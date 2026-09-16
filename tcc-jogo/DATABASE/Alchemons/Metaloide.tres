@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://d18a5783nwx7j"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_g0h4v"]
+[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="2_ypslv"]
+[ext_resource type="Resource" uid="uid://btpx7i0xrh8u0" path="res://DATABASE/Attack/Scratch.tres" id="3_hw5sm"]
+[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="4_j65ka"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="5_r03j5"]
+
+[resource]
+script = ExtResource("5_r03j5")
+id = 3
+creature_name = "Metaloide"
+element_type = 2
+attacks = Array[ExtResource("1_g0h4v")]([ExtResource("2_ypslv"), ExtResource("3_hw5sm"), ExtResource("4_j65ka")])
+metadata/_custom_type_script = "uid://cxfaplp86c865"

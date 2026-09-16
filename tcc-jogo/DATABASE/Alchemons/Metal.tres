@@ -8,7 +8,7 @@
 
 [resource]
 script = ExtResource("4_8x2wx")
-id = 0
+id = 2
 creature_name = "Metal"
 max_hp = 33
 max_valence_electrons = 6

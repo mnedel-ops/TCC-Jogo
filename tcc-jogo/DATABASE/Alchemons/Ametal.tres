@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://dvlwfjw4oiv2k"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_irkcw"]
+[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="2_feu4h"]
+[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="3_2fxa6"]
+[ext_resource type="Resource" uid="uid://btpx7i0xrh8u0" path="res://DATABASE/Attack/Scratch.tres" id="4_u0657"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="5_51661"]
+
+[resource]
+script = ExtResource("5_51661")
+id = 1
+creature_name = "Ametal"
+element_type = 1
+attacks = Array[ExtResource("1_irkcw")]([ExtResource("2_feu4h"), ExtResource("3_2fxa6"), ExtResource("4_u0657")])
+metadata/_custom_type_script = "uid://cxfaplp86c865"
