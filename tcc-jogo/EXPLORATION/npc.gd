@@ -8,6 +8,8 @@ class_name NPC
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
 
+signal combat_start(index: int)
+@export var alchemon:int
 
 func _ready() -> void:
 	dialoguearea.area_entered.connect(_on_area_entered)
@@ -41,7 +43,7 @@ func talk():
 func _on_combat_area_entered(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		print("Vou te quebrar na porrada")
-		get_tree().change_scene_to_file("res://COMBAT/combat_refactored.tscn")
+		combat_start.emit(alchemon)
 func _on_combat_area_exited(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		print("Cansei de te espancar. Vaza")

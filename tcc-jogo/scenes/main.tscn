@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://i8hwn8g0i6hc" path="res://EXPLORATION/Player/camera_rig.gd" id="2_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://yxvf5eisronk" path="res://scenes/scene_1.tscn" id="2_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://i02ouo6uredv" path="res://INTERFACES/menu_pause.tscn" id="3_h2yge"]
+[ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
 
@@ -28,3 +29,12 @@ player = NodePath("../player")
 transform = Transform3D(1, 0, 0, 0, 0.8903082, 0.45535845, 0, -0.45535845, 0.8903082, 0, 7, 9)
 
 [node name="LevelHolder" type="Node3D" parent="." unique_id=3420809]
+
+[node name="CombatSceneManager" type="Node" parent="." unique_id=689452224]
+script = ExtResource("6_tefeu")
+
+[node name="CombatHolder" type="Control" parent="." unique_id=1914775119]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
