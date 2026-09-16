@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://bat4borqfb643"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_4xuym"]
+
+[resource]
+script = ExtResource("1_4xuym")
+indexAttack = 3
+attack_name = "TailStrike"
+power = 10
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://lkv7cq3sslkk"]
 
-[ext_resource type="Script" uid="uid://blk14l4dledyt" path="res://Inventory/interactable_item.gd" id="1_item"]
-[ext_resource type="Resource" uid="uid://c0epucu803i5k" path="res://Inventory/Itens/1ItemGenerico.tres" id="2_item"]
+[ext_resource type="Script" uid="uid://blk14l4dledyt" path="res://DATABASE/Inventory/interactable_item.gd" id="1_item"]
+[ext_resource type="Resource" uid="uid://c0epucu803i5k" path="res://DATABASE/Inventory/Itens/1ItemGenerico.tres" id="2_item"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_uvdoe"]
 

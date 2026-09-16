@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://cvnumu170lca7"]
 
-[ext_resource type="Script" uid="uid://b601lbkpbqul2" path="res://Player/player.gd" id="1_4flbx"]
-[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://Inventory/inventory.tres" id="2_onrkg"]
-[ext_resource type="Script" uid="uid://c84b7j4py50s8" path="res://Player/movement_component.gd" id="3_btcbx"]
-[ext_resource type="Script" uid="uid://c5fpt5p1gtl2c" path="res://Player/interaction_component.gd" id="3_gwnis"]
-[ext_resource type="Script" uid="uid://bihe81j3dy0nm" path="res://Player/inventory_component.gd" id="4_gwnis"]
+[ext_resource type="Script" uid="uid://b601lbkpbqul2" path="res://EXPLORATION/Player/player.gd" id="1_4flbx"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory.tres" id="2_onrkg"]
+[ext_resource type="Script" uid="uid://c84b7j4py50s8" path="res://EXPLORATION/Player/movement_component.gd" id="3_btcbx"]
+[ext_resource type="Script" uid="uid://c5fpt5p1gtl2c" path="res://EXPLORATION/Player/interaction_component.gd" id="3_gwnis"]
+[ext_resource type="Script" uid="uid://bihe81j3dy0nm" path="res://EXPLORATION/Player/inventory_component.gd" id="4_gwnis"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sh265"]
 

@@ -1,11 +1,11 @@
 [gd_scene format=3 uid="uid://i02ouo6uredv"]
 
-[ext_resource type="Script" uid="uid://bbjeu18buys53" path="res://Interfaces/menu.gd" id="1_7xvrs"]
-[ext_resource type="Script" uid="uid://52el4gyao7xq" path="res://Interfaces/navigation_component.gd" id="2_7xvrs"]
-[ext_resource type="Script" uid="uid://cuo55f68wf5su" path="res://Interfaces/exit_flow_component.gd" id="2_ii7rs"]
-[ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://Interfaces/bag_component.gd" id="3_ax8vx"]
-[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://Inventory/inventory.tres" id="4_7xvrs"]
-[ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://Inventory/ItemDatabase.tres" id="5_yceo5"]
+[ext_resource type="Script" uid="uid://bbjeu18buys53" path="res://INTERFACES/menu.gd" id="1_7xvrs"]
+[ext_resource type="Script" uid="uid://52el4gyao7xq" path="res://INTERFACES/navigation_component.gd" id="2_7xvrs"]
+[ext_resource type="Script" uid="uid://cuo55f68wf5su" path="res://INTERFACES/exit_flow_component.gd" id="2_ii7rs"]
+[ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://INTERFACES/bag_component.gd" id="3_ax8vx"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory.tres" id="4_7xvrs"]
+[ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="5_yceo5"]
 
 [node name="MenuPause" type="CanvasLayer" unique_id=1170522014]
 script = ExtResource("1_7xvrs")

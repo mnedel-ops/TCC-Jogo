@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://yxvf5eisronk"]
 
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="1_3sd7o"]
-[ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://Inventory/interactable_item.tscn" id="2_3xosi"]
-[ext_resource type="PackedScene" path="res://npc.tscn" id="3_cn2eb"]
+[ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://DATABASE/Inventory/interactable_item.tscn" id="2_3xosi"]
+[ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="3_cn2eb"]
 
 [sub_resource type="Environment" id="Environment_3xosi"]
 
