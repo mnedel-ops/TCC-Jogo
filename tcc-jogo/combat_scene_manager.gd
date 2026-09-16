@@ -1,7 +1,7 @@
 extends Node
 class_name CombatSceneManager
 
-@onready var NPCGet = "res://combat_scene_manager.gd"
+@onready var NPCGet = $"../LevelHolder/scene1/SignalReceiver"
 @onready var combat_holder: Control = $"../CombatHolder"
 
 var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")

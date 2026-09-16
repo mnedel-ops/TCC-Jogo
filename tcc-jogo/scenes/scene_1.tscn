@@ -26,7 +26,7 @@ height = 4.5
 
 [node name="scene1" type="Node3D" unique_id=1951922366]
 
-[node name="NPCSignalReceiver" type="Node" parent="." unique_id=80924807]
+[node name="SignalReceiver" type="Node" parent="." unique_id=80924807]
 script = ExtResource("1_sj5te")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
@@ -82,5 +82,5 @@ alchemon = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.191526, 1, 2.4241505)
 alchemon = 4
 
-[connection signal="combat_start" from="NPC" to="NPCSignalReceiver" method="_on_npc_combat_start"]
-[connection signal="combat_start" from="NPC2" to="NPCSignalReceiver" method="_on_npc_2_combat_start"]
+[connection signal="combat_start" from="NPC" to="SignalReceiver" method="_on_npc_combat_start"]
+[connection signal="combat_start" from="NPC2" to="SignalReceiver" method="_on_npc_2_combat_start"]
