@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="1_5fle6"]
 [ext_resource type="Script" uid="uid://dbofwuofp1xai" path="res://DATABASE/Alchemons/AlchemonDataBase.gd" id="1_nrgsa"]
-[ext_resource type="Resource" uid="uid://b3mk6fhvww3jr" path="res://DATABASE/Alchemons/Alchemon-Generico.tres" id="2_noolv"]
+[ext_resource type="Resource" uid="uid://b3mk6fhvww3jr" path="res://DATABASE/Alchemons/Metal.tres" id="2_noolv"]
 [ext_resource type="Resource" uid="uid://d18a5783nwx7j" path="res://DATABASE/Alchemons/AlchemonGenericoOutro.tres" id="3_noolv"]
 
 [resource]

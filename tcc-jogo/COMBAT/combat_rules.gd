@@ -91,8 +91,8 @@ static func _resolve_attack(state: CombatState, command: ActionCommand, database
 	var attack: AttackData = template.attacks[command.attack_index]
 	var is_slap := actor.valence_electrons <= 0
 	var attack_name := SLAP_NAME if is_slap else attack.attack_name
-	var power := SLAP_DAMAGE if is_slap else (attack.power if attack.power > 0 else attack.damage)
-	var cost := SLAP_COST if is_slap else attack.energy_cost
+	var power :int= SLAP_DAMAGE if is_slap else (attack.power if attack.power > 0 else attack.damage)
+	var cost :int= SLAP_COST if is_slap else attack.energy_cost
 	if randf() < MISS_CHANCE:
 		return CombatResult.attack_miss(actor.id, target.id, attack_name, cost)
 	var critical := randf() < CRIT_CHANCE
