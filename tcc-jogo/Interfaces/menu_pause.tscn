@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://i02ouo6uredv"]
+
+[ext_resource type="Script" uid="uid://bbjeu18buys53" path="res://Interfaces/menu.gd" id="1_7xvrs"]
+[ext_resource type="Script" uid="uid://52el4gyao7xq" path="res://Interfaces/navigation_component.gd" id="2_7xvrs"]
+[ext_resource type="Script" uid="uid://cuo55f68wf5su" path="res://Interfaces/exit_flow_component.gd" id="2_ii7rs"]
+[ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://Interfaces/bag_component.gd" id="3_ax8vx"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://Inventory/inventory.tres" id="4_7xvrs"]
+[ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://Inventory/ItemDatabase.tres" id="5_yceo5"]
+
+[node name="MenuPause" type="CanvasLayer" unique_id=1170522014]
+script = ExtResource("1_7xvrs")
+
+[node name="Root" type="Control" parent="." unique_id=1691106410]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root" unique_id=1751274943]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_right = 64.0
+grow_vertical = 2
+size_flags_horizontal = 0
+theme_override_constants/margin_left = 64
+
+[node name="PanelContainer" type="PanelContainer" parent="Root/MarginContainer" unique_id=1042915693]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/MarginContainer/PanelContainer" unique_id=949017202]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="NavigationComponent" type="Node" parent="." unique_id=942200191 node_paths=PackedStringArray("buttons_container")]
+script = ExtResource("2_7xvrs")
+buttons_container = NodePath("../Root/MarginContainer/PanelContainer/VBoxContainer")
+button_names = ["Bag", "Exit"]
+
+[node name="BagComponent" type="Node" parent="." unique_id=383327739 node_paths=PackedStringArray("inventoryui", "item_list")]
+script = ExtResource("3_ax8vx")
+mochila = ExtResource("4_7xvrs")
+inventoryui = NodePath("VBoxContainer")
+inventory_database = ExtResource("5_yceo5")
+item_list = NodePath("VBoxContainer")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BagComponent" unique_id=516374588]
+visible = false
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ExitFlowComponent" type="Node" parent="." unique_id=293109961 node_paths=PackedStringArray("exit_without_saving_dialog", "exit_confirm_dialog")]
+script = ExtResource("2_ii7rs")
+exit_without_saving_dialog = NodePath("ExitWithouSavingDialog")
+exit_confirm_dialog = NodePath("ExitConfirmDialog")
+
+[node name="ExitWithouSavingDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=881621034]
+
+[node name="ExitConfirmDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=714866470]
+
+[connection signal="menu_closed" from="." to="BagComponent" method="_on_menu_pause_menu_closed"]

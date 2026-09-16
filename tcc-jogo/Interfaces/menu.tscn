@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://bp4tekd8olulx"]
+
+[ext_resource type="Script" uid="uid://52el4gyao7xq" path="res://Interfaces/navigation_component.gd" id="1_6rt2b"]
+[ext_resource type="Script" uid="uid://bbjeu18buys53" path="res://Interfaces/menu.gd" id="1_lfdkv"]
+[ext_resource type="Script" uid="uid://cuo55f68wf5su" path="res://Interfaces/exit_flow_component.gd" id="2_3buhb"]
+[ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://Interfaces/bag_component.gd" id="4_dr4rn"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://Inventory/inventory.tres" id="5_dr4rn"]
+
+[node name="menu" type="CanvasLayer" unique_id=2020587563]
+script = ExtResource("1_lfdkv")
+
+[node name="NavigationComponent" type="Node" parent="." unique_id=553199402 node_paths=PackedStringArray("buttons_container")]
+script = ExtResource("1_6rt2b")
+buttons_container = NodePath("../Root/MarginContainer/PanelContainer/VBoxContainer")
+button_names = ["Bag", "Exit"]
+
+[node name="ExitFlowComponent" type="Node" parent="." unique_id=207569777 node_paths=PackedStringArray("exit_without_saving_dialog", "exit_confirm_dialog")]
+script = ExtResource("2_3buhb")
+exit_without_saving_dialog = NodePath("ExitWithoutSavingDialog")
+exit_confirm_dialog = NodePath("ExitConfirmDialog")
+
+[node name="ExitConfirmDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=1762283269]
+oversampling_override = 1.0
+
+[node name="ExitWithoutSavingDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=1541662155]
+
+[node name="BagComponent" type="Node" parent="." unique_id=720133904]
+script = ExtResource("4_dr4rn")
+mochila = ExtResource("5_dr4rn")
+
+[node name="Root" type="Control" parent="." unique_id=496849893]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root" unique_id=466550474]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_right = 64.0
+grow_vertical = 2
+size_flags_horizontal = 0
+theme_override_constants/margin_left = 64
+
+[node name="PanelContainer" type="PanelContainer" parent="Root/MarginContainer" unique_id=1800646238]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/MarginContainer/PanelContainer" unique_id=1626500822]
+layout_mode = 2
+size_flags_vertical = 4

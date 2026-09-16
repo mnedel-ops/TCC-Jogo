@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://qpi32vuj8vcr"]
+
+[ext_resource type="PackedScene" uid="uid://cvnumu170lca7" path="res://Player/player.tscn" id="1_ig7tw"]
+[ext_resource type="Script" uid="uid://bed66nl4l3rew" path="res://scenes/scene_manager.gd" id="1_lquwl"]
+[ext_resource type="Script" uid="uid://i8hwn8g0i6hc" path="res://Player/camera_rig.gd" id="2_0xm2m"]
+[ext_resource type="PackedScene" uid="uid://yxvf5eisronk" path="res://scenes/scene_1.tscn" id="2_1bvp3"]
+[ext_resource type="PackedScene" uid="uid://i02ouo6uredv" path="res://Interfaces/menu_pause.tscn" id="3_h2yge"]
+
+[node name="main" type="Node3D" unique_id=1718374945]
+
+[node name="MenuPause" parent="." unique_id=1170522014 instance=ExtResource("3_h2yge")]
+
+[node name="SceneManager" type="Node" parent="." unique_id=396373712 node_paths=PackedStringArray("level_holder", "player", "camera_rig") groups=["scene_manager"]]
+script = ExtResource("1_lquwl")
+level_holder = NodePath("../LevelHolder")
+player = NodePath("../player")
+camera_rig = NodePath("../CameraRig")
+first_level = ExtResource("2_1bvp3")
+first_spawn_point = "SpawnPoint0"
+
+[node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=150659886 node_paths=PackedStringArray("player")]
+script = ExtResource("2_0xm2m")
+player = NodePath("../player")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=2006775177]
+transform = Transform3D(1, 0, 0, 0, 0.8903082, 0.45535845, 0, -0.45535845, 0.8903082, 0, 7, 9)
+
+[node name="LevelHolder" type="Node3D" parent="." unique_id=3420809]

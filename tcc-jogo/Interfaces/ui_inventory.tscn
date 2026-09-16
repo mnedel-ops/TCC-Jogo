@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://bjby8yerjjga2"]
+
+[ext_resource type="Script" uid="uid://cosnqcmkxkx03" path="res://Interfaces/ui_inventory.gd" id="1_script"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://Inventory/inventory.tres" id="2_inventory"]
+
+[node name="UIInventory" type="Control" unique_id=1203882898]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 280.0
+offset_bottom = 220.0
+script = ExtResource("1_script")
+mochila = ExtResource("2_inventory")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=705938593]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=1302905066]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="ItemList" type="VBoxContainer" parent="Panel/Margin" unique_id=2067716550]
+layout_mode = 2

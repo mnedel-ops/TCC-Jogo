@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bpxnmv76ylahn"]
+
+[ext_resource type="Script" uid="uid://dmtha2nlqm4o7" path="res://Inventory/itemdata.gd" id="1_3lrh2"]
+
+[resource]
+script = ExtResource("1_3lrh2")
+index = 2
+nome = "Item Super Generico"
+descricao = "Item generico para testar."
+metadata/_custom_type_script = "uid://dmtha2nlqm4o7"

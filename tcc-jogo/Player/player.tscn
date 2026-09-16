@@ -1,0 +1,52 @@
+[gd_scene format=3 uid="uid://cvnumu170lca7"]
+
+[ext_resource type="Script" uid="uid://b601lbkpbqul2" path="res://Player/player.gd" id="1_4flbx"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://Inventory/inventory.tres" id="2_onrkg"]
+[ext_resource type="Script" uid="uid://c84b7j4py50s8" path="res://Player/movement_component.gd" id="3_btcbx"]
+[ext_resource type="Script" uid="uid://c5fpt5p1gtl2c" path="res://Player/interaction_component.gd" id="3_gwnis"]
+[ext_resource type="Script" uid="uid://bihe81j3dy0nm" path="res://Player/inventory_component.gd" id="4_gwnis"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_sh265"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4flbx"]
+size = Vector3(2, 2.527, 2.994)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_4flbx"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4flbx"]
+
+[node name="player" type="CharacterBody3D" unique_id=247398753 groups=["player"]]
+collision_mask = 14
+script = ExtResource("1_4flbx")
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=686788492]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_sh265")
+
+[node name="InteractArea" type="Area3D" parent="Mesh" unique_id=627225193 groups=["player"]]
+collision_mask = 14
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mesh/InteractArea" unique_id=326791604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5527137e-15, 0.02692771, -1.0029649)
+shape = SubResource("BoxShape3D_4flbx")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Mesh" unique_id=1869202746]
+transform = Transform3D(0.29999998, 0, 0, 0, -4.981161e-09, 0.29999998, 0, -0.11395568, -1.3113416e-08, 0, 0.38301587, -0.5211808)
+mesh = SubResource("CylinderMesh_4flbx")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=899443685]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_4flbx")
+
+[node name="MovementComponent" type="Node" parent="." unique_id=963739668 node_paths=PackedStringArray("body", "mesh")]
+script = ExtResource("3_btcbx")
+body = NodePath("..")
+mesh = NodePath("../Mesh")
+
+[node name="InteractionComponent" type="Node" parent="." unique_id=876064315 node_paths=PackedStringArray("interact_area")]
+script = ExtResource("3_gwnis")
+interact_area = NodePath("../Mesh/InteractArea")
+
+[node name="InventoryComponent" type="Node" parent="." unique_id=1831759049]
+script = ExtResource("4_gwnis")
+mochila = ExtResource("2_onrkg")

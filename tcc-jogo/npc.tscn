@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://dbysqb5jauvro"]
+
+[ext_resource type="Script" uid="uid://bi6ljcmvhwv8h" path="res://npc.gd" id="1_ideak"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_v7lw1"]
+
+[sub_resource type="PrismMesh" id="PrismMesh_ideak"]
+size = Vector3(0.5, 0.745, 0.815)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xxcha"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ideak"]
+size = Vector3(3, 1, 3)
+
+[node name="NPC" type="CharacterBody3D" unique_id=844920822 groups=["npc"]]
+collision_layer = 8
+collision_mask = 3
+script = ExtResource("1_ideak")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=37831167]
+layers = 8
+mesh = SubResource("CapsuleMesh_v7lw1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MeshInstance3D" unique_id=140686001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0076983, 0)
+mesh = SubResource("PrismMesh_ideak")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=529672125]
+shape = SubResource("CapsuleShape3D_xxcha")
+
+[node name="DialogueCollision" type="Area3D" parent="." unique_id=1271880641]
+collision_layer = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DialogueCollision" unique_id=106728003]
+shape = SubResource("BoxShape3D_ideak")
+
+[node name="Root" type="Control" parent="." unique_id=1152905465]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Dialogo" type="Label" parent="Root" unique_id=1803018782]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Estamos conversando..."
+
+[connection signal="area_entered" from="DialogueCollision" to="." method="_on_dialogue_collision_area_entered"]
+[connection signal="area_exited" from="DialogueCollision" to="." method="_on_dialogue_collision_area_exited"]
