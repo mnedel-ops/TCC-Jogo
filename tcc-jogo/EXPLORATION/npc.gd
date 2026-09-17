@@ -8,8 +8,9 @@ class_name NPC
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
 
-signal combat_start(index: int)
-@export var alchemon:int
+@export var alchemon1:int
+@export var alchemon2: int
+signal combat_start(index: int, id2:int)
 
 func _ready() -> void:
 	dialoguearea.area_entered.connect(_on_area_entered)
@@ -43,7 +44,7 @@ func talk():
 func _on_combat_area_entered(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		print("Vou te quebrar na porrada")
-		combat_start.emit(alchemon)
+		combat_start.emit(alchemon1, alchemon2)
 func _on_combat_area_exited(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		print("Cansei de te espancar. Vaza")

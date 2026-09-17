@@ -76,11 +76,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6044545, 1.9073486e-06, -3.
 
 [node name="NPC" parent="." unique_id=844920822 instance=ExtResource("3_cn2eb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.226245, 1, -4.641039)
-alchemon = 1
+alchemon1 = 1
+alchemon2 = 1
 
 [node name="NPC2" parent="." unique_id=1662656818 instance=ExtResource("3_cn2eb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.191526, 1, 2.4241505)
-alchemon = 4
 
 [connection signal="combat_start" from="NPC" to="SignalReceiver" method="_on_npc_combat_start"]
 [connection signal="combat_start" from="NPC2" to="SignalReceiver" method="_on_npc_2_combat_start"]
