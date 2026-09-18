@@ -6,7 +6,6 @@ signal item_collected(item_id: int)
 @export var mochila: Resource   # teu InventoryData
 @export var party_data: PlayerPartyData   # time atual - so species_ids, pro combat controller
 
-
 func collect_from_area(item: Area3D) -> bool:
 	if mochila == null or item == null or not item.has_method("get_item_id"):
 		return false

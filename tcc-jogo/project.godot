@@ -15,6 +15,10 @@ run/main_scene="uid://qpi32vuj8vcr"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+CombatSignal="*uid://8d1n0r4yix1l"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")

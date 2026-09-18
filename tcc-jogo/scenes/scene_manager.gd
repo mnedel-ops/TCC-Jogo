@@ -8,7 +8,7 @@ extends Node
 @export var first_level: PackedScene        # arrasta Scene1.tscn aqui no Inspector
 @export var first_spawn_point: String
 
-var _current_level: Level
+var _current_level: Node3D
 signal ChangeScene
 
 func _ready() -> void:

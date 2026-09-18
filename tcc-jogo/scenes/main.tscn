@@ -3,10 +3,10 @@
 [ext_resource type="PackedScene" uid="uid://cvnumu170lca7" path="res://EXPLORATION/Player/player.tscn" id="1_ig7tw"]
 [ext_resource type="Script" uid="uid://bed66nl4l3rew" path="res://scenes/scene_manager.gd" id="1_lquwl"]
 [ext_resource type="Script" uid="uid://i8hwn8g0i6hc" path="res://EXPLORATION/Player/camera_rig.gd" id="2_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://yxvf5eisronk" path="res://scenes/scene_1.tscn" id="2_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://i02ouo6uredv" path="res://INTERFACES/menu_pause.tscn" id="3_h2yge"]
+[ext_resource type="PackedScene" uid="uid://dxh818mftoswm" path="res://scenes/scene_2.tscn" id="3_o6xl0"]
 [ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
-[ext_resource type="Script" uid="uid://2fr38tubdiyk" path="res://EntityManager.gd" id="7_o6xl0"]
+[ext_resource type="Resource" uid="uid://bcolxo254vrge" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
 
@@ -18,12 +18,10 @@ script = ExtResource("1_lquwl")
 level_holder = NodePath("../LevelHolder")
 player = NodePath("../player")
 camera_rig = NodePath("../CameraRig")
-first_level = ExtResource("2_1bvp3")
-first_spawn_point = "SpawnPoint0"
+first_level = ExtResource("3_o6xl0")
+first_spawn_point = "SpawnPoint2"
 
-[node name="EntityManager" type="Node" parent="." unique_id=1803137416 node_paths=PackedStringArray("entityholder")]
-script = ExtResource("7_o6xl0")
-entityholder = NodePath("../EntityHolder")
+[node name="EntityManager" type="Node" parent="." unique_id=1803137416]
 
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
@@ -38,6 +36,7 @@ transform = Transform3D(1, 0, 0, 0, 0.8903082, 0.45535845, 0, -0.45535845, 0.890
 
 [node name="CombatSceneManager" type="CanvasLayer" parent="." unique_id=696816948]
 script = ExtResource("6_tefeu")
+party = ExtResource("7_o6xl0")
 
 [node name="CombatHolder" type="Control" parent="." unique_id=1914775119]
 layout_mode = 3

@@ -2,44 +2,30 @@
 extends CanvasLayer
 class_name CombatSceneManager
 
-@onready var NPCHolder = $"../LevelHolder/scene1/NPCHolder"
 @onready var combat_holder: Control = $"../CombatHolder"
-
-@onready var SceneManager_guy:SceneManager=$"../SceneManager"
-
+var player : PackedScene = load("res://EXPLORATION/Player/player.tscn")
 var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")
+@export var party : PlayerPartyData
 
 func _ready() -> void:
-	SceneManager_guy.ChangeScene.connect(_on_change_scene)
-
-#Instanciar pelo EntityHOlder e usar NPC markers pra colocar os NPCs.
-func _on_change_scene() -> void:
-	if NPCHolder == null:
-		print("NPCHolder vazio")
-		NPCHolder.combat_start.connect(_on_combat_start)
-	if NPCHolder:
-		print("Detectando Alchemons inimigos...")
+	CombatSignal.combat_start.connect(_on_combat_start)
 
 func _on_combat_start(index: int, id2: int) -> void:
-	npc_alchemons(index, id2)
 	var combatScenes = combatScene.instantiate()
-	combatScenes.player_species_ids = _get_player_species_ids()
+	combatScenes.player_species_ids = party.species_ids
+	combatScenes.enemy_species_ids = _get_enemy_species_ids(index, id2)
 	combat_holder.add_child(combatScenes)
 
-func npc_alchemons(index: int, id2: int) -> void:
-	print(index, id2)
+## -1 = no second mon. Filter, don't pass as species_id.
+func _get_enemy_species_ids(index: int, id2: int) -> Array[int]:
+	var ids: Array[int] = []
+	if index >= 0:
+		ids.append(index)
+	if id2 >= 0:
+		ids.append(id2)
+	if ids.is_empty():
+		push_warning("CombatSceneManager: no valid enemy ids, fallback [3].")
+		return [3]
+	return ids
 
-## Pulls party species_ids from player's InventoryComponent -> PlayerPartyData resource.
-## Fallback [0,1] if missing - never crash combat setup.
-func _get_player_species_ids() -> Array[int]:
-	var player := get_tree().get_first_node_in_group("player")
-	if player == null:
-		push_warning("CombatSceneManager: player node not in group 'player'.")
-		return [0, 1]
-
-	var inventory: InventoryComponent = player.find_child("InventoryComponent", true, false)
-	if inventory == null or inventory.party_data == null:
-		push_warning("CombatSceneManager: InventoryComponent or party_data missing.")
-		return [0, 1]
-
-	return inventory.party_data.species_ids
+	
