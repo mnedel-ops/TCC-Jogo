@@ -22,6 +22,7 @@ script = ExtResource("1_c6lho")
 figther = true
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=37831167]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 layers = 8
 mesh = SubResource("CapsuleMesh_v7lw1")
 
@@ -30,12 +31,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0076983, 0)
 mesh = SubResource("PrismMesh_ideak")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=529672125]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_xxcha")
 
 [node name="DialogueCollision" type="Area3D" parent="." unique_id=1271880641]
 collision_layer = 8
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DialogueCollision" unique_id=106728003]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_ideak")
 
 [node name="Root" type="Control" parent="." unique_id=1152905465]
@@ -53,7 +56,7 @@ text = "Estamos conversando..."
 [node name="CombatCollision" type="Area3D" parent="." unique_id=649249875]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CombatCollision" unique_id=456885469]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5035858)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.5035858)
 shape = SubResource("BoxShape3D_nkfb8")
 
 [connection signal="area_entered" from="DialogueCollision" to="." method="_on_dialogue_collision_area_entered"]

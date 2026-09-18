@@ -21,6 +21,10 @@ camera_rig = NodePath("../CameraRig")
 first_level = ExtResource("2_1bvp3")
 first_spawn_point = "SpawnPoint0"
 
+[node name="EntityManager" type="Node" parent="." unique_id=1803137416 node_paths=PackedStringArray("entityholder")]
+script = ExtResource("7_o6xl0")
+entityholder = NodePath("../EntityHolder")
+
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=150659886 node_paths=PackedStringArray("player")]
@@ -41,10 +45,4 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="TransitionUI" type="CanvasLayer" parent="." unique_id=157262473]
-
 [node name="EntityHolder" type="Node3D" parent="." unique_id=433721231]
-
-[node name="EntityManager" type="Node" parent="." unique_id=1803137416 node_paths=PackedStringArray("entityholder")]
-script = ExtResource("7_o6xl0")
-entityholder = NodePath("../EntityHolder")

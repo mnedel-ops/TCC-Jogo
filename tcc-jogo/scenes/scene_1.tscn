@@ -2,8 +2,10 @@
 
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="1_3sd7o"]
 [ext_resource type="Script" uid="uid://dvohax8cldrfy" path="res://npc_signal_receiver.gd" id="1_sj5te"]
+[ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="1_t6bmd"]
 [ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://DATABASE/Inventory/interactable_item.tscn" id="2_3xosi"]
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="3_cn2eb"]
+[ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_lki8s"]
 
 [sub_resource type="Environment" id="Environment_3xosi"]
 
@@ -25,6 +27,8 @@ bottom_radius = 4.5
 height = 4.5
 
 [node name="scene1" type="Node3D" unique_id=1951922366]
+script = ExtResource("1_t6bmd")
+npc_scene = ExtResource("3_cn2eb")
 
 [node name="NPCHolder" type="Node" parent="." unique_id=80924807]
 script = ExtResource("1_sj5te")
@@ -37,6 +41,12 @@ alchemon2 = 1
 [node name="NPC2" parent="NPCHolder" unique_id=1662656818 instance=ExtResource("3_cn2eb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.191526, 1, 2.4241505)
 figther = false
+
+[node name="SpawnPoint" type="Marker3D" parent="NPCHolder" unique_id=1281948684]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.501, 0, 0)
+script = ExtResource("3_lki8s")
+npc_scene = ExtResource("3_cn2eb")
+alchemons_ids = Array[int]([0, 0])
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")
