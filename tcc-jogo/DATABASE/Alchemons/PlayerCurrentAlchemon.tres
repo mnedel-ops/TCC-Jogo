@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PlayerPartyData" format=3 uid="uid://bcolxo254vrge"]
+
+[ext_resource type="Script" uid="uid://cnhw7mh1xnceu" path="res://DATABASE/Alchemons/PlayerPartyData.gd" id="1_jxhua"]
+
+[resource]
+script = ExtResource("1_jxhua")
+species_ids = Array[int]([1, 1])
+metadata/_custom_type_script = "uid://cnhw7mh1xnceu"

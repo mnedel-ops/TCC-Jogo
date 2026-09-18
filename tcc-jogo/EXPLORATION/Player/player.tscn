@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://c84b7j4py50s8" path="res://EXPLORATION/Player/movement_component.gd" id="3_btcbx"]
 [ext_resource type="Script" uid="uid://c5fpt5p1gtl2c" path="res://EXPLORATION/Player/interaction_component.gd" id="3_gwnis"]
 [ext_resource type="Script" uid="uid://bihe81j3dy0nm" path="res://EXPLORATION/Player/inventory_component.gd" id="4_gwnis"]
+[ext_resource type="Resource" uid="uid://bcolxo254vrge" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="6_l2cs5"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sh265"]
 
@@ -50,3 +51,4 @@ interact_area = NodePath("../Mesh/InteractArea")
 [node name="InventoryComponent" type="Node" parent="." unique_id=1831759049]
 script = ExtResource("4_gwnis")
 mochila = ExtResource("2_onrkg")
+party_data = ExtResource("6_l2cs5")
