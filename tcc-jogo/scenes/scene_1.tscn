@@ -26,8 +26,17 @@ height = 4.5
 
 [node name="scene1" type="Node3D" unique_id=1951922366]
 
-[node name="SignalReceiver" type="Node" parent="." unique_id=80924807]
+[node name="NPCHolder" type="Node" parent="." unique_id=80924807]
 script = ExtResource("1_sj5te")
+
+[node name="NPC" parent="NPCHolder" unique_id=844920822 instance=ExtResource("3_cn2eb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.226245, 1, -4.641039)
+alchemon1 = 1
+alchemon2 = 1
+
+[node name="NPC2" parent="NPCHolder" unique_id=1662656818 instance=ExtResource("3_cn2eb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.191526, 1, 2.4241505)
+figther = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")
@@ -74,13 +83,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.487591)
 [node name="InteractableItem" parent="." unique_id=1606038511 instance=ExtResource("2_3xosi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6044545, 1.9073486e-06, -3.6319332)
 
-[node name="NPC" parent="." unique_id=844920822 instance=ExtResource("3_cn2eb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.226245, 1, -4.641039)
-alchemon1 = 1
-alchemon2 = 1
-
-[node name="NPC2" parent="." unique_id=1662656818 instance=ExtResource("3_cn2eb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.191526, 1, 2.4241505)
-
-[connection signal="combat_start" from="NPC" to="SignalReceiver" method="_on_npc_combat_start"]
-[connection signal="combat_start" from="NPC2" to="SignalReceiver" method="_on_npc_2_combat_start"]
+[connection signal="combat_start" from="NPCHolder/NPC" to="NPCHolder" method="_on_npc_combat_start"]
+[connection signal="combat_start" from="NPCHolder/NPC2" to="NPCHolder" method="_on_npc_2_combat_start"]

@@ -2,14 +2,23 @@
 extends CanvasLayer
 class_name CombatSceneManager
 
-@onready var NPCGet = $"../LevelHolder/scene1/SignalReceiver"
+@onready var NPCHolder = $"../LevelHolder/scene1/NPCHolder"
 @onready var combat_holder: Control = $"../CombatHolder"
+
+@onready var SceneManager_guy:SceneManager=$"../SceneManager"
 
 var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")
 
 func _ready() -> void:
-	if NPCGet:
-		NPCGet.combat_start.connect(_on_combat_start)
+	SceneManager_guy.ChangeScene.connect(_on_change_scene)
+
+#Instanciar pelo EntityHOlder e usar NPC markers pra colocar os NPCs.
+func _on_change_scene() -> void:
+	if NPCHolder == null:
+		print("NPCHolder vazio")
+		NPCHolder.combat_start.connect(_on_combat_start)
+	if NPCHolder:
+		print("Detectando Alchemons inimigos...")
 
 func _on_combat_start(index: int, id2: int) -> void:
 	npc_alchemons(index, id2)

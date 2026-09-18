@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://yxvf5eisronk" path="res://scenes/scene_1.tscn" id="2_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://i02ouo6uredv" path="res://INTERFACES/menu_pause.tscn" id="3_h2yge"]
 [ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
+[ext_resource type="Script" uid="uid://2fr38tubdiyk" path="res://EntityManager.gd" id="7_o6xl0"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
 
@@ -31,8 +32,6 @@ transform = Transform3D(1, 0, 0, 0, 0.8903082, 0.45535845, 0, -0.45535845, 0.890
 
 [node name="LevelHolder" type="Node3D" parent="." unique_id=3420809]
 
-[node name="EntityHolder" type="Node3D" parent="." unique_id=1490772970]
-
 [node name="CombatSceneManager" type="CanvasLayer" parent="." unique_id=696816948]
 script = ExtResource("6_tefeu")
 
@@ -41,3 +40,11 @@ layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
+
+[node name="TransitionUI" type="CanvasLayer" parent="." unique_id=157262473]
+
+[node name="EntityHolder" type="Node3D" parent="." unique_id=433721231]
+
+[node name="EntityManager" type="Node" parent="." unique_id=1803137416 node_paths=PackedStringArray("entityholder")]
+script = ExtResource("7_o6xl0")
+entityholder = NodePath("../EntityHolder")
