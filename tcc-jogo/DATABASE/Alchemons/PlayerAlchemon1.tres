@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="AlchemonInstance" format=3 uid="uid://cvpb356kkufg1"]
+
+[ext_resource type="Script" uid="uid://b0x624q5kmq6u" path="res://DATABASE/Alchemons/AlchemonInstance.gd" id="1_l7jgj"]
+
+[resource]
+script = ExtResource("1_l7jgj")
+species_id = 1
+metadata/_custom_type_script = "uid://b0x624q5kmq6u"

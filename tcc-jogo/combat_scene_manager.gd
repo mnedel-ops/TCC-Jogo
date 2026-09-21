@@ -12,7 +12,7 @@ func _ready() -> void:
 
 func _on_combat_start(index: int, id2: int) -> void:
 	var combatScenes = combatScene.instantiate()
-	combatScenes.player_species_ids = party.species_ids
+	combatScenes.player_species_ids = party.party
 	combatScenes.enemy_species_ids = _get_enemy_species_ids(index, id2)
 	combat_holder.add_child(combatScenes)
 

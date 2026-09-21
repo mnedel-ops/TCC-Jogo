@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ddnn6q6y6rndp" path="res://COMBAT/combat_controller_states.gd" id="1_dg64o"]
 [ext_resource type="Resource" uid="uid://mjh0owhcv1br" path="res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres" id="2_vo0t6"]
+[ext_resource type="Script" uid="uid://b0x624q5kmq6u" path="res://DATABASE/Alchemons/AlchemonInstance.gd" id="3_1wde8"]
 [ext_resource type="Script" uid="uid://boivk4nx0ba0f" path="res://COMBAT/combat_states_ui.gd" id="3_vo0t6"]
 
 [node name="CombatStates" type="Control" unique_id=1823080993]
@@ -13,7 +14,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_dg64o")
 database = ExtResource("2_vo0t6")
-player_species_ids = Array[int]([1, 2])
+player_species_ids = Array[ExtResource("3_1wde8")]([null, null])
 enemy_species_ids = Array[int]([3, 3])
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1301123171]

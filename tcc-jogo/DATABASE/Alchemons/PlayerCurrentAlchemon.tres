@@ -1,8 +1,11 @@
-[gd_resource type="Resource" script_class="PlayerPartyData" format=3 uid="uid://bcolxo254vrge"]
+[gd_resource type="Resource" script_class="PlayerPartyData" format=3 uid="uid://kfl5y2vtbtix"]
 
 [ext_resource type="Script" uid="uid://cnhw7mh1xnceu" path="res://DATABASE/Alchemons/PlayerPartyData.gd" id="1_jxhua"]
+[ext_resource type="Script" uid="uid://b0x624q5kmq6u" path="res://DATABASE/Alchemons/AlchemonInstance.gd" id="1_leei7"]
+[ext_resource type="Resource" uid="uid://cvpb356kkufg1" path="res://DATABASE/Alchemons/PlayerAlchemon1.tres" id="2_f7820"]
+[ext_resource type="Resource" uid="uid://cxl443kbeo0br" path="res://DATABASE/Alchemons/PlayerAlchemon2.tres" id="3_xfjfc"]
 
 [resource]
 script = ExtResource("1_jxhua")
-species_ids = Array[int]([1, 1])
+party = Array[ExtResource("1_leei7")]([ExtResource("2_f7820"), ExtResource("3_xfjfc")])
 metadata/_custom_type_script = "uid://cnhw7mh1xnceu"

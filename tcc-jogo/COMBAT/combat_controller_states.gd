@@ -6,7 +6,7 @@ extends Control
 @onready var ui: Combat_UI_states = $VBoxContainer
 
 @export var database: AlchemonDatabase
-@export var player_species_ids: Array[int] = []
+@export var player_species_ids: Array[AlchemonInstance] = []
 @export var enemy_species_ids: Array[int] = []
 
 var state: CombatState
@@ -215,7 +215,6 @@ func _on_flee_pressed() -> void:
 		return
 	_resolve_flee()
 
-
 func _resolve_flee() -> void:
 	if not _advance_phase(BattlePhaseRules.RESOLVING_ACTIONS):
 		return
@@ -226,10 +225,11 @@ func _resolve_flee() -> void:
 	CombatResultApplier.apply(state, flee_result, database)
 	if flee_result.outcome == CombatResult.Outcome.FLEE_SUCCESS:
 		ui.log_message("Fugimos! Escapamos do combate.")
+		_sync_party_state()
 		CombatSignal.combat_ended.emit()
 		queue_free()
 		return
-
+	
 	ui.log_message("Tentativa de fuga falhou!")
 
 	for enemy_id in state.get_active_ids(state.enemy_ids):
@@ -288,3 +288,14 @@ func _log_event(event: CombatEvent) -> void:
 			ui.log_message("Tentativa de capturar %s falhou!" % _name_of(event.target_id))
 		CombatEvent.Kind.INVALID_TARGET, CombatEvent.Kind.ALREADY_DEAD, CombatEvent.Kind.INVALID_ACTION:
 			ui.log_message("Acao cancelada (%s)." % event.reason)
+
+func _sync_party_state() -> void:
+	for i in range(min(player_species_ids.size(), state.player_ids.size())):
+		var combatant_id: int = state.player_ids[i]
+		var c: CombatantState = state.get_combatant(combatant_id)
+		var persistent_alchemon: AlchemonInstance = player_species_ids[i]
+
+		if c != null and persistent_alchemon != null:
+			persistent_alchemon.current_hp = maxi(c.hp, 0)
+			persistent_alchemon.level = c.level
+			persistent_alchemon.current_exp = c.experience
