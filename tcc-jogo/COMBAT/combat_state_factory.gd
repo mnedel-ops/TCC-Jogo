@@ -21,7 +21,10 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		if player_slot_index >= 2:
 			push_warning("Too many players for battlefield (max 2 slots)")
 			break
-
+# If current_hp hasn't been set yet (or was defaulted to -1), initialize it to max_hp
+		if instance.current_hp <= 0:
+			instance.current_hp = template.max_hp
+			
 		var c := CombatantState.new(next_instance_id, instance.species_id, instance.current_hp, true, slot, template.max_valence_electrons)
 		
 		_seed_player_stats(c, template, instance)

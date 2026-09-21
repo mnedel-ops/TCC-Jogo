@@ -263,7 +263,12 @@ func _resolve_flee() -> void:
 
 
 func _show_combat_end() -> void:
+	_sync_party_state()
 	ui.show_combat_end(state.player_won)
+	CombatSignal.combat_ended.emit()
+	
+	# Give the player time to see the outcome screen before despawning combat
+	await get_tree().create_timer(2.0).timeout
 	queue_free()
 
 
@@ -298,4 +303,4 @@ func _sync_party_state() -> void:
 		if c != null and persistent_alchemon != null:
 			persistent_alchemon.current_hp = maxi(c.hp, 0)
 			persistent_alchemon.level = c.level
-			persistent_alchemon.current_exp = c.experience
+			persistent_alchemon.experience = c.experience
