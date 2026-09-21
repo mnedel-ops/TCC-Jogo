@@ -16,7 +16,7 @@ size = Vector3(20.239136, 1, 0.24414063)
 
 [node name="scene2" type="Node3D" unique_id=1951922366]
 
-[node name="SpawnPoint2" type="Marker3D" parent="." unique_id=138369254]
+[node name="SpawnPointPlayer" type="Marker3D" parent="." unique_id=138369254]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8.771921)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1613718894]
@@ -30,7 +30,7 @@ shape = SubResource("BoxShape3D_icno0")
 transform = Transform3D(-1, 0, -8.940697e-08, 0, 1, 0, 8.940697e-08, 0, -1, 0, 0, 9.113438)
 script = ExtResource("1_3r24c")
 target_level_path = "uid://yxvf5eisronk"
-target_spawn_point = "SpawnPoint1"
+target_spawn_point = "SpawnPointPlayer"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DoorTo1" unique_id=737028408]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4882813, -0.37768555)

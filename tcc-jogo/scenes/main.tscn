@@ -19,7 +19,7 @@ level_holder = NodePath("../LevelHolder")
 player = NodePath("../player")
 camera_rig = NodePath("../CameraRig")
 first_level = ExtResource("3_o6xl0")
-first_spawn_point = "SpawnPoint2"
+first_spawn_point = "SpawnPointPlayer"
 
 [node name="EntityManager" type="Node" parent="." unique_id=1803137416]
 
