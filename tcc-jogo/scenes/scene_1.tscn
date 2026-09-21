@@ -26,29 +26,28 @@ bottom_radius = 4.5
 height = 4.5
 
 [node name="scene1" type="Node3D" unique_id=1951922366]
-script = ExtResource("1_t6bmd")
-npc_scene = ExtResource("3_cn2eb")
 
 [node name="NPCHolder" type="Node" parent="." unique_id=80924807]
-
-[node name="NPC" parent="NPCHolder" unique_id=844920822 instance=ExtResource("3_cn2eb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.226245, 1, -4.641039)
-
-[node name="NPC2" parent="NPCHolder" unique_id=1662656818 instance=ExtResource("3_cn2eb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.191526, 1, 2.4241505)
-figther = false
+script = ExtResource("1_t6bmd")
+npc_scene = ExtResource("3_cn2eb")
 
 [node name="SpawnPoint" type="Marker3D" parent="NPCHolder" unique_id=1281948684]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.501, 0, 0)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
-alchemons_ids = Array[int]([1, 1])
+alchemons_ids = Array[int]([1, 2])
 
 [node name="SpawnPoint2" type="Marker3D" parent="NPCHolder" unique_id=524408964]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.253752, 0, 1.5233603)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.525158, 0, -3.5990982)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([1, 1])
+
+[node name="SpawnPoint3" type="Marker3D" parent="NPCHolder" unique_id=380600726]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.53906, 0, 9.237663)
+script = ExtResource("3_lki8s")
+npc_scene = ExtResource("3_cn2eb")
+alchemons_ids = Array[int]([3, 3])
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")
