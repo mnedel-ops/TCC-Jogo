@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://c5fpt5p1gtl2c" path="res://EXPLORATION/Player/interaction_component.gd" id="3_gwnis"]
 [ext_resource type="Script" uid="uid://bihe81j3dy0nm" path="res://EXPLORATION/Player/inventory_component.gd" id="4_gwnis"]
 [ext_resource type="Resource" uid="uid://bcolxo254vrge" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="6_l2cs5"]
+[ext_resource type="Script" uid="uid://dvohaiphj6lxg" path="res://EXPLORATION/Player/combat_handler.gd" id="7_screu"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sh265"]
 
@@ -52,3 +53,6 @@ interact_area = NodePath("../Mesh/InteractArea")
 script = ExtResource("4_gwnis")
 mochila = ExtResource("2_onrkg")
 party_data = ExtResource("6_l2cs5")
+
+[node name="CombatHandler" type="Node" parent="." unique_id=337732276]
+script = ExtResource("7_screu")

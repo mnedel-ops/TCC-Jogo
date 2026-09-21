@@ -226,6 +226,7 @@ func _resolve_flee() -> void:
 	CombatResultApplier.apply(state, flee_result, database)
 	if flee_result.outcome == CombatResult.Outcome.FLEE_SUCCESS:
 		ui.log_message("Fugimos! Escapamos do combate.")
+		CombatSignal.combat_ended.emit()
 		queue_free()
 		return
 
@@ -254,6 +255,8 @@ func _resolve_flee() -> void:
 
 	if state.combat_over:
 		_show_combat_end()
+		CombatSignal.combat_ended.emit()
+
 	else:
 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
 		_start_action_selection()
@@ -261,6 +264,8 @@ func _resolve_flee() -> void:
 
 func _show_combat_end() -> void:
 	ui.show_combat_end(state.player_won)
+	queue_free()
+
 
 
 func _log_event(event: CombatEvent) -> void:

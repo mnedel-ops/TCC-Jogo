@@ -7,6 +7,7 @@ class_name NPC
 
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
+@onready var is_combat_zone : bool = false 
 
 @export var alchemon1:int =1
 @export var alchemon2: int =1
@@ -42,11 +43,13 @@ func talk():
 
 #Func do combate
 func _on_combat_area_entered(area: Area3D) -> void:
-	if area.is_in_group("player"):
+	if area.is_in_group("player") and is_combat_zone !=true:
+		is_combat_zone = true
 		print("Vou te quebrar na porrada")
 		print_debug(alchemon1, alchemon2)
 		CombatSignal.combat_start.emit(alchemon1, alchemon2)
 		
-func _on_combat_area_exited(area: Area3D) -> void:
+func _on_combat_area_exited(area: Area3D) -> void: #nao acho que precise deste
 	if area.is_in_group("player"):
+		is_combat_zone = false
 		print("Cansei de te espancar. Vaza")
