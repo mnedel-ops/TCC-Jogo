@@ -17,6 +17,7 @@ extends RefCounted
 ##   seguida cada Alchemon vivo compara essa temperatura nova com a sua
 ##   propria (AlchemonSheet.temperature) - GDD sec 8.2.
 
+const STATE_CHANGE_DAMAGE :int= 5
 static func apply(state: CombatState, result: CombatResult, database: AlchemonDatabase) -> void:
 	match result.outcome:
 		CombatResult.Outcome.ATTACK_HIT:
@@ -100,6 +101,13 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 		c.physical_state = next_state
 		print(state.arena_temperature)
 		c.arena_hotter_than_myself.emit(c.slot)
+		
+		#Aplica o dano pela mudanca de temperatura
+		var is_invulnerable_cation := c.bond_kind == BondRules.COMPOUND and c.is_bond_cation
+		if is_invulnerable_cation:
+			continue
+		_apply_damage(state, c.id, STATE_CHANGE_DAMAGE)
+		print_debug(state)
 
 
 static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: int, defeated_id: int) -> void:

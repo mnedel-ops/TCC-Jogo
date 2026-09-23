@@ -41,6 +41,6 @@ static func compute_damage(level: int, power: int, attack: int, defense: int, ef
 ## Sempre um incremento - o GDD nao define sinal, entao todo golpe aquece
 ## a arena, nenhum esfria. So calculado quando o golpe acerta (chamado por
 ## CombatRules so no caminho de ATTACK_HIT, nunca em MISS).
-static func compute_temperature_delta(level: int, power: int, attack: int) -> int:
-	var raw := (float(level) / 10.0 + 1.0) * (float(power) / 10.0) * (float(attack) / 100.0)
-	return int(floor(raw))
+static func compute_temperature_delta(level: int, power: int, attack: int) -> float:
+	var raw :float = (float(level) / 10.0 + 1.0) * (float(power) / 10.0) * (float(attack) / 100.0)
+	return raw

@@ -79,5 +79,4 @@ func get_temperature(id: int):
 	var actor := get_combatant(id)
 	if arena_temperature > actor.temperature:
 		print_debug("Alguem mudou", id)
-		
 		print_debug(actor.physical_state)

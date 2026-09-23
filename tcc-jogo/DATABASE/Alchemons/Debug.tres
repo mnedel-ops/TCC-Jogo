@@ -16,6 +16,6 @@ base_attack = 3000000
 base_defense = 3000000
 base_mechanical_speed = 3000000
 base_action_energy = 3000000
-temperature = 300.0
+temperature = 9.223372e+18
 attacks = Array[ExtResource("1_t5l6e")]([ExtResource("2_io3wn"), ExtResource("3_ewa28"), ExtResource("4_ndte5")])
 metadata/_custom_type_script = "uid://cxfaplp86c865"

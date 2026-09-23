@@ -67,8 +67,6 @@ func _refresh_hp_display() -> void:
 	ui.update_temperature(arena_temperature)
 	ui.update_hp_dict(player_entries, enemy_entries)
 	
-
-
 func _advance_phase(next_phase: String) -> bool:
 	if not BattlePhaseRules.is_valid_transition(state.phase, next_phase):
 		push_error("Invalid battle transition: %s -> %s" % [state.phase, next_phase])
@@ -136,7 +134,7 @@ func _show_attack_menu(actor_id: int) -> void:
 	for i in template.attacks.size():
 		var attack_index := i
 		options.append({
-			"text": template.attacks[i].attack_name,
+			"text": "%s (%s)" % [template.attacks[i].attack_name, AlchemonType.type_name(template.attacks[i].element_type)],
 			"callback": func(): _begin_target_selection(actor_id, "attack", attack_index, func(): _show_attack_menu(actor_id)),
 		})
 	ui.show_options(_with_back(options, func(): _prompt_action_for_current()))
