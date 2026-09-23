@@ -31,7 +31,7 @@ func _ready() -> void:
 	state.phase = BattlePhaseRules.ENCOUNTER_START
 	_log_initiative_order()
 
-	_refresh_hp_display()
+	_refresh_hp_display() #tanto o Hp como a Temperatura habitam aqui.
 	ui.log_message("Combate comecou!")
 	_start_action_selection()
 
@@ -50,6 +50,7 @@ func _log_initiative_order() -> void:
 
 func _refresh_hp_display() -> void:
 	var player_entries: Array[Dictionary] = []
+	var arena_temperature :float= state.temperature
 	for id in state.player_ids:
 		var c := state.get_combatant(id)
 		player_entries.append({"name": _name_of(id), "hp": c.hp, "max_hp": c.max_hp})
@@ -59,6 +60,7 @@ func _refresh_hp_display() -> void:
 		var c := state.get_combatant(id)
 		enemy_entries.append({"name": _name_of(id), "hp": c.hp, "max_hp": c.max_hp})
 
+	ui.update_temperature(arena_temperature)
 	ui.update_hp_dict(player_entries, enemy_entries)
 
 

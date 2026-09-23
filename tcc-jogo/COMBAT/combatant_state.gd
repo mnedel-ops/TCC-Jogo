@@ -6,6 +6,9 @@ extends Resource
 ## AlchemonSheet/AlchemonDatabase, resolvido via species_id quando precisar
 ## exibir. Isso evita ter 2 fontes de verdade pro mesmo dado estatico.
 
+signal arena_hotter_than_myself(slot: int) #Emitido quando o Alchemon sofrer alteracao de estado. A temperatura da arena aumentou demais.
+
+
 @export var id: int = -1              # id de INSTANCIA nessa batalha (unico por combatente, nao por especie)
 @export var species_id: int = -1      # chave pra buscar nome/ataques no AlchemonDatabase
 @export var slot: int = -1            # battlefield slot position (BattlefieldSlot.*)
@@ -23,9 +26,11 @@ extends Resource
 @export var bond_kind: String = BondRules.NONE   # NONE | MIXTURE | COMPOUND - see BondRules
 @export var bond_partner_id: int = -1
 @export var is_bond_cation: bool = false         # only meaningful when bond_kind == COMPOUND
+@export var is_bond_inactive: bool = false        # Anion
 @export var initiative: int = 0
 @export var is_player: bool = false
 @export var alive: bool = true
+@export var physical_state: String = AlchemonSheet.SOLIDO 
 
 func _init(
 	p_id: int = -1,

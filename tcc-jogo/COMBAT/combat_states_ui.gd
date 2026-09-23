@@ -9,7 +9,7 @@ extends VBoxContainer
 @onready var hp_label: Label = $HPLabel
 @onready var turn_label: Label = $TurnLabel
 @onready var action_buttons: VBoxContainer = $ActionButtons
-
+@onready var temperature_label: Label = $TemperatureLabel
 
 func log_message(text: String) -> void:
 	log_label.text += "\n" + text
@@ -17,17 +17,6 @@ func log_message(text: String) -> void:
 
 func set_turn_text(text: String) -> void:
 	turn_label.text = text
-
-
-func update_hp(player_team: Array[AlchemonSheet], enemy_team: Array[AlchemonSheet]) -> void:
-	var text := ""
-	for c in player_team:
-		text += "%s: %d/%d HP   " % [c.creature_name, c.hp, c.max_hp]
-	text += "\n"
-	for c in enemy_team:
-		text += "%s: %d/%d HP   " % [c.creature_name, c.hp, c.max_hp]
-	hp_label.text = text
-
 
 # Versao V2, sem depender de AlchemonSheet - recebe so {name, hp, max_hp}.
 # UI recebe entradas prontas para exibicao; so entende Dictionary generico.
@@ -40,6 +29,9 @@ func update_hp_dict(player_entries: Array[Dictionary], enemy_entries: Array[Dict
 		text += "%s: %d/%d HP   " % [e.name, e.hp, e.max_hp]
 	hp_label.text = text
 
+func update_temperature(temperature: float):
+	temperature_label.text = "Temperatura da Arena: %.2fK" %temperature
+	
 
 # options: Array de {"text": String, "callback": Callable}
 func show_options(options: Array) -> void:

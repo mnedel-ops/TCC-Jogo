@@ -16,7 +16,7 @@ extends Resource
 @export var phase: String = BattlePhaseRules.ENCOUNTER_START
 @export var combat_over: bool = false
 @export var player_won: bool = false
-@export var temperature: float = 298.15
+@export var temperature: float = 273.15 #Em Kelvin
 
 var battlefield: Battlefield
 var battle_phase: BattlePhaseMachine

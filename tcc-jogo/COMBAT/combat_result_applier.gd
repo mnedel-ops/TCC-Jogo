@@ -13,13 +13,16 @@ extends RefCounted
 ## - Leveling: quem derruba ou captura um alvo ganha a XP daquela especie
 ##   (AlchemonSheet.xp_reward), podendo disparar level up (AlchemonGrowth).
 ## - Temperatura: todo golpe que acerta aquece a arena compartilhada
-##   (CombatState.temperature) pelo CombatResult.temperature_delta.
+##   (CombatState.temperature) pelo CombatResult.temperature_delta, e em
+##   seguida cada Alchemon vivo compara essa temperatura nova com a sua
+##   propria (AlchemonSheet.temperature) - GDD sec 8.2.
 
 static func apply(state: CombatState, result: CombatResult, database: AlchemonDatabase) -> void:
 	match result.outcome:
 		CombatResult.Outcome.ATTACK_HIT:
 			_apply_energy_cost(state, result.actor_id, result.energy_cost)
 			state.temperature += result.temperature_delta
+			_apply_arena_heat(state, database)
 			var died := _apply_damage(state, result.target_id, result.damage)
 			if died:
 				_grant_xp(state, database, result.actor_id, result.target_id)
@@ -73,6 +76,30 @@ static func _apply_capture(state: CombatState, target_id: int) -> void:
 static func _kill(state: CombatState, target: CombatantState) -> void:
 	target.alive = false
 	state.battlefield.free_slot(target.slot)
+
+
+## GDD 8.2: apos a arena esquentar, TODO Alchemon vivo em campo (nao so
+## quem atacou/foi atacado - a temperatura e global, sec 8.1) compara sua
+## propria temperatura de referencia com a nova temperatura da arena. Se
+## a arena estiver mais quente, o Alchemon muda de estado fisico (SOLIDO
+## -> LIQUIDO -> GASOSO) e emite arena_hotter_than_self com seu slot. Se
+## ja estiver no estado mais quente modelado (GASOSO), nao ha transicao
+## nem sinal - nada mudou de verdade.
+static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
+	var all_ids: Array[int] = state.player_ids + state.enemy_ids
+	for id in state.get_alive_ids(all_ids):
+		var c := state.get_combatant(id)
+		var template := database.get_by_id(c.species_id)
+		if template == null:
+			continue
+		if state.temperature <= template.temperature:
+			continue
+		var next_state := AlchemonSheet.next_physical_state(c.physical_state)
+		if next_state == c.physical_state:
+			continue
+		c.physical_state = next_state
+		print(state.temperature)
+		c.arena_hotter_than_myself.emit(c.slot)
 
 
 static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: int, defeated_id: int) -> void:

@@ -10,6 +10,7 @@ const CAPTURE_CHANCE := 2.0 / 6.0
 const ITEM_HEAL_AMOUNT := 6
 const CRIT_CHANCE := 0.125
 const CRIT_MULTIPLIER := 1.5
+
 const SLAP_NAME := "Slap"
 const SLAP_DAMAGE := 10
 const SLAP_COST := 0
@@ -81,27 +82,36 @@ static func resolve_action(state: CombatState, command: ActionCommand, database:
 static func _resolve_attack(state: CombatState, command: ActionCommand, database: AlchemonDatabase, target_id: int) -> CombatResult:
 	var actor := state.get_combatant(command.actor_id)
 	var target := state.get_combatant(target_id)
+	
 	if target == null or not target.alive:
 		return CombatResult.already_dead(actor.id, target_id)
+	
 	if target.id not in state.get_valid_targets(actor.id):
 		return CombatResult.invalid_target(actor.id, target.id)
+	
 	var template := database.get_by_id(actor.species_id)
 	if template == null or command.attack_index < 0 or command.attack_index >= template.attacks.size():
 		return CombatResult.invalid_action(actor.id, target.id, "invalid_attack")
+	
 	var attack: AttackData = template.attacks[command.attack_index]
+	
 	var is_slap := actor.valence_electrons <= 0
 	var attack_name := SLAP_NAME if is_slap else attack.attack_name
 	var power :int= SLAP_DAMAGE if is_slap else (attack.power if attack.power > 0 else attack.damage)
 	var cost :int= SLAP_COST if is_slap else attack.energy_cost
+	
 	if randf() < MISS_CHANCE:
 		return CombatResult.attack_miss(actor.id, target.id, attack_name, cost)
+	
 	var critical := randf() < CRIT_CHANCE
 	var effectiveness := AlchemonType.NEUTRAL
+	
 	if not is_slap:
 		var target_template := database.get_by_id(target.species_id)
 		if target_template == null:
 			return CombatResult.invalid_action(actor.id, target.id, "unknown_species")
 		effectiveness = AlchemonType.effectiveness(attack.element_type, target_template.element_type)
+	
 	var base_damage := SLAP_DAMAGE if is_slap else AlchemonFormulas.compute_damage(actor.level, power, actor.attack, target.defense, effectiveness)
 	var temperature_delta := 0 if is_slap else AlchemonFormulas.compute_temperature_delta(actor.level, power, actor.attack)
 	return CombatResult.attack_hit(actor.id, target.id, attack_name, compute_damage(base_damage, critical), critical, temperature_delta, effectiveness, cost)

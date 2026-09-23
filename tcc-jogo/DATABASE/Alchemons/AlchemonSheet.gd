@@ -10,6 +10,7 @@ const GASOSO := "gasoso"
 
 @export var id: int = -1
 @export var creature_name: String = ""
+#Stats
 @export var max_hp: int = 30
 @export var hp: int = 30
 @export var max_valence_electrons: int = 8   # cresce no level-up, mesma formula de sec 7.2 (ainda nao implementada)
@@ -18,16 +19,35 @@ const GASOSO := "gasoso"
 @export var base_defense: int = 10
 @export var base_mechanical_speed: int = 10
 @export var base_action_energy: int = 8
+
 @export var defense_growth_min: int = 1
 @export var defense_growth_max: int = 1
+
 @export var mechanical_speed_growth_min: int = 1
 @export var mechanical_speed_growth_max: int = 1
+
 @export var action_energy_growth_min: int = 1
 @export var action_energy_growth_max: int = 1
+
 @export var xp_reward: int = 0
+
 @export var physical_state: String = SOLIDO   # SOLIDO | LIQUIDO | GASOSO - ver sec 8.2 (temperatura da arena)
+@export var temperature: float = 298.15 #Temperatura em Kelvin. 
 @export var element_type: AlchemonType.Type = AlchemonType.Type.METAL   # tipo da CRIATURA - so importa como defensor (sem STAB)
 @export var attacks: Array[AttackData] = []   # ate 4 ataques
+
+## Proxima etapa da mudanca de estado fisico ao esquentar (GDD sec 8.2):
+## SOLIDO -> LIQUIDO -> GASOSO. Ja em GASOSO, satura (nao ha estado mais
+## quente modelado ainda) - retorna o mesmo valor, sem transicao.
+static func next_physical_state(current: String) -> String:
+	match current:
+		SOLIDO:
+			return LIQUIDO
+		LIQUIDO:
+			return GASOSO
+		_:
+			return current
+
 
 func _init(p_name: String = "", p_max_hp: int = 30, p_id_or_is_player: Variant = -1, legacy_id: Variant = null) -> void:
 	# Third argument is the species id. Accept prior (name, hp, is_player, id)

@@ -26,6 +26,9 @@ script = ExtResource("3_vo0t6")
 [node name="HPLabel" type="Label" parent="VBoxContainer" unique_id=823173243]
 layout_mode = 2
 
+[node name="TemperatureLabel" type="Label" parent="VBoxContainer" unique_id=1203866646]
+layout_mode = 2
+
 [node name="TurnLabel" type="Label" parent="VBoxContainer" unique_id=1150483530]
 layout_mode = 2
 
