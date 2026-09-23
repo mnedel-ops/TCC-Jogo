@@ -17,11 +17,16 @@ var _current_player_index := 0
 func _ready() -> void:
 	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids)
 
-	if state.player_ids.is_empty() or state.enemy_ids.is_empty():
-		push_error("CombatControllerV2: time vazio. Confere database e os arrays de species ids.")
+	if state.player_ids.is_empty():
+		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
 		ui.set_turn_text("Erro de configuracao - veja o console.")
 		return
 
+	if state.enemy_ids.is_empty():
+		push_error("Time do inimigo: time vazio. Confere database e os arrays de species ids.")
+		ui.set_turn_text("Erro de configuracao - veja o console.")
+		return
+		
 	CombatRules.roll_initiative(state)
 	state.phase = BattlePhaseRules.ENCOUNTER_START
 	_log_initiative_order()

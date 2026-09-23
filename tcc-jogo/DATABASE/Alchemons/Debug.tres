@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://bkaikqtquqee8"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_t5l6e"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_4jdb4"]
+[ext_resource type="Resource" uid="uid://da5jr7rrhllb6" path="res://DATABASE/Attack/DebugAtack-metal.tres" id="2_io3wn"]
+[ext_resource type="Resource" uid="uid://c25qdtmik86ik" path="res://DATABASE/Attack/DebugAtack-ametal.tres" id="3_ewa28"]
+[ext_resource type="Resource" uid="uid://dno02val6h1bm" path="res://DATABASE/Attack/DebugAtack-metaloide.tres" id="4_ndte5"]
+
+[resource]
+script = ExtResource("2_4jdb4")
+id = 999
+creature_name = "Debug"
+max_hp = 3000000
+hp = 3000000
+base_attack = 3000000
+base_defense = 3000000
+base_mechanical_speed = 3000000
+base_action_energy = 3000000
+attacks = Array[ExtResource("1_t5l6e")]([ExtResource("2_io3wn"), ExtResource("3_ewa28"), ExtResource("4_ndte5")])
+metadata/_custom_type_script = "uid://cxfaplp86c865"

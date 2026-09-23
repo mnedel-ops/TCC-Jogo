@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://da5jr7rrhllb6"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_dt7by"]
+
+[resource]
+script = ExtResource("1_dt7by")
+indexAttack = -2
+attack_name = "Metal"
+power = 3000000
+energy_cost = 0
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

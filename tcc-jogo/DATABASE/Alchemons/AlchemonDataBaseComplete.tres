@@ -4,8 +4,10 @@
 [ext_resource type="Script" uid="uid://dbofwuofp1xai" path="res://DATABASE/Alchemons/AlchemonDataBase.gd" id="1_nrgsa"]
 [ext_resource type="Resource" uid="uid://b3mk6fhvww3jr" path="res://DATABASE/Alchemons/Metal.tres" id="2_tb324"]
 [ext_resource type="Resource" uid="uid://dvlwfjw4oiv2k" path="res://DATABASE/Alchemons/Ametal.tres" id="4_jxsww"]
+[ext_resource type="Resource" uid="uid://bkaikqtquqee8" path="res://DATABASE/Alchemons/Debug.tres" id="4_tb324"]
+[ext_resource type="Resource" uid="uid://d18a5783nwx7j" path="res://DATABASE/Alchemons/Metaloide.tres" id="5_megiu"]
 
 [resource]
 script = ExtResource("1_nrgsa")
-alchemons = Array[ExtResource("1_5fle6")]([ExtResource("2_tb324"), ExtResource("4_jxsww"), ExtResource("2_tb324")])
+alchemons = Array[ExtResource("1_5fle6")]([ExtResource("4_tb324"), ExtResource("4_jxsww"), ExtResource("2_tb324"), ExtResource("5_megiu")])
 metadata/_custom_type_script = "uid://dbofwuofp1xai"
