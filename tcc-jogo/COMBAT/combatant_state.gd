@@ -40,7 +40,8 @@ func _init(
 	p_is_player: bool = false,
 	p_slot: int = -1,
 	p_max_valence_electrons: int = 0,
-	p_temperature: float = 0.00
+	p_temperature: float = 0.00,
+	p_physical_state: String = AlchemonSheet.SOLIDO
 ) -> void:
 	id = p_id
 	species_id = p_species_id
@@ -51,3 +52,4 @@ func _init(
 	max_valence_electrons = p_max_valence_electrons
 	valence_electrons = p_max_valence_electrons
 	temperature = p_temperature
+	physical_state = p_physical_state

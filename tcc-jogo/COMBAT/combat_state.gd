@@ -77,6 +77,7 @@ func get_valid_targets(actor_id: int) -> Array[int]:
 
 func get_temperature(id: int):
 	var actor := get_combatant(id)
-	print(actor.temperature)
-	if arena_temperature> actor.temperature:
-		print("Alguem mudou", id)
+	if arena_temperature > actor.temperature:
+		print_debug("Alguem mudou", id)
+		
+		print_debug(actor.physical_state)
