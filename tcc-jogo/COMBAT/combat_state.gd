@@ -16,7 +16,8 @@ extends Resource
 @export var phase: String = BattlePhaseRules.ENCOUNTER_START
 @export var combat_over: bool = false
 @export var player_won: bool = false
-@export var temperature: float = 273.15 #Em Kelvin
+
+@export var arena_temperature: float = 273.15 #Em Kelvin
 
 var battlefield: Battlefield
 var battle_phase: BattlePhaseMachine
@@ -73,3 +74,9 @@ func get_valid_targets(actor_id: int) -> Array[int]:
 	if actor == null:
 		return []
 	return get_alive_opposing_combatants(actor.is_player)
+
+func get_temperature(id: int):
+	var actor := get_combatant(id)
+	print(actor.temperature)
+	if actor.temperature > arena_temperature:
+		print("Alguem mudou", id)

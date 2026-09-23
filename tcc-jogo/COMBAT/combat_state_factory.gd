@@ -66,6 +66,7 @@ static func _seed_player_stats(combatant: CombatantState, template: AlchemonShee
 	combatant.defense = maxi(template.base_defense, 1)
 	combatant.mechanical_speed = maxi(template.base_mechanical_speed, 1)
 	combatant.action_energy = maxi(template.base_action_energy, 1)
+	combatant.temperature = template.temperature
 
 static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet) -> void:
 	combatant.level = 1
@@ -75,3 +76,4 @@ static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet
 	combatant.defense = maxi(template.base_defense, 1)
 	combatant.mechanical_speed = maxi(template.base_mechanical_speed, 1)
 	combatant.action_energy = maxi(template.base_action_energy, 1)
+	combatant.temperature = template.temperature

@@ -21,7 +21,7 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
 	match result.outcome:
 		CombatResult.Outcome.ATTACK_HIT:
 			_apply_energy_cost(state, result.actor_id, result.energy_cost)
-			state.temperature += result.temperature_delta
+			state.arena_temperature += result.temperature_delta
 			_apply_arena_heat(state, database)
 			var died := _apply_damage(state, result.target_id, result.damage)
 			if died:
@@ -92,13 +92,13 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 		var template := database.get_by_id(c.species_id)
 		if template == null:
 			continue
-		if state.temperature <= template.temperature:
+		if state.arena_temperature <= template.temperature:
 			continue
 		var next_state := AlchemonSheet.next_physical_state(c.physical_state)
 		if next_state == c.physical_state:
 			continue
 		c.physical_state = next_state
-		print(state.temperature)
+		print(state.arena_temperature)
 		c.arena_hotter_than_myself.emit(c.slot)
 
 

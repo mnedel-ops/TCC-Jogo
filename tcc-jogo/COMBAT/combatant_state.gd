@@ -31,6 +31,7 @@ signal arena_hotter_than_myself(slot: int) #Emitido quando o Alchemon sofrer alt
 @export var is_player: bool = false
 @export var alive: bool = true
 @export var physical_state: String = AlchemonSheet.SOLIDO 
+@export var temperature: float = 0.00
 
 func _init(
 	p_id: int = -1,
@@ -38,7 +39,8 @@ func _init(
 	p_max_hp: int = 0,
 	p_is_player: bool = false,
 	p_slot: int = -1,
-	p_max_valence_electrons: int = 0
+	p_max_valence_electrons: int = 0,
+	p_temperature: float = 0.00
 ) -> void:
 	id = p_id
 	species_id = p_species_id
@@ -48,3 +50,4 @@ func _init(
 	slot = p_slot
 	max_valence_electrons = p_max_valence_electrons
 	valence_electrons = p_max_valence_electrons
+	temperature = p_temperature

@@ -50,18 +50,23 @@ func _log_initiative_order() -> void:
 
 func _refresh_hp_display() -> void:
 	var player_entries: Array[Dictionary] = []
-	var arena_temperature :float= state.temperature
+	var arena_temperature :float= state.arena_temperature
 	for id in state.player_ids:
 		var c := state.get_combatant(id)
 		player_entries.append({"name": _name_of(id), "hp": c.hp, "max_hp": c.max_hp})
+		if arena_temperature > c.temperature:
+			state.get_temperature(c.id)
 
 	var enemy_entries: Array[Dictionary] = []
 	for id in state.enemy_ids:
 		var c := state.get_combatant(id)
 		enemy_entries.append({"name": _name_of(id), "hp": c.hp, "max_hp": c.max_hp})
+		if arena_temperature > c.temperature:
+			state.get_temperature(c.id)
 
 	ui.update_temperature(arena_temperature)
 	ui.update_hp_dict(player_entries, enemy_entries)
+	
 
 
 func _advance_phase(next_phase: String) -> bool:
