@@ -18,22 +18,22 @@ static func is_mixture(sheets: Array[AlchemonSheet]) -> bool:
 static func validate_stoichiometry(sheets: Array[AlchemonSheet]) -> bool:
 	if sheets.size() != 2:
 		return false
-	
-	var metal: Array[AlchemonSheet]= []
-	var non_metal: Array[AlchemonSheet]= []
-	
+
+	var metal: Array[AlchemonSheet] = []
+	var non_metal: Array[AlchemonSheet] = []
+
 	for s in sheets:
-		if s.element_type ==AlchemonType.Type.METAL:
+		if s.element_type == AlchemonType.Type.METAL:
 			metal.append(s)
 		else:
 			non_metal.append(s)
-			
-		if metal.is_empty():
-			return _validate_covalent(sheets)
-		if non_metal.is_empty():
-			return false
-		return _validate_ionic(metal, non_metal)
 
+	if metal.is_empty():
+		return _validate_covalent(sheets)
+	if non_metal.is_empty():
+		return false
+	return _validate_ionic(metal, non_metal)
+	
 static func _validate_ionic(metals: Array[AlchemonSheet], non_metals: Array[AlchemonSheet]) -> bool:
 	var donated := 0
 	for m in metals:

@@ -10,6 +10,7 @@
 script = ExtResource("5_51661")
 id = 1
 creature_name = "Ametal"
+max_valence_electrons = 5
 element_type = 1
 attacks = Array[ExtResource("1_irkcw")]([ExtResource("2_feu4h"), ExtResource("3_2fxa6"), ExtResource("4_u0657")])
 metadata/_custom_type_script = "uid://cxfaplp86c865"

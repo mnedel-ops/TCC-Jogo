@@ -12,6 +12,7 @@ id = 999
 creature_name = "Debug"
 max_hp = 3000000
 hp = 3000000
+max_valence_electrons = 5
 base_attack = 3000000
 base_defense = 3000000
 base_mechanical_speed = 3000000

@@ -54,6 +54,16 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		next_instance_id += 1
 		enemy_slot_index += 1
 
+# CombatStateFactory.build, logo antes do "return state":
+	if state.player_ids.size() == 2:
+		var p0 := state.get_combatant(state.player_ids[0])
+		var p1 := state.get_combatant(state.player_ids[1])
+		var sheet0 := database.get_by_id(p0.species_id)
+		var sheet1 := database.get_by_id(p1.species_id)
+		var kind := AlchemyStation.determine_bond_kind([sheet0, sheet1])
+		if kind != BondRules.NONE:
+			BondRules.apply_bond(kind, [p0, p1], [sheet0, sheet1])
+		
 	return state
 
 static func _seed_player_stats(combatant: CombatantState, template: AlchemonSheet, instance: AlchemonInstance) -> void:
