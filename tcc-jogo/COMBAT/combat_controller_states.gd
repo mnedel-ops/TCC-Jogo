@@ -48,19 +48,35 @@ func _log_initiative_order() -> void:
 	ui.log_message("Ordem de iniciativa: " + text)
 
 
+func _bond_tag(c: CombatantState) -> String:
+	match c.bond_kind:
+		BondRules.NONE:
+			return "Cagao"
+		BondRules.MIXTURE:
+			return " [Mistura c/ %s]" % _name_of(c.bond_partner_id)
+		BondRules.COMPOUND:
+			if c.is_bond_cation:
+				return " [Cátion - invisível]"
+			elif c.is_bond_inactive:
+				return " [Ânion → %s]" % _name_of(c.bond_partner_id)
+			else:
+				return " [Composto ativo]"
+		_:
+			return ""
+
 func _refresh_hp_display() -> void:
 	var player_entries: Array[Dictionary] = []
-	var arena_temperature :float= state.arena_temperature
+	var arena_temperature: float = state.arena_temperature
 	for id in state.player_ids:
 		var c := state.get_combatant(id)
-		player_entries.append({"name": _name_of(id), "hp": c.hp, "max_hp": c.max_hp})
+		player_entries.append({"name": _name_of(id) + _bond_tag(c), "hp": c.hp, "max_hp": c.max_hp})
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
 	var enemy_entries: Array[Dictionary] = []
 	for id in state.enemy_ids:
 		var c := state.get_combatant(id)
-		enemy_entries.append({"name": _name_of(id), "hp": c.hp, "max_hp": c.max_hp})
+		enemy_entries.append({"name": _name_of(id) + _bond_tag(c), "hp": c.hp, "max_hp": c.max_hp})
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
