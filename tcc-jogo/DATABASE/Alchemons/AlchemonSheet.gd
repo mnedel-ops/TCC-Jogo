@@ -14,6 +14,7 @@ const GASOSO := "gasoso"
 @export var max_hp: int = 30
 @export var hp: int = 30
 @export var max_valence_electrons: int = 8   # cresce no level-up, mesma formula de sec 7.2 (ainda nao implementada)
+@export var octet_target: int = 8            # eletrons de valencia p/ octeto completo (GDD - Regra do Octeto)
 # Species/base stats. Per-battle values belong in CombatantState.
 @export var base_attack: int = 10
 @export var base_defense: int = 10
@@ -35,6 +36,7 @@ const GASOSO := "gasoso"
 @export var temperature: float = 298.15 #Temperatura em Kelvin. 
 @export var element_type: AlchemonType.Type = AlchemonType.Type.METAL   # tipo da CRIATURA - so importa como defensor (sem STAB)
 @export var attacks: Array[AttackData] = []   # ate 4 ataques
+
 
 ## Proxima etapa da mudanca de estado fisico ao esquentar (GDD sec 8.2):
 ## SOLIDO -> LIQUIDO -> GASOSO. Ja em GASOSO, satura (nao ha estado mais
