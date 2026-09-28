@@ -23,10 +23,10 @@ func set_turn_text(text: String) -> void:
 func update_hp_dict(player_entries: Array[Dictionary], enemy_entries: Array[Dictionary]) -> void:
 	var text := ""
 	for e in player_entries:
-		text += "%s: %d/%d HP   " % [e.name, e.hp, e.max_hp]
+		text += "%s Lv%d: %d/%d HP  (XP %d/%d)   " % [e.name, e.level, e.hp, e.max_hp, e.xp, e.xp_max]
 	text += "\n"
 	for e in enemy_entries:
-		text += "%s: %d/%d HP   " % [e.name, e.hp, e.max_hp]
+		text += "%s Lv%d: %d/%d HP  (XP %d/%d)   " % [e.name, e.level, e.hp, e.max_hp, e.xp, e.xp_max]
 	hp_label.text = text
 
 func update_temperature(temperature: float):

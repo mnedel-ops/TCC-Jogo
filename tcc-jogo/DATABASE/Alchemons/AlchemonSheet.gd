@@ -30,7 +30,7 @@ const GASOSO := "gasoso"
 @export var action_energy_growth_min: int = 1
 @export var action_energy_growth_max: int = 1
 
-@export var xp_reward: int = 0
+@export var xp_reward: int = 50
 
 @export var physical_state: String = SOLIDO   # SOLIDO | LIQUIDO | GASOSO - ver sec 8.2 (temperatura da arena)
 @export var temperature: float = 298.15 #Temperatura em Kelvin. 

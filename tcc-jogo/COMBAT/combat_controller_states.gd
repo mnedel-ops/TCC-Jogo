@@ -69,14 +69,22 @@ func _refresh_hp_display() -> void:
 	var arena_temperature: float = state.arena_temperature
 	for id in state.player_ids:
 		var c := state.get_combatant(id)
-		player_entries.append({"name": _name_of(id) + _bond_tag(c), "hp": c.hp, "max_hp": c.max_hp})
+		player_entries.append({
+			"name": _name_of(id) + _bond_tag(c),
+			"hp": c.hp, "max_hp": c.max_hp,
+			"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP
+		})
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
 	var enemy_entries: Array[Dictionary] = []
 	for id in state.enemy_ids:
 		var c := state.get_combatant(id)
-		enemy_entries.append({"name": _name_of(id) + _bond_tag(c), "hp": c.hp, "max_hp": c.max_hp})
+		enemy_entries.append({
+			"name": _name_of(id) + _bond_tag(c),
+			"hp": c.hp, "max_hp": c.max_hp,
+			"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP
+		})
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
