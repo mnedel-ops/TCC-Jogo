@@ -9,9 +9,7 @@ extends RefCounted
 ## GDD 7.2 "Outros Atributos", sem termo de EV:
 ## floor(0.01 * (2*Base + IV) * Level) + 5
 static func compute_attack(base_attack: int, individual_value: int, level: int) -> int:
-	var raw := 0.01 * (2.0 * base_attack + individual_value) * level
-	return int(floor(raw)) + 5
-
+	return compute_stat(base_attack, individual_value, level)
 
 ## Iniciativa por Velocidade Mecanica. Formula especifica pra ordem de
 ## turno - distinta da formula generica de atributo acima:
@@ -44,3 +42,8 @@ static func compute_damage(level: int, power: int, attack: int, defense: int, ef
 static func compute_temperature_delta(level: int, power: int, attack: int) -> float:
 	var raw :float = (float(level) / 10.0 + 1.0) * (float(power) / 10.0) * (float(attack) / 100.0)
 	return raw
+
+## GDD 7.2, sem EV: floor(0.01 * (2*Base + IV) * Level) + 5
+static func compute_stat(base: int, individual_value: int, level: int) -> int:
+	var raw := 0.01 * (2.0 * base + individual_value) * level
+	return int(floor(raw)) + 5

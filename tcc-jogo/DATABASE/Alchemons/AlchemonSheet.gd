@@ -16,21 +16,12 @@ const GASOSO := "gasoso"
 @export var max_valence_electrons: int = 8   # cresce no level-up, mesma formula de sec 7.2 (ainda nao implementada)
 @export var octet_target: int = 8            # eletrons de valencia p/ octeto completo (GDD - Regra do Octeto)
 # Species/base stats. Per-battle values belong in CombatantState.
-@export var base_attack: int = 10
-@export var base_defense: int = 10
-@export var base_mechanical_speed: int = 10
+@export var base_attack: int = 70
+@export var base_defense: int = 70
+@export var base_mechanical_speed: int = 70
 @export var base_action_energy: int = 8
 
-@export var defense_growth_min: int = 1
-@export var defense_growth_max: int = 1
-
-@export var mechanical_speed_growth_min: int = 1
-@export var mechanical_speed_growth_max: int = 1
-
-@export var action_energy_growth_min: int = 1
-@export var action_energy_growth_max: int = 1
-
-@export var xp_reward: int = 50
+@export var xp_reward: int = 100
 
 @export var physical_state: String = SOLIDO   # SOLIDO | LIQUIDO | GASOSO - ver sec 8.2 (temperatura da arena)
 @export var temperature: float = 298.15 #Temperatura em Kelvin. 

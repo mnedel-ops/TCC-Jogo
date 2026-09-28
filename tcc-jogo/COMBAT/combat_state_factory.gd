@@ -84,11 +84,13 @@ static func _seed_player_stats(combatant: CombatantState, template: AlchemonShee
 	combatant.individual_value = instance.individual_value
 	
 	combatant.max_hp = template.max_hp
-	combatant.attack = AlchemonFormulas.compute_attack(template.base_attack, combatant.individual_value, combatant.level)
-	combatant.defense = maxi(template.base_defense, 1)
-	combatant.mechanical_speed = maxi(template.base_mechanical_speed, 1)
-	combatant.action_energy = maxi(template.base_action_energy, 1)
 	combatant.temperature = template.temperature
+
+	# _seed_player_stats
+	combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, combatant.individual_value, combatant.level)
+	combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, combatant.individual_value, combatant.level)
+	combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, combatant.individual_value, combatant.level)
+	combatant.action_energy = AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
 	
 	# CombatStateFactory._seed_player_stats, no fim
 	if instance.defense > 0: combatant.defense = instance.defense
@@ -99,8 +101,8 @@ static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet
 	combatant.level = 1
 	combatant.experience = 0
 	combatant.individual_value = 1
-	combatant.attack = AlchemonFormulas.compute_attack(template.base_attack, combatant.individual_value, combatant.level)
-	combatant.defense = maxi(template.base_defense, 1)
-	combatant.mechanical_speed = maxi(template.base_mechanical_speed, 1)
-	combatant.action_energy = maxi(template.base_action_energy, 1)
+	combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, combatant.individual_value, combatant.level)
+	combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, combatant.individual_value, combatant.level)
+	combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, combatant.individual_value, combatant.level)
+	combatant.action_energy = AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
 	combatant.temperature = template.temperature

@@ -17,19 +17,17 @@ extends RefCounted
 ## define uma curva de XP por nivel/especie.
 const XP_TO_LEVEL_UP := 100
 
-
 static func level_up(combatant: CombatantState, template: AlchemonSheet, levels: int = 1) -> void:
 	for i in levels:
+		var old_energy_max := AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
 		combatant.level += 1
-
-		combatant.attack = AlchemonFormulas.compute_attack(
-			template.base_attack, combatant.individual_value, combatant.level
-		)
-
-		combatant.defense = maxi(combatant.defense + randi_range(template.defense_growth_min, template.defense_growth_max), 1)
-		combatant.mechanical_speed = maxi(combatant.mechanical_speed + randi_range(template.mechanical_speed_growth_min, template.mechanical_speed_growth_max), 1)
-		combatant.action_energy = maxi(combatant.action_energy + randi_range(template.action_energy_growth_min, template.action_energy_growth_max), 1)
-
+		var iv := combatant.individual_value
+		combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, iv, combatant.level)
+		combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, iv, combatant.level)
+		combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, iv, combatant.level)
+		var new_energy_max := AlchemonFormulas.compute_stat(template.base_action_energy, iv, combatant.level)
+		combatant.action_energy += new_energy_max - old_energy_max
+		print("LVUP %s Lv%d atk=%d def=%d spd=%d en=%d" % [combatant.id, combatant.level, combatant.attack, combatant.defense, combatant.mechanical_speed, combatant.action_energy])
 
 ## Concede XP a um combatente e aplica quantos level ups o total acumulado
 ## render (normalmente 0 ou 1, mas cobre o caso de uma recompensa grande
