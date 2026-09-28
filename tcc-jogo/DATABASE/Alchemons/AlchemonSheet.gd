@@ -29,19 +29,6 @@ const GASOSO := "gasoso"
 @export var attacks: Array[AttackData] = []   # ate 4 ataques
 
 
-## Proxima etapa da mudanca de estado fisico ao esquentar (GDD sec 8.2):
-## SOLIDO -> LIQUIDO -> GASOSO. Ja em GASOSO, satura (nao ha estado mais
-## quente modelado ainda) - retorna o mesmo valor, sem transicao.
-static func next_physical_state(current: String) -> String:
-	match current:
-		SOLIDO:
-			return LIQUIDO
-		LIQUIDO:
-			return GASOSO
-		_:
-			return current
-
-
 func _init(p_name: String = "", p_max_hp: int = 30, p_id_or_is_player: Variant = -1, legacy_id: Variant = null) -> void:
 	# Third argument is the species id. Accept prior (name, hp, is_player, id)
 	# calls while old tests/assets are migrated.
@@ -52,3 +39,14 @@ func _init(p_name: String = "", p_max_hp: int = 30, p_id_or_is_player: Variant =
 	creature_name = p_name
 	max_hp = p_max_hp
 	hp = p_max_hp
+
+@export var boiling_point: float = 373.15   # K - acima disso: GASOSO
+
+## Estado fisico que esta espécie tem numa arena a `arena_temperature` (GDD 8.2).
+## <= temperature (fusao): SOLIDO | <= boiling_point: LIQUIDO | acima: GASOSO
+func state_at(arena_temperature: float) -> String:
+	if arena_temperature <= temperature:
+		return SOLIDO
+	if arena_temperature <= boiling_point:
+		return LIQUIDO
+	return GASOSO

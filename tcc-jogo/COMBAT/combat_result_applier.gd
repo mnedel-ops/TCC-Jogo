@@ -93,21 +93,15 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 		var template := database.get_by_id(c.species_id)
 		if template == null:
 			continue
-		if state.arena_temperature <= template.temperature:
+		var new_state := template.state_at(state.arena_temperature)
+		if new_state == c.physical_state:
 			continue
-		var next_state := AlchemonSheet.next_physical_state(c.physical_state)
-		if next_state == c.physical_state:
-			continue
-		c.physical_state = next_state
-		print(state.arena_temperature)
+		c.physical_state = new_state
 		c.arena_hotter_than_myself.emit(c.slot)
-		
-		#Aplica o dano pela mudanca de temperatura
 		var is_invulnerable_cation := c.bond_kind == BondRules.COMPOUND and c.is_bond_cation
 		if is_invulnerable_cation:
 			continue
 		_apply_damage(state, c.id, STATE_CHANGE_DAMAGE)
-		print_debug(state)
 
 
 static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: int, defeated_id: int) -> void:

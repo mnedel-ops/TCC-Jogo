@@ -34,3 +34,11 @@ func test_level_up_keeps_spent_energy() -> void:
 	AlchemonGrowth.level_up(c, _make_template(), 9)
 	# pool era 3, máximo subiu 5 -> 7 (delta +2): 3 + 2 = 5, não encheu
 	assert_int(c.action_energy).is_equal(5)
+	
+func test_state_at() -> void:
+	var s := AlchemonSheet.new()
+	s.temperature = 300.0
+	s.boiling_point = 400.0
+	assert_str(s.state_at(273.15)).is_equal(AlchemonSheet.SOLIDO)
+	assert_str(s.state_at(350.0)).is_equal(AlchemonSheet.LIQUIDO)
+	assert_str(s.state_at(500.0)).is_equal(AlchemonSheet.GASOSO)

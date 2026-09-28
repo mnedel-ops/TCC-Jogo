@@ -66,7 +66,15 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 	
 	_try_bond(state, database, state.player_ids)
 	_try_bond(state, database, state.enemy_ids)
+	
+	for id in state.player_ids + state.enemy_ids:
+		var c := state.get_combatant(id)
+		var t := database.get_by_id(c.species_id)
+		if t != null:
+			c.physical_state = t.state_at(state.arena_temperature)
+	
 	return state
+	
 
 static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array) -> void:
 	if ids.size() != 2:
