@@ -6,6 +6,9 @@
 [ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://INTERFACES/bag_component.gd" id="3_ax8vx"]
 [ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory.tres" id="4_7xvrs"]
 [ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="5_yceo5"]
+[ext_resource type="Script" uid="uid://bnn5jjplg3d5l" path="res://INTERFACES/AlchemonComponent.gd" id="7_qwdrv"]
+[ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="8_4br5b"]
+[ext_resource type="Resource" uid="uid://mjh0owhcv1br" path="res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres" id="9_2prvq"]
 
 [node name="MenuPause" type="CanvasLayer" unique_id=1170522014]
 script = ExtResource("1_7xvrs")
@@ -38,7 +41,7 @@ size_flags_vertical = 4
 [node name="NavigationComponent" type="Node" parent="." unique_id=942200191 node_paths=PackedStringArray("buttons_container")]
 script = ExtResource("2_7xvrs")
 buttons_container = NodePath("../Root/MarginContainer/PanelContainer/VBoxContainer")
-button_names = ["Bag", "Exit"]
+button_names = ["Alchemon", "Bag", "Exit"]
 
 [node name="BagComponent" type="Node" parent="." unique_id=383327739 node_paths=PackedStringArray("inventoryui", "item_list")]
 script = ExtResource("3_ax8vx")
@@ -60,5 +63,21 @@ exit_confirm_dialog = NodePath("ExitConfirmDialog")
 [node name="ExitWithouSavingDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=881621034]
 
 [node name="ExitConfirmDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=714866470]
+
+[node name="AlchemonsComponent" type="Node" parent="." unique_id=1528444619 node_paths=PackedStringArray("panel", "list")]
+script = ExtResource("7_qwdrv")
+party = ExtResource("8_4br5b")
+database = ExtResource("9_2prvq")
+panel = NodePath("Panel")
+list = NodePath("Panel/VBoxContainer")
+
+[node name="Panel" type="Panel" parent="AlchemonsComponent" unique_id=1725915049]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AlchemonsComponent/Panel" unique_id=762652191]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
 
 [connection signal="menu_closed" from="." to="BagComponent" method="_on_menu_pause_menu_closed"]

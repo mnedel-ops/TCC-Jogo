@@ -8,6 +8,7 @@ signal menu_button_pressed(button_name: String)
 @onready var navigation: MenuNavigationComponent = $NavigationComponent
 @onready var exit_flow: ExitFlowComponent = $ExitFlowComponent
 @onready var bag: BagComponent = $BagComponent
+@onready var alchemons: AlchemonsComponent = $AlchemonsComponent
 
 var is_open := false
 
@@ -47,6 +48,7 @@ func close_menu() -> void:
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	menu_closed.emit()
+	alchemons.close()
 
 func _on_button_activated(button_name: String) -> void:
 	match button_name:
@@ -54,4 +56,6 @@ func _on_button_activated(button_name: String) -> void:
 			exit_flow.start_exit_flow()
 		"Bag":
 			bag.open_bag()
+		"Alchemon":
+			alchemons.open()
 	menu_button_pressed.emit(button_name)

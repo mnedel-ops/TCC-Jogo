@@ -89,6 +89,11 @@ static func _seed_player_stats(combatant: CombatantState, template: AlchemonShee
 	combatant.mechanical_speed = maxi(template.base_mechanical_speed, 1)
 	combatant.action_energy = maxi(template.base_action_energy, 1)
 	combatant.temperature = template.temperature
+	
+	# CombatStateFactory._seed_player_stats, no fim
+	if instance.defense > 0: combatant.defense = instance.defense
+	if instance.mechanical_speed > 0: combatant.mechanical_speed = instance.mechanical_speed
+	if instance.action_energy > 0: combatant.action_energy = instance.action_energy
 
 static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet) -> void:
 	combatant.level = 1

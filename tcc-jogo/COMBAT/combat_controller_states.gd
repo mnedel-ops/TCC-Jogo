@@ -337,4 +337,7 @@ func _sync_party_state() -> void:
 		if c != null and persistent_alchemon != null:
 			persistent_alchemon.current_hp = maxi(c.hp, 0)
 			persistent_alchemon.level = c.level
+			persistent_alchemon.defense = c.defense
+			persistent_alchemon.mechanical_speed = c.mechanical_speed
+			persistent_alchemon.action_energy = c.action_energy
 			persistent_alchemon.experience = c.experience
