@@ -63,8 +63,20 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		var kind := AlchemyStation.determine_bond_kind([sheet0, sheet1])
 		if kind != BondRules.NONE:
 			BondRules.apply_bond(kind, [p0, p1], [sheet0, sheet1])
-		
+	
+	_try_bond(state, database, state.player_ids)
+	_try_bond(state, database, state.enemy_ids)
 	return state
+
+static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array) -> void:
+	if ids.size() != 2:
+		return
+	var c0 := state.get_combatant(ids[0])
+	var c1 := state.get_combatant(ids[1])
+	var sheets: Array[AlchemonSheet] = [database.get_by_id(c0.species_id), database.get_by_id(c1.species_id)]
+	var kind := AlchemyStation.determine_bond_kind(sheets)
+	if kind != BondRules.NONE:
+		BondRules.apply_bond(kind, [c0, c1], sheets)
 
 static func _seed_player_stats(combatant: CombatantState, template: AlchemonSheet, instance: AlchemonInstance) -> void:
 	combatant.level = instance.level
