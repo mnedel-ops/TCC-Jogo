@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dxh818mftoswm" path="res://scenes/scene_2.tscn" id="3_o6xl0"]
 [ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
+[ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
 
@@ -45,3 +46,5 @@ offset_right = 40.0
 offset_bottom = 40.0
 
 [node name="EntityHolder" type="Node3D" parent="." unique_id=433721231]
+
+[node name="Hud" parent="." unique_id=1534891892 instance=ExtResource("8_tipki")]

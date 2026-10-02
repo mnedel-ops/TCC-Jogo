@@ -13,7 +13,7 @@ size = Vector3(0.5, 0.745, 0.815)
 size = Vector3(3, 1, 3)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nkfb8"]
-size = Vector3(1, 1, 4.0071716)
+size = Vector3(0.24780273, 1, 3.3400116)
 
 [node name="NPC" type="CharacterBody3D" unique_id=844920822 groups=["npc"]]
 collision_layer = 8
@@ -27,7 +27,7 @@ layers = 8
 mesh = SubResource("CapsuleMesh_v7lw1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="MeshInstance3D" unique_id=140686001]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0076983, 0)
+transform = Transform3D(1, 0, 0, 0, 0.8735063, 0.48681283, 0, -0.48681283, 0.8735063, 0, 0.936687, -0.24470386)
 mesh = SubResource("PrismMesh_ideak")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=529672125]
@@ -56,7 +56,7 @@ text = "Estamos conversando..."
 [node name="CombatCollision" type="Area3D" parent="." unique_id=649249875]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CombatCollision" unique_id=456885469]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1.5035858)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.013305664, 1, 1.1700058)
 shape = SubResource("BoxShape3D_nkfb8")
 
 [connection signal="area_entered" from="DialogueCollision" to="." method="_on_dialogue_collision_area_entered"]
