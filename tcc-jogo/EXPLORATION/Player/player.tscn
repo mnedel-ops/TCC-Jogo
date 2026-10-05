@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://bihe81j3dy0nm" path="res://EXPLORATION/Player/inventory_component.gd" id="4_gwnis"]
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="6_l2cs5"]
 [ext_resource type="Script" uid="uid://dvohaiphj6lxg" path="res://EXPLORATION/Player/combat_handler.gd" id="7_screu"]
+[ext_resource type="Script" uid="uid://ddkrio812ybbm" path="res://EXPLORATION/Player/alchemon_follower_component.gd" id="8_1tbpo"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sh265"]
 
@@ -56,3 +57,6 @@ party_data = ExtResource("6_l2cs5")
 
 [node name="CombatHandler" type="Node" parent="." unique_id=337732276]
 script = ExtResource("7_screu")
+
+[node name="AlchemonFollowerComponent" type="Node" parent="." unique_id=1135604727]
+script = ExtResource("8_1tbpo")
