@@ -32,6 +32,10 @@ folder_colors={
 "res://INTERFACES/": "purple"
 }
 
+[global_group]
+
+player=""
+
 [input]
 
 ui_accept={

@@ -1,5 +1,8 @@
 [gd_scene format=3 uid="uid://kpa243380yde"]
 
+[ext_resource type="Script" uid="uid://dpho3srssxfn0" path="res://DATABASE/Alchemons/alchemonBuilder.gd" id="1_3usro"]
+[ext_resource type="Script" uid="uid://ddkrio812ybbm" path="res://EXPLORATION/Player/alchemon_follower_component.gd" id="1_81i36"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_nx03v"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_nx03v"]
@@ -7,6 +10,7 @@ radius = 0.319
 height = 0.638
 
 [node name="Alchemon" type="Node3D" unique_id=1629739135]
+script = ExtResource("1_3usro")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=345166076]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
@@ -15,3 +19,6 @@ mesh = SubResource("BoxMesh_nx03v")
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="MeshInstance3D" unique_id=1695600050]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3841858e-07, 0.61021936, 0.5434177)
 mesh = SubResource("SphereMesh_nx03v")
+
+[node name="FollowComponent" type="Node" parent="." unique_id=115668379]
+script = ExtResource("1_81i36")

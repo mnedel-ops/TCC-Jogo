@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://i8hwn8g0i6hc" path="res://EXPLORATION/Player/camera_rig.gd" id="2_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://i02ouo6uredv" path="res://INTERFACES/menu_pause.tscn" id="3_h2yge"]
 [ext_resource type="PackedScene" uid="uid://dxh818mftoswm" path="res://scenes/scene_2.tscn" id="3_o6xl0"]
+[ext_resource type="Script" uid="uid://vq2d5kpllln5" path="res://scenes/follower_manager.gd" id="4_85g3d"]
 [ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
 [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
@@ -22,7 +23,8 @@ camera_rig = NodePath("../CameraRig")
 first_level = ExtResource("3_o6xl0")
 first_spawn_point = "SpawnPointPlayer"
 
-[node name="EntityManager" type="Node" parent="." unique_id=1803137416]
+[node name="FollowerManager" type="Node" parent="." unique_id=1803137416]
+script = ExtResource("4_85g3d")
 
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
@@ -45,6 +47,6 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="EntityHolder" type="Node3D" parent="." unique_id=433721231]
+[node name="FollowerHolder" type="Node3D" parent="." unique_id=433721231]
 
 [node name="Hud" parent="." unique_id=1534891892 instance=ExtResource("8_tipki")]
