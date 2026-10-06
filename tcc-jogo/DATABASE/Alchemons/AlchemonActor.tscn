@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://kpa243380yde"]
+
+[ext_resource type="Script" uid="uid://dpho3srssxfn0" path="res://DATABASE/Alchemons/alchemonBuilder.gd" id="1_ih6pi"]
+[ext_resource type="Script" uid="uid://ddkrio812ybbm" path="res://EXPLORATION/Player/alchemon_follower_component.gd" id="2_lhxql"]
+[ext_resource type="PackedScene" uid="uid://yw4c8ixumf18" path="res://DATABASE/Alchemons/Model_AlchemonMetal.tscn" id="3_lhxql"]
+
+[node name="Alchemon" type="Node3D" unique_id=1629739135]
+script = ExtResource("1_ih6pi")
+
+[node name="FollowComponent" type="Node" parent="." unique_id=115668379]
+script = ExtResource("2_lhxql")
+
+[node name="MeshHolder" type="Node3D" parent="." unique_id=584081182]
+
+[node name="MeshInstance3D" parent="MeshHolder" unique_id=2016145240 instance=ExtResource("3_lhxql")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)

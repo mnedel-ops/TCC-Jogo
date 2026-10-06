@@ -28,6 +28,7 @@ const GASOSO := "gasoso"
 @export var element_type: AlchemonType.Type = AlchemonType.Type.METAL   # tipo da CRIATURA - so importa como defensor (sem STAB)
 @export var attacks: Array[AttackData] = []   # ate 4 ataques
 
+@export var model: PackedScene
 
 func _init(p_name: String = "", p_max_hp: int = 30, p_id_or_is_player: Variant = -1, legacy_id: Variant = null) -> void:
 	# Third argument is the species id. Accept prior (name, hp, is_player, id)
