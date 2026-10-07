@@ -23,9 +23,13 @@ func  place_npcs():
 		
 		npc_scene_guy.position = marker.position as Vector3
 		npc_scene_guy.rotation = marker.rotation as Vector3
-		npc_scene_guy.alchemon1 = marker.alchemons_ids[0]
-		npc_scene_guy.alchemon2 = marker.alchemons_ids[1]
 		
-		npc_scene_guy.figther=true
+		npc_scene_guy.figther = marker.is_fighter
+		if npc_scene_guy.figther:
+			npc_scene_guy.alchemon1 = marker.alchemons_ids[0]
+			npc_scene_guy.alchemon1 = marker.level
+		
+			npc_scene_guy.alchemon2 = marker.alchemons_ids[1]
+		
 		NPCHolder_guy.add_child(npc_scene_guy)
 		existo.emit()

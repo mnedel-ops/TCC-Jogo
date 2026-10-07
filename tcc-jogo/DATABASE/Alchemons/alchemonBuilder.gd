@@ -12,6 +12,6 @@ func _ready() -> void:
 	apply_level(sheet)
 	
 func apply_level(sheet:AlchemonSheet):
-	sheet.max_hp += AlchemonFormulas.compute_stat(sheet.hp, 5, alchemonLevel)
+	sheet.max_hp += AlchemonFormulas.compute_stat(sheet.hp, sheet.individual_value, alchemonLevel)
 	print_debug("stats: ", sheet.max_hp)
 	

@@ -36,12 +36,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.501, 0, 0)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([2, 2])
+level = 2
+is_fighter = true
 
 [node name="SpawnPoint2" type="Marker3D" parent="NPCHolder" unique_id=524408964]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.525158, 0, -3.5990982)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
-alchemons_ids = Array[int]([1, 1])
 
 [node name="SpawnPoint3" type="Marker3D" parent="NPCHolder" unique_id=380600726]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.53906, 0, 9.237663)

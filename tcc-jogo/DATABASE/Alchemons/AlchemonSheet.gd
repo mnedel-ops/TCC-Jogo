@@ -11,6 +11,7 @@ const GASOSO := "gasoso"
 @export var id: int = -1
 @export var creature_name: String = ""
 #Stats
+@export var individual_value: int = 5
 @export var max_hp: int = 30
 @export var hp: int = 30
 

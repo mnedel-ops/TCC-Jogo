@@ -50,3 +50,4 @@ offset_bottom = 40.0
 [node name="FollowerHolder" type="Node3D" parent="." unique_id=433721231]
 
 [node name="Hud" parent="." unique_id=1534891892 instance=ExtResource("8_tipki")]
+visible = false
