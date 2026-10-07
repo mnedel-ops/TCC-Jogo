@@ -14,5 +14,3 @@ script = ExtResource("2_lhxql")
 
 [node name="MeshInstance3D" parent="MeshHolder" unique_id=2016145240 instance=ExtResource("3_lhxql")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-
-[node name="SheetHolder" type="Node" parent="." unique_id=793386632]

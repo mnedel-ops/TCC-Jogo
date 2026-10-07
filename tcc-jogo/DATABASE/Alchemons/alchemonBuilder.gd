@@ -9,7 +9,9 @@ func _ready() -> void:
 	var sheet :AlchemonSheet= database.get_by_id(id)
 	print_debug("Nome do alchemon: ", sheet.creature_name)
 	print_debug("stats: ", sheet.max_hp)
+	apply_level(sheet)
 	
+func apply_level(sheet:AlchemonSheet):
 	sheet.max_hp += AlchemonFormulas.compute_stat(sheet.hp, 5, alchemonLevel)
 	print_debug("stats: ", sheet.max_hp)
 	
