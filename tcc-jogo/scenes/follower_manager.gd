@@ -9,7 +9,8 @@ var alchemonfollowerinstance : Node3D
 @export var equipe_player: PlayerPartyData 
 
 func _ready() -> void:
-	print_debug(equipe_player.species_ids[0])
+	for m in equipe_player.party:
+		print_debug(equipe_player.species_ids[m])
 	set_follower()
 	
 func set_follower():
