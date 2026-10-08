@@ -27,6 +27,10 @@ first_spawn_point = "SpawnPointPlayer"
 script = ExtResource("4_85g3d")
 equipe_player = ExtResource("7_o6xl0")
 
+[node name="APosition" type="Marker3D" parent="FollowerManager" unique_id=1257855422]
+
+[node name="BPosition" type="Marker3D" parent="FollowerManager" unique_id=2081602102]
+
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=150659886 node_paths=PackedStringArray("player")]
