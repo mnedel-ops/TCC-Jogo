@@ -1,6 +1,7 @@
 extends Node3D
+class_name AlchemonBuilder
 
-var id : int = 2
+var id : int = -1
 var database := load("res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres")
 var alchemonLevel :int= 5
 
@@ -10,6 +11,9 @@ var stats: Dictionary
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	alchemon_instance()
+	
+func _set_id(sent_id: int):
+	id = sent_id
 	
 func alchemon_instance():
 	var sheet :AlchemonSheet= database.get_by_id(id)
@@ -22,7 +26,6 @@ func alchemon_instance():
 	instance.level=alchemonLevel
 	
 	print_debug("Nome do alchemon: ", instance.creature_name)
-	print_debug("antes de subir de nivel, Vida: ", instance.max_hp)
 	
 	stats = apply_level(sheet,instance)
 	

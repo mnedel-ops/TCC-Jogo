@@ -6,12 +6,15 @@ extends Node
 var alchemonfollower: PackedScene = load("res://DATABASE/Alchemons/AlchemonActor.tscn")
 var alchemonfollowerinstance : Node3D
 
+@export var equipe_player: PlayerPartyData 
+
 func _ready() -> void:
-	set_follower(0)
-	set_follower(3)
+	print_debug(equipe_player.species_ids[0])
+	set_follower()
 	
-func set_follower(offset: int):
+func set_follower():
 	alchemonfollowerinstance = alchemonfollower.instantiate() as Node3D
+	alchemonfollowerinstance._set_id(equipe_player.species_ids[0])
 	follower_holder.add_child(alchemonfollowerinstance)
-	alchemonfollowerinstance.global_position = player.global_position + Vector3(offset, 0,0)
+	alchemonfollowerinstance.global_position = player.global_position
 	

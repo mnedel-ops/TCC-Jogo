@@ -25,6 +25,7 @@ first_spawn_point = "SpawnPointPlayer"
 
 [node name="FollowerManager" type="Node" parent="." unique_id=1803137416]
 script = ExtResource("4_85g3d")
+equipe_player = ExtResource("7_o6xl0")
 
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
