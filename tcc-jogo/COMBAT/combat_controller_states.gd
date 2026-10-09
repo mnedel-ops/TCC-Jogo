@@ -2,12 +2,18 @@ extends Control
 
 ## Combat state machine controller. Orchestrates battle phases.
 ## Rules are in CombatRules. UI is in Combat_UI_states.
+## Balloons (HP/Energy following 3D alchemons) are in CombatBalloons.
 
 @onready var ui: Combat_UI_states = $VBoxContainer
+@onready var balloons: CombatBalloons = $Balloons
 
 @export var database: AlchemonDatabase
 @export var player_species_ids: Array[AlchemonInstance] = []
 @export var enemy_species_ids: Array[int] = []
+
+## BattlefieldSlot -> Node3D. Set by CombatSceneManager BEFORE add_child,
+## because _ready() hands it to the balloons.
+var anchors: Dictionary = {}
 
 var state: CombatState
 var _selection_order: Array[int] = []
@@ -31,6 +37,7 @@ func _ready() -> void:
 	state.phase = BattlePhaseRules.ENCOUNTER_START
 	_log_initiative_order()
 
+	balloons.anchors = anchors
 	_refresh_hp_display() #tanto o Hp como a Temperatura habitam aqui.
 	ui.log_message("Combate comecou!")
 	_start_action_selection()
@@ -64,33 +71,47 @@ func _bond_tag(c: CombatantState) -> String:
 		_:
 			return ""
 
+
+## One display-ready dict per combatant. UI never touches CombatantState.
+## Energy = valence electrons (what attacks spend), NOT the action_energy stat.
+func _build_entry(id: int) -> Dictionary:
+	var c := state.get_combatant(id)
+	return {
+		"id": id,
+		"slot": c.slot,
+		"name": _name_of(id) + _bond_tag(c),
+		"hp": c.hp, "max_hp": c.max_hp,
+		"energy": c.valence_electrons, "max_energy": c.max_valence_electrons,
+		"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP,
+		"visible": c.alive and not c.is_bond_cation,
+	}
+
+
 func _refresh_hp_display() -> void:
 	var player_entries: Array[Dictionary] = []
 	var arena_temperature: float = state.arena_temperature
 	for id in state.player_ids:
 		var c := state.get_combatant(id)
-		player_entries.append({
-			"name": _name_of(id) + _bond_tag(c),
-			"hp": c.hp, "max_hp": c.max_hp,
-			"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP
-		})
+		player_entries.append(_build_entry(id))
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
 	var enemy_entries: Array[Dictionary] = []
 	for id in state.enemy_ids:
 		var c := state.get_combatant(id)
-		enemy_entries.append({
-			"name": _name_of(id) + _bond_tag(c),
-			"hp": c.hp, "max_hp": c.max_hp,
-			"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP
-		})
+		enemy_entries.append(_build_entry(id))
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
 	ui.update_temperature(arena_temperature)
 	ui.update_hp_dict(player_entries, enemy_entries)
-	
+
+	var all_entries: Array[Dictionary] = []
+	all_entries.append_array(player_entries)
+	all_entries.append_array(enemy_entries)
+	balloons.update_all(all_entries)
+
+
 func _advance_phase(next_phase: String) -> bool:
 	if not BattlePhaseRules.is_valid_transition(state.phase, next_phase):
 		push_error("Invalid battle transition: %s -> %s" % [state.phase, next_phase])

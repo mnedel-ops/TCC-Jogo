@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://dlg0yfhe6hu37"]
 
+[ext_resource type="Script" uid="uid://cyowce13nrta0" path="res://INTERFACES/hud_combat.gd" id="1_ds5ty"]
 [ext_resource type="Texture2D" uid="uid://date0n2u5fbnc" path="res://INTERFACES/assets/barras.png" id="1_vnm4g"]
 [ext_resource type="Texture2D" uid="uid://ra86ysnx4fii" path="res://INTERFACES/assets/comandos.png" id="2_7si0y"]
 [ext_resource type="Texture2D" uid="uid://la4exquhb4a7" path="res://icon.svg" id="2_f0qhb"]
 [ext_resource type="Texture2D" uid="uid://cicl78ecxpb3" path="res://INTERFACES/assets/barras-energia.png" id="3_nwahv"]
 
 [node name="Hud" type="CanvasLayer" unique_id=1534891892]
+script = ExtResource("1_ds5ty")
 
 [node name="Control" type="Control" parent="." unique_id=40993123]
 layout_mode = 3
@@ -81,10 +83,3 @@ stretch_mode = 2
 layout_mode = 2
 texture = ExtResource("3_nwahv")
 stretch_mode = 2
-
-[node name="icon" type="TextureRect" parent="Control/MarginContainer/HBoxContainer/VBoxContainer/AlchemonB" unique_id=2016251726]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-texture = ExtResource("2_f0qhb")
-stretch_mode = 3

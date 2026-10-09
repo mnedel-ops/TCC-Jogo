@@ -4,6 +4,7 @@
 [ext_resource type="Resource" uid="uid://mjh0owhcv1br" path="res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres" id="2_vo0t6"]
 [ext_resource type="Script" uid="uid://b0x624q5kmq6u" path="res://DATABASE/Alchemons/AlchemonInstance.gd" id="3_1wde8"]
 [ext_resource type="Script" uid="uid://boivk4nx0ba0f" path="res://COMBAT/combat_states_ui.gd" id="3_vo0t6"]
+[ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="5_rsjl3"]
 
 [node name="CombatStates" type="Control" unique_id=1823080993]
 layout_mode = 3
@@ -40,3 +41,5 @@ layout_mode = 2
 
 [node name="TargetButtons" type="HBoxContainer" parent="VBoxContainer" unique_id=2077509692]
 layout_mode = 2
+
+[node name="Hud" parent="." unique_id=1534891892 instance=ExtResource("5_rsjl3")]

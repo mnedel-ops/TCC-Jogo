@@ -36,9 +36,6 @@ shape = SubResource("BoxShape3D_4flbx")
 transform = Transform3D(0.29999998, 0, 0, 0, -4.981161e-09, 0.29999998, 0, -0.11395568, -1.3113416e-08, 0, 0.38301587, -0.5211808)
 mesh = SubResource("CylinderMesh_4flbx")
 
-[node name="Follower_target" type="Marker3D" parent="Mesh" unique_id=1928505924]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 2)
-
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=899443685]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_4flbx")
