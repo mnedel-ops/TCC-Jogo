@@ -1,4 +1,3 @@
-# INTERFACES/combat_balloon.gd
 class_name CombatBalloon
 extends Control
 
@@ -6,6 +5,7 @@ extends Control
 var target: Node3D
 var _hidden_by_state := false
 
+@onready var panel: PanelContainer = $PanelContainer
 @onready var name_label: Label = $PanelContainer/VBoxContainer/Name
 @onready var hp_bar: ProgressBar = $PanelContainer/VBoxContainer/HP
 @onready var energy_bar: ProgressBar = $PanelContainer/VBoxContainer/ValenceEnergy
@@ -30,4 +30,4 @@ func _process(_delta: float) -> void:
 		return
 	var world_pos := target.global_position + offset
 	visible = not _hidden_by_state and not cam.is_position_behind(world_pos)
-	position = cam.unproject_position(world_pos) - Vector2(size.x * 0.5, size.y)
+	position = cam.unproject_position(world_pos) - Vector2(panel.size.x * 0.5, panel.size.y)

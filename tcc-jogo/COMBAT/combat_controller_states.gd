@@ -2,10 +2,10 @@ extends Control
 
 ## Combat state machine controller. Orchestrates battle phases.
 ## Rules are in CombatRules. UI is in Combat_UI_states.
-## Balloons (HP/Energy following 3D alchemons) are in CombatBalloons.
+## Balloons (HP/Energy following 3D alchemons) are in Hud: CombatBalloons.
 
 @onready var ui: Combat_UI_states = $VBoxContainer
-@onready var balloons: CombatBalloons = $Balloons
+@onready var hud: CombatBalloons = $Hud
 
 @export var database: AlchemonDatabase
 @export var player_species_ids: Array[AlchemonInstance] = []
@@ -37,7 +37,7 @@ func _ready() -> void:
 	state.phase = BattlePhaseRules.ENCOUNTER_START
 	_log_initiative_order()
 
-	balloons.anchors = anchors
+	hud.anchors = anchors
 	_refresh_hp_display() #tanto o Hp como a Temperatura habitam aqui.
 	ui.log_message("Combate comecou!")
 	_start_action_selection()
@@ -109,7 +109,7 @@ func _refresh_hp_display() -> void:
 	var all_entries: Array[Dictionary] = []
 	all_entries.append_array(player_entries)
 	all_entries.append_array(enemy_entries)
-	balloons.update_all(all_entries)
+	hud.update_all(all_entries)
 
 
 func _advance_phase(next_phase: String) -> bool:
