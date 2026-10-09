@@ -37,13 +37,13 @@ equipe_player = ExtResource("7_o6xl0")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 4)
 
 [node name="P2" type="Marker3D" parent="BattleAnchors" unique_id=506149907]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0.24705124)
 
 [node name="E3" type="Marker3D" parent="BattleAnchors" unique_id=1602917171]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.291066, 0, 3.0830479)
 
 [node name="E4" type="Marker3D" parent="BattleAnchors" unique_id=823272897]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.291066, 0, -6)
 
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 

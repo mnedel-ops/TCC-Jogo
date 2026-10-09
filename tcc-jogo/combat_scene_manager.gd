@@ -29,8 +29,10 @@ func _on_combat_start(index: int, id2: int) -> void:
 func _get_enemy_species_ids(index: int, id2: int) -> Array[int]:
 	var ids: Array[int] = []
 	if index >= 0:
+		print_debug(index)
 		ids.append(index)
 	if id2 >= 0:
+		print_debug(id2)
 		ids.append(id2)
 	if ids.is_empty():
 		push_warning("CombatSceneManager: no valid enemy ids, fallback [3].")

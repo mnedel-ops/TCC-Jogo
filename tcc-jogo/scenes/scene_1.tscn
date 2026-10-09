@@ -35,7 +35,7 @@ npc_scene = ExtResource("3_cn2eb")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.501, 0, 0)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
-alchemons_ids = Array[int]([2, 2])
+alchemons_ids = Array[int]([999, 999])
 level = 2
 is_fighter = true
 

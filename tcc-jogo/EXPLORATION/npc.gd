@@ -11,6 +11,7 @@ class_name NPC
 
 @export var alchemon1:int =1
 @export var alchemon2: int =1
+var alchemon_level: int = -1
 
 
 func _ready() -> void:

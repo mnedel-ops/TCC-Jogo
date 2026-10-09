@@ -27,9 +27,8 @@ func  place_npcs():
 		npc_scene_guy.figther = marker.is_fighter
 		if npc_scene_guy.figther:
 			npc_scene_guy.alchemon1 = marker.alchemons_ids[0]
-			npc_scene_guy.alchemon1 = marker.level
-		
 			npc_scene_guy.alchemon2 = marker.alchemons_ids[1]
+			npc_scene_guy.alchemon_level = marker.level
 		
 		NPCHolder_guy.add_child(npc_scene_guy)
 		existo.emit()
