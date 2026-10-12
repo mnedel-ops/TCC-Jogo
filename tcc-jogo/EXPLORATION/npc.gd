@@ -48,6 +48,8 @@ func _on_combat_area_entered(area: Area3D) -> void:
 		is_combat_zone = true
 		print("Vou te quebrar na porrada")
 		print_debug(alchemon1, alchemon2)
+		CombatSignal.enemy_position = global_position
+		CombatSignal.combat_start.emit(alchemon1, alchemon2)
 		CombatSignal.combat_start.emit(alchemon1, alchemon2)
 		
 func _on_combat_area_exited(area: Area3D) -> void: #nao acho que precise deste
