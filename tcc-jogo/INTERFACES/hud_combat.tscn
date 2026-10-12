@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cyowce13nrta0" path="res://INTERFACES/hud_combat.gd" id="1_ds5ty"]
 [ext_resource type="Texture2D" uid="uid://ra86ysnx4fii" path="res://INTERFACES/assets/comandos.png" id="2_7si0y"]
+[ext_resource type="Script" uid="uid://blpn2cx6uf5vy" path="res://INTERFACES/battle_commands.gd" id="3_nwahv"]
 
 [node name="Hud" type="CanvasLayer" unique_id=1534891892]
 script = ExtResource("1_ds5ty")
@@ -35,3 +36,10 @@ theme_override_constants/separation = 256
 layout_mode = 2
 texture = ExtResource("2_7si0y")
 stretch_mode = 2
+
+[node name="Commands" type="Control" parent="." unique_id=57873855]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("3_nwahv")

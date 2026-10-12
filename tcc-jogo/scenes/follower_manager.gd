@@ -65,6 +65,11 @@ func _update_markers() -> void:
 		_markers[i].global_position = player.global_position + basis_yaw * _offsets[i]
 		_markers[i].global_rotation.y = _facing_yaw if rotate_with_player else 0.0
 
+## 3D node of the party creature at this index (null if none). Used by combat
+## to highlight the creature when it is targeted.
+func get_follower(index: int) -> Node3D:
+	return _followers[index] if index >= 0 and index < _followers.size() else null
+
 func set_follower(index: int):
 	alchemonfollowerinstance = alchemonfollower.instantiate() as Node3D
 	alchemonfollowerinstance._set_id(equipe_player.species_ids[index])

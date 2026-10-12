@@ -19,10 +19,24 @@ var state: CombatState
 var _selection_order: Array[int] = []
 var _current_player_index := 0
 
+## Horizontal command bar (top left). Old text UI is pushed below it.
+const COMMANDS_AREA_HEIGHT := 130.0
+## Set by CombatSceneManager BEFORE add_child (player's bag + item names).
+var inventory: InventoryData
+var item_database: ItemDatabase
+var commands: BattleCommands
+var _command_actor_id := -1
+
+var actor_nodes: Dictionary = {}
+var _highlighted: Node3D = null
 
 func _ready() -> void:
 	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids)
-
+	commands.attack_confirmed.connect(_on_command_attack)
+	commands.item_confirmed.connect(_on_command_item)
+	commands.flee_confirmed.connect(_on_flee_pressed)
+	commands.target_hovered.connect(_on_target_hovered)
+	
 	if state.player_ids.is_empty():
 		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
 		ui.set_turn_text("Erro de configuracao - veja o console.")
@@ -40,6 +54,12 @@ func _ready() -> void:
 	hud.anchors = anchors
 	_refresh_hp_display() #tanto o Hp como a Temperatura habitam aqui.
 	ui.log_message("Combate comecou!")
+	ui.position.y = COMMANDS_AREA_HEIGHT
+	commands = BattleCommands.new()
+	add_child(commands)
+	commands.attack_chosen.connect(_on_command_attack)
+	commands.item_chosen.connect(_on_command_item)
+	commands.flee_confirmed.connect(_on_flee_pressed)
 	_start_action_selection()
 
 
@@ -141,69 +161,88 @@ func _start_action_selection() -> void:
 	_prompt_action_for_current()
 
 
-## Appends a Back button to any options list. Every combat menu gets one,
-## including the top-level action menu (where Back just re-shows itself -
-## there's nothing earlier to return to within a locked-in turn).
-func _with_back(options: Array, back_callback: Callable) -> Array:
-	options.append({"text": "Voltar", "callback": back_callback})
-	return options
-
-
 func _prompt_action_for_current() -> void:
 	if _current_player_index >= _selection_order.size():
 		_try_resolve_round()
 		return
 
 	var actor_id := _selection_order[_current_player_index]
+	_command_actor_id = actor_id
+	ui.clear_options()
 	ui.set_turn_text("Acao de %s:" % _name_of(actor_id))
+	commands.open_for(
+		_name_of(actor_id),
+		_build_attack_entries(actor_id),
+		_build_item_entries(),
+		_build_target_entries(state.get_active_ids(state.enemy_ids)),   # attack targets
+		_build_target_entries(state.get_active_ids(state.player_ids)))  # item targets
 
-	var options: Array = [
-		{"text": "Ataque", "callback": func(): _show_attack_menu(actor_id)},
-		{"text": "Item", "callback": func(): _begin_target_selection(actor_id, "item", -1, func(): _prompt_action_for_current())},
-		{"text": "Capturar", "callback": func(): _begin_target_selection(actor_id, "capture", -1, func(): _prompt_action_for_current())},
-		{"text": "Fugir", "callback": _on_flee_pressed},
-	]
-	ui.show_options(_with_back(options, func(): _prompt_action_for_current()))
-
-
-## Attack submenu. Names always shown as-is - CombatRules silently swaps
-## the resolved effect to a free Slap if the actor is at 0 valence
-## electrons, but the UI never hides or relabels the real attacks.
-func _show_attack_menu(actor_id: int) -> void:
-	var actor := state.get_combatant(actor_id)
-	var template := database.get_by_id(actor.species_id)
-
-	ui.set_turn_text("Ataque de %s:" % _name_of(actor_id))
-
-	var options: Array = []
-	for i in template.attacks.size():
-		var attack_index := i
-		options.append({
-			"text": "%s (%s)" % [template.attacks[i].attack_name, AlchemonType.type_name(template.attacks[i].element_type)],
-			"callback": func(): _begin_target_selection(actor_id, "attack", attack_index, func(): _show_attack_menu(actor_id)),
+## Display-ready targets: id, name, hp, max_hp, creature type.
+func _build_target_entries(ids: Array[int]) -> Array:
+	var entries: Array = []
+	for id in ids:
+		var c := state.get_combatant(id)
+		var template := database.get_by_id(c.species_id)
+		entries.append({
+			"id": id,
+			"name": _name_of(id),
+			"hp": c.hp,
+			"max_hp": c.max_hp,
+			"type": AlchemonType.type_name(template.element_type),
 		})
-	ui.show_options(_with_back(options, func(): _prompt_action_for_current()))
+	return entries
 
-
-func _begin_target_selection(actor_id: int, kind: String, attack_index: int, back_callback: Callable) -> void:
-	var candidate_ids: Array[int] = []
-	match kind:
-		"attack", "capture":
-			candidate_ids = state.get_active_ids(state.enemy_ids)
-		"item":
-			candidate_ids = state.get_active_ids(state.player_ids)
-
-	ui.set_turn_text("%s: escolha o alvo" % _name_of(actor_id))
-
-	var options: Array = []
-	for target_id in candidate_ids:
-		var c := state.get_combatant(target_id)
-		options.append({
-			"text": "%s (%d/%d HP)" % [_name_of(target_id), c.hp, c.max_hp],
-			"callback": func(): _confirm_action(actor_id, kind, target_id, attack_index),
+## Display-ready attacks (max 4). Index = position in template.attacks, which is
+## what ActionCommand.attack_index expects.
+func _build_attack_entries(actor_id: int) -> Array:
+	var template := database.get_by_id(state.get_combatant(actor_id).species_id)
+	var entries: Array = []
+	for i in mini(template.attacks.size(), 4):
+		var a: AttackData = template.attacks[i]
+		entries.append({
+			"name": a.attack_name,
+			"damage": a.power,
+			"type": AlchemonType.type_name(a.element_type),
 		})
-	ui.show_options(_with_back(options, back_callback))
+	return entries
 
+
+## Display-ready usable items: name + effect text.
+func _build_item_entries() -> Array:
+	var entries: Array = []
+	if inventory == null or item_database == null:
+		return entries
+	for stack in inventory.get_stacked_view(item_database):
+		var data := item_database.get_item(stack.index)
+		entries.append({
+			"index": stack.index,
+			"name": "%s x%d" % [stack.nome, stack.quantidade],
+			"effect": data.descricao if data != null else "",
+		})
+	return entries
+
+
+func _on_command_attack(attack_index: int, target_id: int) -> void:
+	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
+
+## NOTE: ActionCommand has no item id yet, so rules still apply the generic
+## heal and the bag is not consumed. Needs item_index in ActionCommand + rules.
+func _on_command_item(_item_index: int, target_id: int) -> void:
+	_confirm_action(_command_actor_id, "item", target_id, -1)
+
+func _on_target_hovered(target_id: int) -> void:
+	TargetHighlight.set_on(_highlighted, false)
+	_highlighted = null
+	if target_id < 0:
+		return
+	var c := state.get_combatant(target_id)
+	if c == null:
+		return
+	_highlighted = actor_nodes.get(c.slot)
+	TargetHighlight.set_on(_highlighted, true)
+
+func _exit_tree() -> void:
+	TargetHighlight.set_on(_highlighted, false)
 
 func _confirm_action(actor_id: int, kind: String, target_id: int, attack_index: int) -> void:
 	state.pending_actions.append(ActionCommand.new(actor_id, kind, target_id, attack_index))
@@ -236,6 +275,7 @@ func _resolve_round() -> void:
 	if not _advance_phase(BattlePhaseRules.RESOLVING_ACTIONS):
 		return
 	ui.clear_options()
+	commands.hide_menu()
 
 	for actor_id in state.turn_order_ids:
 		if state.combat_over:
@@ -274,6 +314,7 @@ func _resolve_flee() -> void:
 	if not _advance_phase(BattlePhaseRules.RESOLVING_ACTIONS):
 		return
 	ui.clear_options()
+	commands.hide_menu()
 	ui.set_turn_text("Equipe tenta fugir...")
 
 	var flee_result := CombatRules.resolve_flee()
@@ -318,6 +359,7 @@ func _resolve_flee() -> void:
 
 
 func _show_combat_end() -> void:
+	commands.hide_menu()
 	_sync_party_state()
 	ui.show_combat_end(state.player_won)
 	CombatSignal.combat_ended.emit()
