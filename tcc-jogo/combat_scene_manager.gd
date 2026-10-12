@@ -5,11 +5,20 @@ class_name CombatSceneManager
 @onready var combat_holder: Control = $"../CombatHolder"
 var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")
 @export var party : PlayerPartyData
+## Player's bag + item names, shown in the Item command. Defaults = same files
+## the exploration inventory uses.
+@export var inventory: InventoryData = preload("res://DATABASE/Inventory/inventory.tres")
+@export var item_database: ItemDatabase = preload("res://DATABASE/Inventory/ItemDatabase.tres")
 
 @onready var anchors_root: Node3D = $"../BattleAnchors"
 @onready var player_node: Node3D = $"../player"
 @onready var player_mesh: Node3D = $"../player/Mesh" # Mesh rotates, Player body does not
 @onready var camera_rig: Node = $"../CameraRig"
+@onready var follower_manager: Node = $"../FollowerManager"
+@onready var follower_holder: Node3D = $"../FollowerHolder"
+
+var actor_scene: PackedScene = load("res://DATABASE/Alchemons/AlchemonActor.tscn")
+var _enemy_actors: Array[Node3D] = []
 
 ## Seconds characters take to walk to the corners / back home.
 @export var move_time: float = 0.6
@@ -20,15 +29,6 @@ var _enemy_home: Vector3
 var _tween: Tween
 var _moved: bool = false # true only if characters really went to corners
 
-@export var inventory: InventoryData = preload("res://DATABASE/Inventory/inventory.tres")
-@export var item_database: ItemDatabase = preload("res://DATABASE/Inventory/ItemDatabase.tres")
-# ... in _on_combat_start, after enemy_species_ids line:
-
-@onready var follower_manager: Node = $"../FollowerManager"
-@onready var follower_holder: Node3D = $"../FollowerHolder"
-
-var actor_scene: PackedScene = load("res://DATABASE/Alchemons/AlchemonActor.tscn")
-var _enemy_actors: Array[Node3D] = []
 
 func _ready() -> void:
 	CombatSignal.combat_start.connect(_on_combat_start)
@@ -46,30 +46,57 @@ func _on_combat_start(index: int, id2: int) -> void:
 
 	var combatScenes = combatScene.instantiate()
 	combatScenes.player_species_ids = party.party
-	combatScenes.enemy_species_ids = _get_enemy_species_ids(index, id2)
+	var enemy_ids := _get_enemy_species_ids(index, id2)
+	combatScenes.enemy_species_ids = enemy_ids
 	combatScenes.inventory = inventory
 	combatScenes.item_database = item_database
-	
+
 	combatScenes.anchors = { #Combat positions
 		BattlefieldSlot.PLAYER_SLOT_1: anchors_root.get_node("P1"),
 		BattlefieldSlot.PLAYER_SLOT_2: anchors_root.get_node("P2"),
 		BattlefieldSlot.ENEMY_SLOT_1:  anchors_root.get_node("E3"),
 		BattlefieldSlot.ENEMY_SLOT_2:  anchors_root.get_node("E4"),
 	}
+	combatScenes.actor_nodes = _collect_actor_nodes(enemy_ids)
 	combat_holder.add_child(combatScenes)
 
 	_send_characters_to_corners()
-	
-	var enemy_ids := _get_enemy_species_ids(index, id2)
-	combatScenes.enemy_species_ids = enemy_ids
-	# ... (inventory lines stay) ...
-	combatScenes.actor_nodes = _collect_actor_nodes(enemy_ids)
-	combat_holder.add_child(combatScenes)
 
 
 func _on_combat_ended() -> void:
 	_free_enemy_actors()
 	_send_characters_home()
+
+
+## BattlefieldSlot -> 3D node. Player slots = the party followers (already in the
+## scene). Enemy slots = models spawned here at E3/E4 and freed when combat ends.
+func _collect_actor_nodes(enemy_species: Array[int]) -> Dictionary:
+	var actors := {}
+	for i in 2:
+		var f: Node3D = follower_manager.get_follower(i)
+		if f != null:
+			actors[BattlefieldSlot.PLAYER_SLOT_1 + i] = f
+
+	var enemy_anchor_names: Array[String] = ["E3", "E4"]
+	var look_at_pos: Vector3 = anchors_root.get_node("P1").global_position
+	for i in mini(enemy_species.size(), enemy_anchor_names.size()):
+		var anchor := anchors_root.get_node(enemy_anchor_names[i]) as Node3D
+		var actor := actor_scene.instantiate() as Node3D
+		actor._set_id(enemy_species[i])
+		follower_holder.add_child(actor)
+		actor.global_position = anchor.global_position
+		actor.global_rotation.y = _yaw_toward(anchor.global_position, look_at_pos)
+		_enemy_actors.append(actor)
+		actors[BattlefieldSlot.ENEMY_SLOT_1 + i] = actor
+	return actors
+
+
+func _free_enemy_actors() -> void:
+	for a in _enemy_actors:
+		if is_instance_valid(a):
+			a.queue_free()
+	_enemy_actors.clear()
+
 
 func _get_battle_center() -> Vector3:
 	var p := player_node.global_position
@@ -155,30 +182,3 @@ func _get_enemy_species_ids(index: int, id2: int) -> Array[int]:
 		push_warning("CombatSceneManager: no valid enemy ids, fallback [3].")
 		return [3]
 	return ids
-
-func _collect_actor_nodes(enemy_species: Array[int]) -> Dictionary:
-	var actors := {}
-	for i in 2:
-		var f: Node3D = follower_manager.get_follower(i)
-		if f != null:
-			actors[BattlefieldSlot.PLAYER_SLOT_1 + i] = f
-
-	var enemy_anchor_names: Array[String] = ["E3", "E4"]
-	var look_at_pos: Vector3 = anchors_root.get_node("P1").global_position
-	for i in mini(enemy_species.size(), enemy_anchor_names.size()):
-		var anchor := anchors_root.get_node(enemy_anchor_names[i]) as Node3D
-		var actor := actor_scene.instantiate() as Node3D
-		actor._set_id(enemy_species[i])
-		follower_holder.add_child(actor)
-		actor.global_position = anchor.global_position
-		actor.global_rotation.y = _yaw_toward(anchor.global_position, look_at_pos)
-		_enemy_actors.append(actor)
-		actors[BattlefieldSlot.ENEMY_SLOT_1 + i] = actor
-	return actors
-
-
-func _free_enemy_actors() -> void:
-	for a in _enemy_actors:
-		if is_instance_valid(a):
-			a.queue_free()
-	_enemy_actors.clear()

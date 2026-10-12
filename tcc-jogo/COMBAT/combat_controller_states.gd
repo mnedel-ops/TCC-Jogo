@@ -27,16 +27,15 @@ var item_database: ItemDatabase
 var commands: BattleCommands
 var _command_actor_id := -1
 
+## BattlefieldSlot -> Node3D of that creature (mesh to highlight when targeted).
+## Set by CombatSceneManager BEFORE add_child.
 var actor_nodes: Dictionary = {}
 var _highlighted: Node3D = null
 
+
 func _ready() -> void:
 	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids)
-	commands.attack_confirmed.connect(_on_command_attack)
-	commands.item_confirmed.connect(_on_command_item)
-	commands.flee_confirmed.connect(_on_flee_pressed)
-	commands.target_hovered.connect(_on_target_hovered)
-	
+
 	if state.player_ids.is_empty():
 		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
 		ui.set_turn_text("Erro de configuracao - veja o console.")
@@ -54,12 +53,15 @@ func _ready() -> void:
 	hud.anchors = anchors
 	_refresh_hp_display() #tanto o Hp como a Temperatura habitam aqui.
 	ui.log_message("Combate comecou!")
+
 	ui.position.y = COMMANDS_AREA_HEIGHT
-	commands = BattleCommands.new()
-	add_child(commands)
-	commands.attack_chosen.connect(_on_command_attack)
-	commands.item_chosen.connect(_on_command_item)
+	commands = BattleCommands.new()                          # 1. create
+	add_child(commands)                                      # 2. add to tree
+	commands.attack_confirmed.connect(_on_command_attack)    # 3. connect
+	commands.item_confirmed.connect(_on_command_item)
 	commands.flee_confirmed.connect(_on_flee_pressed)
+	commands.target_hovered.connect(_on_target_hovered)
+
 	_start_action_selection()
 
 
@@ -177,20 +179,6 @@ func _prompt_action_for_current() -> void:
 		_build_target_entries(state.get_active_ids(state.enemy_ids)),   # attack targets
 		_build_target_entries(state.get_active_ids(state.player_ids)))  # item targets
 
-## Display-ready targets: id, name, hp, max_hp, creature type.
-func _build_target_entries(ids: Array[int]) -> Array:
-	var entries: Array = []
-	for id in ids:
-		var c := state.get_combatant(id)
-		var template := database.get_by_id(c.species_id)
-		entries.append({
-			"id": id,
-			"name": _name_of(id),
-			"hp": c.hp,
-			"max_hp": c.max_hp,
-			"type": AlchemonType.type_name(template.element_type),
-		})
-	return entries
 
 ## Display-ready attacks (max 4). Index = position in template.attacks, which is
 ## what ActionCommand.attack_index expects.
@@ -222,14 +210,33 @@ func _build_item_entries() -> Array:
 	return entries
 
 
+## Display-ready targets: id, name, hp, max_hp, creature type.
+func _build_target_entries(ids: Array[int]) -> Array:
+	var entries: Array = []
+	for id in ids:
+		var c := state.get_combatant(id)
+		var template := database.get_by_id(c.species_id)
+		entries.append({
+			"id": id,
+			"name": _name_of(id),
+			"hp": c.hp,
+			"max_hp": c.max_hp,
+			"type": AlchemonType.type_name(template.element_type),
+		})
+	return entries
+
+
 func _on_command_attack(attack_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
+
 
 ## NOTE: ActionCommand has no item id yet, so rules still apply the generic
 ## heal and the bag is not consumed. Needs item_index in ActionCommand + rules.
 func _on_command_item(_item_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "item", target_id, -1)
 
+
+## Highlight the mesh of the creature under the target cursor. -1 = clear.
 func _on_target_hovered(target_id: int) -> void:
 	TargetHighlight.set_on(_highlighted, false)
 	_highlighted = null
@@ -241,8 +248,10 @@ func _on_target_hovered(target_id: int) -> void:
 	_highlighted = actor_nodes.get(c.slot)
 	TargetHighlight.set_on(_highlighted, true)
 
+
 func _exit_tree() -> void:
 	TargetHighlight.set_on(_highlighted, false)
+
 
 func _confirm_action(actor_id: int, kind: String, target_id: int, attack_index: int) -> void:
 	state.pending_actions.append(ActionCommand.new(actor_id, kind, target_id, attack_index))
@@ -350,8 +359,7 @@ func _resolve_flee() -> void:
 		await get_tree().create_timer(0.5).timeout
 
 	if state.combat_over:
-		_show_combat_end()
-		CombatSignal.combat_ended.emit()
+		_show_combat_end() # already emits combat_ended
 
 	else:
 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
