@@ -47,6 +47,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
 [node name="E4" type="Marker3D" parent="BattleAnchors" unique_id=823272897]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
 
+[node name="Char0" type="Marker3D" parent="BattleAnchors" unique_id=1663487279]
+
+[node name="Char1" type="Marker3D" parent="BattleAnchors" unique_id=824663457]
+
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=150659886 node_paths=PackedStringArray("player")]
