@@ -230,10 +230,8 @@ func _on_command_attack(attack_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
 
 
-## NOTE: ActionCommand has no item id yet, so rules still apply the generic
-## heal and the bag is not consumed. Needs item_index in ActionCommand + rules.
-func _on_command_item(_item_index: int, target_id: int) -> void:
-	_confirm_action(_command_actor_id, "item", target_id, -1)
+func _on_command_item(item_index: int, target_id: int) -> void:
+	_confirm_action(_command_actor_id, "item", target_id, -1, item_index)
 
 
 ## Highlight the mesh of the creature under the target cursor. -1 = clear.
@@ -253,8 +251,8 @@ func _exit_tree() -> void:
 	TargetHighlight.set_on(_highlighted, false)
 
 
-func _confirm_action(actor_id: int, kind: String, target_id: int, attack_index: int) -> void:
-	state.pending_actions.append(ActionCommand.new(actor_id, kind, target_id, attack_index))
+func _confirm_action(actor_id: int, kind: String, target_id: int, attack_index: int, item_index: int = -1) -> void:
+	state.pending_actions.append(ActionCommand.new(actor_id, kind, target_id, attack_index, item_index))
 	_current_player_index += 1
 	_prompt_action_for_current()
 
@@ -299,7 +297,14 @@ func _resolve_round() -> void:
 			continue
 
 		ui.set_turn_text("Turno: %s" % _name_of(actor_id))
-		var result := CombatRules.resolve_action(state, command, database)
+		# two actors may queue the same item while the bag has only one
+		if command.kind == "item" and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
+			ui.log_message("Sem esse item na mochila! Acao cancelada.")
+			await get_tree().create_timer(0.5).timeout
+			continue
+		var result := CombatRules.resolve_action(state, command, database, item_database)
+		if command.kind == "item" and result.outcome == CombatResult.Outcome.ITEM_USED:
+			inventory.remove_item(command.item_index)   # consumed only if it was really used
 		CombatResultApplier.apply(state, result, database)
 		_log_event(CombatEvent.from_result(result))
 		_refresh_hp_display()
@@ -391,7 +396,8 @@ func _log_event(event: CombatEvent) -> void:
 				eff_text = " Nao muito efetivo..."
 			ui.log_message("%s usa %s em %s! %d de dano.%s%s" % [_name_of(event.actor_id), event.attack_name, _name_of(event.target_id), event.damage, crit_text, eff_text])
 		CombatEvent.Kind.ITEM_USED:
-			ui.log_message("%s usa item em %s! Recupera %d HP." % [_name_of(event.actor_id), _name_of(event.target_id), event.amount])
+			var effect_text := "Recupera %d HP." % event.amount if event.amount > 0 else "Nada acontece."
+			ui.log_message("%s usa um item em %s! %s" % [_name_of(event.actor_id), _name_of(event.target_id), effect_text])
 		CombatEvent.Kind.CAPTURE_SUCCESS:
 			ui.log_message("%s captura %s! Retirado do combate." % [_name_of(event.actor_id), _name_of(event.target_id)])
 		CombatEvent.Kind.CAPTURE_FAIL:

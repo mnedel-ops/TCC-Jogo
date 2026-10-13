@@ -26,6 +26,7 @@ func get_quantity(index: int) -> int:
 	return quantity
 
 # Agrupa indices repetidos -> lista pra UI. Ordem = primeira vez que apareceu.
+# Cada entrada: {index, nome, quantidade, data (ItemData ou null)}
 func get_stacked_view(database: ItemDatabase) -> Array[Dictionary]:
 	var counts: Dictionary = {}
 	var order: Array[int] = []
@@ -38,7 +39,7 @@ func get_stacked_view(database: ItemDatabase) -> Array[Dictionary]:
 
 	var result: Array[Dictionary] = []
 	for idx in order:
-		var data := database.get_item(idx)
+		var data: ItemData = database.get_item(idx) if database != null else null
 		var nome := data.nome if data else "Desconhecido"
-		result.append({"index": idx, "nome": nome, "quantidade": counts[idx]})
+		result.append({"index": idx, "nome": nome, "quantidade": counts[idx], "data": data})
 	return result

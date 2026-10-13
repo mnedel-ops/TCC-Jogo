@@ -7,7 +7,6 @@ extends RefCounted
 const MISS_CHANCE := 1.0 / 6.0
 const FLEE_CHANCE := 5.0 / 6.0
 const CAPTURE_CHANCE := 2.0 / 6.0
-const ITEM_HEAL_AMOUNT := 6
 const CRIT_CHANCE := 0.125
 const CRIT_MULTIPLIER := 1.5
 
@@ -63,7 +62,7 @@ static func _retarget_if_dead(state: CombatState, command: ActionCommand) -> int
 	return replacement if replacement != -1 else command.target_id
 
 
-static func resolve_action(state: CombatState, command: ActionCommand, database: AlchemonDatabase) -> CombatResult:
+static func resolve_action(state: CombatState, command: ActionCommand, database: AlchemonDatabase, item_database: ItemDatabase = null) -> CombatResult:
 	var actor := state.get_combatant(command.actor_id)
 	if actor == null or not actor.alive:
 		return CombatResult.already_dead(command.actor_id, command.target_id, "actor_dead")
@@ -72,7 +71,7 @@ static func resolve_action(state: CombatState, command: ActionCommand, database:
 		"attack":
 			return _resolve_attack(state, command, database, target_id)
 		"item":
-			return _resolve_item(state, command, target_id)
+			return _resolve_item(state, command, target_id, item_database)
 		"capture":
 			return _resolve_capture(state, command, target_id)
 		_:
@@ -117,14 +116,17 @@ static func _resolve_attack(state: CombatState, command: ActionCommand, database
 	return CombatResult.attack_hit(actor.id, target.id, attack_name, compute_damage(base_damage, critical), critical, temperature_delta, effectiveness, cost)
 
 
-static func _resolve_item(state: CombatState, command: ActionCommand, target_id: int) -> CombatResult:
+static func _resolve_item(state: CombatState, command: ActionCommand, target_id: int, item_database: ItemDatabase) -> CombatResult:
 	var actor := state.get_combatant(command.actor_id)
 	var target := state.get_combatant(target_id)
 	if target == null or not target.alive:
 		return CombatResult.already_dead(actor.id, target_id)
 	if target.is_player != actor.is_player:
 		return CombatResult.invalid_target(actor.id, target.id)
-	return CombatResult.item_used(actor.id, target.id, ITEM_HEAL_AMOUNT)
+	var data: ItemData = item_database.get_item(command.item_index) if item_database != null else null
+	if data == null:
+		return CombatResult.invalid_action(actor.id, target.id, "unknown_item")
+	return CombatResult.item_used(actor.id, target.id, data.heal_amount)   # 0 = does nothing
 
 
 static func _resolve_capture(state: CombatState, command: ActionCommand, target_id: int) -> CombatResult:

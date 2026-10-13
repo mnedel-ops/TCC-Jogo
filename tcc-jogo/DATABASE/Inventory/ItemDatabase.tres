@@ -1,10 +1,20 @@
 [gd_resource type="Resource" script_class="ItemDatabase" format=3 uid="uid://cg0g1i3y8jxq4"]
 
-[ext_resource type="Script" uid="uid://dmtha2nlqm4o7" path="res://DATABASE/Inventory/itemdata.gd" id="1_q1i45"]
-[ext_resource type="Resource" uid="uid://c0epucu803i5k" path="res://DATABASE/Inventory/Itens/1ItemGenerico.tres" id="2_d1htk"]
 [ext_resource type="Script" uid="uid://fpb1fvc5cjp1" path="res://DATABASE/Inventory/ItemDatabase.gd" id="2_rwwep"]
+
+[sub_resource type="GDScript" id="GDScript_y51jo"]
+script/source = "class_name ItemData
+extends Resource
+
+@export var index: int = 0
+@export var nome: String = \"\"
+@export_multiline var descricao: String = \"\"
+@export var icone: Texture2D   # opcional: sem icone a UI mostra uma letra
+
+#Codigo para gerar os itens. Todo item herda este codigo, basta criar um
+#resource para o novo item.
+"
 
 [resource]
 script = ExtResource("2_rwwep")
-items = Array[ExtResource("1_q1i45")]([ExtResource("2_d1htk")])
 metadata/_custom_type_script = "uid://fpb1fvc5cjp1"

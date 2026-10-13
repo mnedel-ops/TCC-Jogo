@@ -170,6 +170,8 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 
 func toggle_menu() -> void:
 	if _mode == Mode.CLOSED:
+		if CombatSignal.in_combat:   # combat has its own UI, never pause it
+			return
 		open_menu()
 	else:
 		close_menu()
