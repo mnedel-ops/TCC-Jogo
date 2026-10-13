@@ -19,7 +19,7 @@ enum Mode { CLOSED, LIST, PAGE }
 ## action = "exit" asks to quit instead of opening a page.
 @export var entries: Array[Dictionary] = [
 	{"name": "Table", "icon": "", "page": ""},
-	{"name": "Bag", "icon": "", "page": ""},
+	{"name": "Bag", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
 	{"name": "Alchemons", "icon": "", "page": ""},
 	{"name": "Player", "icon": "", "page": ""},
 	{"name": "Save", "icon": "", "page": ""},
