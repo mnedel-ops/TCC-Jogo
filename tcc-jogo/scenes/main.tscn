@@ -3,17 +3,16 @@
 [ext_resource type="PackedScene" uid="uid://cvnumu170lca7" path="res://EXPLORATION/Player/player.tscn" id="1_ig7tw"]
 [ext_resource type="Script" uid="uid://bed66nl4l3rew" path="res://scenes/scene_manager.gd" id="1_lquwl"]
 [ext_resource type="Script" uid="uid://i8hwn8g0i6hc" path="res://EXPLORATION/Player/camera_rig.gd" id="2_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://i02ouo6uredv" path="res://INTERFACES/menu_pause.tscn" id="3_h2yge"]
 [ext_resource type="PackedScene" uid="uid://dxh818mftoswm" path="res://scenes/scene_2.tscn" id="3_o6xl0"]
 [ext_resource type="Script" uid="uid://vq2d5kpllln5" path="res://scenes/follower_manager.gd" id="4_85g3d"]
 [ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
 [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
+[ext_resource type="PackedScene" uid="uid://c1s742glubqgs" path="res://INTERFACES/game_menu.tscn" id="10_choun"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
 
-[node name="MenuPause" parent="." unique_id=1170522014 instance=ExtResource("3_h2yge")]
-layer = 20
+[node name="GameMenu" parent="." unique_id=825610973 instance=ExtResource("10_choun")]
 
 [node name="SceneManager" type="Node" parent="." unique_id=396373712 node_paths=PackedStringArray("level_holder", "player", "camera_rig") groups=["scene_manager"]]
 script = ExtResource("1_lquwl")
