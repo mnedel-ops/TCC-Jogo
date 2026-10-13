@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://INTERFACES/pages/bag_page.gd" id="1_bag"]
-[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory.tres" id="2_inv"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory_backup.tres" id="2_inv"]
 [ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="3_db"]
 
 [node name="BagPage" type="Control"]

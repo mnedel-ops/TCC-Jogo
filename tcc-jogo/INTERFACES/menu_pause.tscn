@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://52el4gyao7xq" path="res://INTERFACES/navigation_component.gd" id="2_7xvrs"]
 [ext_resource type="Script" uid="uid://cuo55f68wf5su" path="res://INTERFACES/exit_flow_component.gd" id="2_ii7rs"]
 [ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://INTERFACES/bag_component.gd" id="3_ax8vx"]
-[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory.tres" id="4_7xvrs"]
+[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory_backup.tres" id="4_7xvrs"]
 [ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="5_yceo5"]
 [ext_resource type="Script" uid="uid://bnn5jjplg3d5l" path="res://INTERFACES/AlchemonComponent.gd" id="7_qwdrv"]
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="8_4br5b"]
