@@ -10,6 +10,9 @@
 script = ExtResource("5_51661")
 id = 1
 creature_name = "Ametal"
+atomic_mass = 14
+description = "Nao-metal de aparencia opaca. Prefere ganhar eletrons a doa-los."
+lore = "Placeholder de lore: o Ametal surgiu nas bordas da Tabela."
 max_valence_electrons = 6
 element_type = 1
 attacks = Array[ExtResource("1_irkcw")]([ExtResource("2_feu4h"), ExtResource("3_2fxa6"), ExtResource("4_u0657")])

@@ -10,6 +10,9 @@
 script = ExtResource("2_4jdb4")
 id = 999
 creature_name = "Debug"
+atomic_mass = 999
+description = "Criatura de teste. Stats absurdos."
+lore = "Placeholder de lore: nao existe fora do editor."
 max_hp = 3000000
 hp = 3000000
 max_valence_electrons = 2

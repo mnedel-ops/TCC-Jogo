@@ -10,6 +10,9 @@
 script = ExtResource("4_8x2wx")
 id = 2
 creature_name = "Metal"
+atomic_mass = 56
+description = "Brilhante e resistente. Doa eletrons com facilidade."
+lore = "Placeholder de lore: o Metal guarda o calor das forjas antigas."
 max_hp = 33
 max_valence_electrons = 2
 attacks = Array[ExtResource("1_rwf4c")]([ExtResource("2_oxw2i"), ExtResource("3_d5wru"), ExtResource("4_oxw2i")])

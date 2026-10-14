@@ -10,6 +10,10 @@ const GASOSO := "gasoso"
 
 @export var id: int = -1
 @export var creature_name: String = ""
+#Table (Pokedex do jogo)
+@export_range(0, 999) var atomic_mass: int = 0   # ordem na Tabela; mostrado com 3 digitos (#056)
+@export_multiline var description: String = ""
+@export_multiline var lore: String = ""
 #Stats
 @export var max_hp: int = 30
 @export var hp: int = 30

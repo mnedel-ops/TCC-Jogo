@@ -10,6 +10,9 @@
 script = ExtResource("5_r03j5")
 id = 3
 creature_name = "Metaloide"
+atomic_mass = 28
+description = "Comportamento intermediario entre metais e ametais."
+lore = "Placeholder de lore: o Metaloide nunca escolheu um lado."
 max_valence_electrons = 6
 element_type = 2
 attacks = Array[ExtResource("1_g0h4v")]([ExtResource("2_ypslv"), ExtResource("3_hw5sm"), ExtResource("4_j65ka")])

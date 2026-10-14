@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://INTERFACES/pages/table_page.gd" id="1_table"]
+
+[node name="TablePage" type="Control"]
+script = ExtResource("1_table")

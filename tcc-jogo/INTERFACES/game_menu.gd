@@ -18,7 +18,7 @@ enum Mode { CLOSED, LIST, PAGE }
 ## page = scene path, root extends MenuPage ("" = placeholder page)
 ## action = "exit" asks to quit instead of opening a page.
 @export var entries: Array[Dictionary] = [
-	{"name": "Table", "icon": "", "page": ""},
+	{"name": "Table", "icon": "", "page": "res://INTERFACES/pages/table_page.tscn"},
 	{"name": "Bag", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
 	{"name": "Alchemons", "icon": "", "page": ""},
 	{"name": "Player", "icon": "", "page": ""},
