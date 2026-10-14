@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://bjby8yerjjga2"]
 
 [ext_resource type="Script" uid="uid://cosnqcmkxkx03" path="res://INTERFACES/ui_inventory.gd" id="1_script"]
-[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory_backup.tres" id="2_inventory"]
+[ext_resource type="Resource" uid="uid://de6f0ly05ue7r" path="res://DATABASE/Inventory/inventory.tres" id="2_4u75o"]
+[ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="3_r18f8"]
 
 [node name="UIInventory" type="Control" unique_id=1203882898]
 layout_mode = 3
@@ -11,7 +12,8 @@ offset_top = 16.0
 offset_right = 280.0
 offset_bottom = 220.0
 script = ExtResource("1_script")
-mochila = ExtResource("2_inventory")
+mochila = ExtResource("2_4u75o")
+inventory_database = ExtResource("3_r18f8")
 
 [node name="Panel" type="PanelContainer" parent="." unique_id=705938593]
 layout_mode = 1

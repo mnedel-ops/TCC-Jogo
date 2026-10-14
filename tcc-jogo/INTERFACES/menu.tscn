@@ -4,7 +4,8 @@
 [ext_resource type="Script" uid="uid://bbjeu18buys53" path="res://INTERFACES/menu.gd" id="1_lfdkv"]
 [ext_resource type="Script" uid="uid://cuo55f68wf5su" path="res://INTERFACES/exit_flow_component.gd" id="2_3buhb"]
 [ext_resource type="Script" uid="uid://bv2frfdf7il3" path="res://INTERFACES/bag_component.gd" id="4_dr4rn"]
-[ext_resource type="Resource" uid="uid://bt4psd2exd6eu" path="res://DATABASE/Inventory/inventory_backup.tres" id="5_dr4rn"]
+[ext_resource type="Resource" uid="uid://de6f0ly05ue7r" path="res://DATABASE/Inventory/inventory.tres" id="5_mv0ym"]
+[ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="6_vgtgc"]
 
 [node name="menu" type="CanvasLayer" unique_id=2020587563]
 script = ExtResource("1_lfdkv")
@@ -24,9 +25,12 @@ oversampling_override = 1.0
 
 [node name="ExitWithoutSavingDialog" type="ConfirmationDialog" parent="ExitFlowComponent" unique_id=1541662155]
 
-[node name="BagComponent" type="Node" parent="." unique_id=720133904]
+[node name="BagComponent" type="Node" parent="." unique_id=720133904 node_paths=PackedStringArray("inventoryui", "item_list")]
 script = ExtResource("4_dr4rn")
-mochila = ExtResource("5_dr4rn")
+mochila = ExtResource("5_mv0ym")
+inventoryui = NodePath("../Root/MarginContainer/PanelContainer")
+inventory_database = ExtResource("6_vgtgc")
+item_list = NodePath("../Root/MarginContainer/PanelContainer/VBoxContainer")
 
 [node name="Root" type="Control" parent="." unique_id=496849893]
 layout_mode = 3

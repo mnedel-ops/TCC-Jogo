@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c7lirqnho7dqa"]
+
+[ext_resource type="Script" uid="uid://baosmgi65yqil" path="res://INTERFACES/pages/bag_page.gd" id="1_bag"]
+[ext_resource type="Resource" uid="uid://de6f0ly05ue7r" path="res://DATABASE/Inventory/inventory.tres" id="2_4u67h"]
+[ext_resource type="Resource" uid="uid://cg0g1i3y8jxq4" path="res://DATABASE/Inventory/ItemDatabase.tres" id="3_db"]
+
+[node name="BagPage" type="Control" unique_id=1440985772]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_bag")
+mochila = ExtResource("2_4u67h")
+inventory_database = ExtResource("3_db")
