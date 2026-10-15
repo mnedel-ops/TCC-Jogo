@@ -20,8 +20,8 @@ enum Mode { CLOSED, LIST, PAGE }
 @export var entries: Array[Dictionary] = [
 	{"name": "Table", "icon": "", "page": "res://INTERFACES/pages/table_page.tscn"},
 	{"name": "Bag", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
-	{"name": "Alchemons", "icon": "", "page": ""},
-	{"name": "Player", "icon": "", "page": ""},
+	{"name": "Alchemons", "icon": "", "page": "res://INTERFACES/pages/alchemons_page.tscn"},
+	{"name": "Player", "icon": "", "page": "res://INTERFACES/pages/player_page.tscn"},
 	{"name": "Save", "icon": "", "page": ""},
 	{"name": "Exit", "icon": "", "page": "", "action": "exit"},
 ]

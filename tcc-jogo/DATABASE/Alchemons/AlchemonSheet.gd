@@ -14,6 +14,10 @@ const GASOSO := "gasoso"
 @export_range(0, 999) var atomic_mass: int = 0   # ordem na Tabela; mostrado com 3 digitos (#056)
 @export_multiline var description: String = ""
 @export_multiline var lore: String = ""
+#Info tab of the Alchemons page (flavour only, no gameplay effect)
+@export var found_at: String = ""
+@export var likes: String = ""
+@export var dislikes: String = ""
 #Stats
 @export var max_hp: int = 30
 @export var hp: int = 30
