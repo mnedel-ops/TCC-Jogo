@@ -77,7 +77,7 @@ static func _apply_capture(state: CombatState, target_id: int) -> void:
 static func _kill(state: CombatState, target: CombatantState) -> void:
 	target.alive = false
 	state.battlefield.free_slot(target.slot)
-
+	BondRules.release_compound_partners(state, target)
 
 ## GDD 8.2: apos a arena esquentar, TODO Alchemon vivo em campo (nao so
 ## quem atacou/foi atacado - a temperatura e global, sec 8.1) compara sua

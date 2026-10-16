@@ -18,7 +18,8 @@ const COMPOUND := "compound"
 
 const MIXTURE_BONUS := 8              # flat, GDD sec 9.1, aplicado em HP e Energia
 const COMPOUND_TRANSFER_RATIO := 0.7  # GDD sec 9.2, % dos atributos de cada doador que o membro ativo absorve
-
+const COMPOUND_RELEASE_HP_RATIO := 0.3       # pops out with 70% less HP
+const COMPOUND_RELEASE_FALLBACK_ENERGY := 11 # placeholder when active had 0 energy
 
 ## Aplica um vinculo de tipo `kind` (ja resolvido pela AlchemyStation) ao
 ## grupo de combatentes correspondente. Retorna um Dictionary de
@@ -112,3 +113,27 @@ static func _pick_active_index(participants: Array[CombatantState], sheets: Arra
 			best_level = participants[i].level
 			best_index = i
 	return best_index
+
+## Active member of a compound fell: every bonded partner leaves the bond
+## and becomes a normal, targetable combatant.
+## HP = 30% of its max_hp (min 1). Energy = what the fallen one had left;
+## 0 -> COMPOUND_RELEASE_FALLBACK_ENERGY (placeholder).
+static func release_compound_partners(state: CombatState, fallen: CombatantState) -> void:
+	if fallen.bond_kind != COMPOUND or fallen.is_bond_inactive or fallen.is_bond_cation:
+		return   # only the active member triggers a release
+	var energy := fallen.valence_electrons
+	if energy <= 0:
+		energy = COMPOUND_RELEASE_FALLBACK_ENERGY
+	for id in state.combatants:
+		var c: CombatantState = state.combatants[id]
+		if c == fallen or not c.alive:
+			continue
+		if c.bond_kind != COMPOUND or c.bond_partner_id != fallen.id:
+			continue
+		c.bond_kind = NONE
+		c.bond_partner_id = -1
+		c.is_bond_cation = false
+		c.is_bond_inactive = false
+		c.hp = clampi(int(floor(c.max_hp * COMPOUND_RELEASE_HP_RATIO)), 1, c.max_hp)
+		c.max_valence_electrons = maxi(c.max_valence_electrons, energy)
+		c.valence_electrons = energy
