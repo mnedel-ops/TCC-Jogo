@@ -10,10 +10,6 @@
 [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
 [ext_resource type="PackedScene" uid="uid://c1s742glubqgs" path="res://INTERFACES/game_menu.tscn" id="10_choun"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_85g3d"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_choun"]
-
 [node name="main" type="Node3D" unique_id=1718374945]
 
 [node name="GameMenu" parent="." unique_id=825610973 instance=ExtResource("10_choun")]
@@ -53,16 +49,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, -2)
 [node name="Char0" type="Marker3D" parent="BattleAnchors" unique_id=1663487279]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 0, -0.5)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="BattleAnchors/Char0" unique_id=528492175]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, -5)
-mesh = SubResource("BoxMesh_85g3d")
-
 [node name="Char1" type="Marker3D" parent="BattleAnchors" unique_id=824663457]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -0.5)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="BattleAnchors/Char1" unique_id=836115764]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
-mesh = SubResource("BoxMesh_choun")
 
 [node name="player" parent="." unique_id=247398753 instance=ExtResource("1_ig7tw")]
 
