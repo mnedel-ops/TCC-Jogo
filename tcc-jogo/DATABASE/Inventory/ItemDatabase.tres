@@ -2,7 +2,13 @@
 
 [ext_resource type="Script" uid="uid://dkvjbbo1yc74m" path="res://DATABASE/Inventory/itemdata.gd" id="1_3kt6e"]
 [ext_resource type="Script" uid="uid://fpb1fvc5cjp1" path="res://DATABASE/Inventory/ItemDatabase.gd" id="2_rwwep"]
+[ext_resource type="Resource" uid="uid://c0epucu803i5k" path="res://DATABASE/Inventory/Itens/1ItemGenerico.tres" id="3_i1"]
+[ext_resource type="Resource" uid="uid://bpxnmv76ylahn" path="res://DATABASE/Inventory/Itens/2ItemGenerico.tres" id="3_i2"]
+[ext_resource type="Resource" uid="uid://cvokrnrlvijd3" path="res://DATABASE/Inventory/Itens/MetalMethod.tres" id="3_i3"]
+[ext_resource type="Resource" uid="uid://cinfsi6tw4ff1" path="res://DATABASE/Inventory/Itens/AmetalMethod.tres" id="3_i4"]
+[ext_resource type="Resource" uid="uid://fhcne48rwxjc" path="res://DATABASE/Inventory/Itens/MetaloideMethod.tres" id="3_i5"]
 
 [resource]
 script = ExtResource("2_rwwep")
+items = Array[ExtResource("1_3kt6e")]([ExtResource("3_i1"), ExtResource("3_i2"), ExtResource("3_i3"), ExtResource("3_i4"), ExtResource("3_i5")])
 metadata/_custom_type_script = "uid://fpb1fvc5cjp1"

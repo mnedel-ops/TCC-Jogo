@@ -65,11 +65,11 @@ static func _apply_heal(state: CombatState, target_id: int, amount: int) -> void
 		return
 	target.hp = mini(target.hp + amount, target.max_hp)
 
-
 static func _apply_capture(state: CombatState, target_id: int) -> void:
 	var target := state.get_combatant(target_id)
 	if target == null or not target.alive:
 		return
+	state.captured_species_ids.append(target.species_id)
 	target.hp = 0
 	_kill(state, target)
 

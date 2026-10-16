@@ -18,6 +18,8 @@ extends Resource
 @export var player_won: bool = false
 
 @export var arena_temperature: float = 273.15 #Em Kelvin
+## species_id of each creature captured this battle. Only the applier writes.
+@export var captured_species_ids: Array[int] = []
 
 var battlefield: Battlefield
 var battle_phase: BattlePhaseMachine

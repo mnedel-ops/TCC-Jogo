@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cvokrnrlvijd3"]
+
+[ext_resource type="Script" uid="uid://dkvjbbo1yc74m" path="res://DATABASE/Inventory/itemdata.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+index = 3
+nome = "Metal method"
+descricao = "Placeholder. Captura criaturas do tipo Metal."
+is_capture_method = true

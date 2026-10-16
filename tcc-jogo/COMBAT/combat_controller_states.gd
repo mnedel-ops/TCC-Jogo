@@ -26,7 +26,7 @@ var inventory: InventoryData
 var item_database: ItemDatabase
 var commands: BattleCommands
 var _command_actor_id := -1
-
+var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
 ## BattlefieldSlot -> Node3D of that creature (mesh to highlight when targeted).
 ## Set by CombatSceneManager BEFORE add_child.
 var actor_nodes: Dictionary = {}
@@ -59,6 +59,7 @@ func _ready() -> void:
 	add_child(commands)                                      # 2. add to tree
 	commands.attack_confirmed.connect(_on_command_attack)    # 3. connect
 	commands.item_confirmed.connect(_on_command_item)
+	commands.capture_confirmed.connect(_on_command_capture)
 	commands.flee_confirmed.connect(_on_flee_pressed)
 	commands.target_hovered.connect(_on_target_hovered)
 
@@ -206,6 +207,7 @@ func _build_item_entries() -> Array:
 			"index": stack.index,
 			"name": "%s x%d" % [stack.nome, stack.quantidade],
 			"effect": data.descricao if data != null else "",
+			"capture": data != null and data.is_capture_method,
 		})
 	return entries
 
@@ -229,6 +231,8 @@ func _build_target_entries(ids: Array[int]) -> Array:
 func _on_command_attack(attack_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
 
+func _on_command_capture(item_index: int, target_id: int) -> void:
+	_confirm_action(_command_actor_id, "capture", target_id, -1, item_index)
 
 func _on_command_item(item_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "item", target_id, -1, item_index)
@@ -298,13 +302,16 @@ func _resolve_round() -> void:
 
 		ui.set_turn_text("Turno: %s" % _name_of(actor_id))
 		# two actors may queue the same item while the bag has only one
-		if command.kind == "item" and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
+		var uses_bag_item := command.kind == "item" or command.kind == "capture"
+		if uses_bag_item and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
 			ui.log_message("Sem esse item na mochila! Acao cancelada.")
 			await get_tree().create_timer(0.5).timeout
 			continue
 		var result := CombatRules.resolve_action(state, command, database, item_database)
 		if command.kind == "item" and result.outcome == CombatResult.Outcome.ITEM_USED:
-			inventory.remove_item(command.item_index)   # consumed only if it was really used
+			inventory.remove_item(command.item_index)
+		if command.kind == "capture" and _capture_was_attempted(result):
+			inventory.remove_item(command.item_index)   # spent on success AND fail
 		CombatResultApplier.apply(state, result, database)
 		_log_event(CombatEvent.from_result(result))
 		_refresh_hp_display()
@@ -370,6 +377,18 @@ func _resolve_flee() -> void:
 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
 		_start_action_selection()
 
+func _capture_was_attempted(result: CombatResult) -> bool:
+	return result.outcome == CombatResult.Outcome.CAPTURE_SUCCESS \
+		or result.outcome == CombatResult.Outcome.CAPTURE_FAIL
+
+
+## Copy this battle's captures into the persistent array. Drains, so no double add.
+func _sync_captures() -> void:
+	if captured_storage != null:
+		for species_id in state.captured_species_ids:
+			captured_storage.add(species_id)
+	state.captured_species_ids.clear()
+
 
 func _show_combat_end() -> void:
 	commands.hide_menu()
@@ -380,7 +399,6 @@ func _show_combat_end() -> void:
 	# Give the player time to see the outcome screen before despawning combat
 	await get_tree().create_timer(2.0).timeout
 	queue_free()
-
 
 
 func _log_event(event: CombatEvent) -> void:
@@ -406,6 +424,7 @@ func _log_event(event: CombatEvent) -> void:
 			ui.log_message("Acao cancelada (%s)." % event.reason)
 
 func _sync_party_state() -> void:
+	_sync_captures()
 	for i in range(min(player_species_ids.size(), state.player_ids.size())):
 		var combatant_id: int = state.player_ids[i]
 		var c: CombatantState = state.get_combatant(combatant_id)

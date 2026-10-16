@@ -16,6 +16,7 @@ var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")
 @onready var camera_rig: Node = $"../CameraRig"
 @onready var follower_manager: Node = $"../FollowerManager"
 @onready var follower_holder: Node3D = $"../FollowerHolder"
+@export var captured_storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")
 
 var actor_scene: PackedScene = load("res://DATABASE/Alchemons/AlchemonActor.tscn")
 var _enemy_actors: Array[Node3D] = []
@@ -50,7 +51,8 @@ func _on_combat_start(index: int, id2: int) -> void:
 	combatScenes.enemy_species_ids = enemy_ids
 	combatScenes.inventory = inventory
 	combatScenes.item_database = item_database
-
+	combatScenes.captured_storage = captured_storage
+	
 	combatScenes.anchors = { #Combat positions
 		BattlefieldSlot.PLAYER_SLOT_1: anchors_root.get_node("P1"),
 		BattlefieldSlot.PLAYER_SLOT_2: anchors_root.get_node("P2"),

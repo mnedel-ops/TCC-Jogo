@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CapturedStorage" format=3 uid="uid://xo7ytk6estbd"]
+
+[ext_resource type="Script" uid="uid://ct04g7vrrssu8" path="res://DATABASE/Alchemons/CapturedStorage.gd" id="1_cs"]
+
+[resource]
+script = ExtResource("1_cs")
+metadata/_custom_type_script = "uid://ct04g7vrrssu8"

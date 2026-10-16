@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cinfsi6tw4ff1"]
+
+[ext_resource type="Script" uid="uid://dkvjbbo1yc74m" path="res://DATABASE/Inventory/itemdata.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+index = 4
+nome = "Ametal method"
+descricao = "Placeholder. Captura criaturas do tipo Ametal."
+is_capture_method = true
+capture_type = 1

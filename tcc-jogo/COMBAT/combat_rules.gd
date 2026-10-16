@@ -6,7 +6,11 @@ extends RefCounted
 
 const MISS_CHANCE := 1.0 / 6.0
 const FLEE_CHANCE := 5.0 / 6.0
+
 const CAPTURE_CHANCE := 2.0 / 6.0
+## Wrong-type method still works, much less. 0.0 = guaranteed fail.
+const CAPTURE_CHANCE_WRONG_METHOD := 1.0 / 6.0
+
 const CRIT_CHANCE := 0.125
 const CRIT_MULTIPLIER := 1.5
 
@@ -73,7 +77,7 @@ static func resolve_action(state: CombatState, command: ActionCommand, database:
 		"item":
 			return _resolve_item(state, command, target_id, item_database)
 		"capture":
-			return _resolve_capture(state, command, target_id)
+			return _resolve_capture(state, command, database, target_id, item_database)
 		_:
 			return CombatResult.invalid_action(actor.id, target_id, "unknown_command")
 
@@ -124,20 +128,29 @@ static func _resolve_item(state: CombatState, command: ActionCommand, target_id:
 	if target.is_player != actor.is_player:
 		return CombatResult.invalid_target(actor.id, target.id)
 	var data: ItemData = item_database.get_item(command.item_index) if item_database != null else null
-	if data == null:
+	if data == null or data.is_capture_method:
 		return CombatResult.invalid_action(actor.id, target.id, "unknown_item")
 	return CombatResult.item_used(actor.id, target.id, data.heal_amount)   # 0 = does nothing
 
+static func capture_chance(method_type: int, target_type: int) -> float:
+	return CAPTURE_CHANCE if method_type == target_type else CAPTURE_CHANCE_WRONG_METHOD
 
-static func _resolve_capture(state: CombatState, command: ActionCommand, target_id: int) -> CombatResult:
+
+static func _resolve_capture(state: CombatState, command: ActionCommand, database: AlchemonDatabase, target_id: int, item_database: ItemDatabase) -> CombatResult:
 	var actor := state.get_combatant(command.actor_id)
 	var target := state.get_combatant(target_id)
 	if target == null or not target.alive:
 		return CombatResult.already_dead(actor.id, target_id)
 	if target.is_player == actor.is_player:
 		return CombatResult.invalid_target(actor.id, target.id)
-	return CombatResult.capture_success(actor.id, target.id) if randf() < CAPTURE_CHANCE else CombatResult.capture_fail(actor.id, target.id)
-
+	var method: ItemData = item_database.get_item(command.item_index) if item_database != null else null
+	if method == null or not method.is_capture_method:
+		return CombatResult.invalid_action(actor.id, target.id, "unknown_capture_method")
+	var target_template := database.get_by_id(target.species_id)
+	if target_template == null:
+		return CombatResult.invalid_action(actor.id, target.id, "unknown_species")
+	var chance := capture_chance(method.capture_type, target_template.element_type)
+	return CombatResult.capture_success(actor.id, target.id) if randf() < chance else CombatResult.capture_fail(actor.id, target.id)
 
 static func resolve_flee() -> CombatResult:
 	return CombatResult.flee_success() if randf() < FLEE_CHANCE else CombatResult.flee_fail()

@@ -17,6 +17,8 @@ signal flee_confirmed
 ## Combatant under the target cursor. -1 = none (list closed / picked).
 signal target_hovered(target_id: int)
 
+signal capture_confirmed(item_index: int, target_id: int)
+
 enum Cmd { ATTACK, ITEM, FLEE }
 enum Mode { LOCKED, ICONS, DROPDOWN, TARGET }
 
@@ -218,8 +220,9 @@ func _open_menu(cmd: int) -> void:
 		Cmd.ITEM:
 			var rows: Array = []
 			for it in _items:
+				var kind := "capture" if it.get("capture", false) else "item"
 				rows.append({"cells": [it.name, it.effect],
-					"callback": _open_targets.bind("item", it.index)})
+					"callback": _open_targets.bind(kind, it.index)})
 			if rows.is_empty():
 				rows.append({"cells": ["Sem itens", ""], "enabled": false})
 			_menu = _build_list("", ["Nome", "Efeito"], rows, [180, 300], 0)
@@ -267,7 +270,7 @@ func _open_targets(kind: String, index: int) -> void:
 	_pending_kind = kind
 	_pending_index = index
 
-	var list: Array = _enemy_targets if kind == "attack" else _ally_targets
+	var list: Array = _ally_targets if kind == "item" else _enemy_targets
 	var rows: Array = []
 	for t in list:
 		rows.append({
@@ -302,10 +305,13 @@ func _confirm_target(target_id: int) -> void:
 	var kind := _pending_kind
 	var index := _pending_index
 	lock()                                          # closes lists + clears highlight
-	if kind == "attack":
-		attack_confirmed.emit(index, target_id)
-	else:
-		item_confirmed.emit(index, target_id)
+	match kind:
+		"attack":
+			attack_confirmed.emit(index, target_id)
+		"capture":
+			capture_confirmed.emit(index, target_id)
+		_:
+			item_confirmed.emit(index, target_id)
 
 
 var _target_ids: Array[int] = []                    # id of each selectable target row
