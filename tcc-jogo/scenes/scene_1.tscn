@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://DATABASE/Inventory/interactable_item.tscn" id="2_3xosi"]
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="3_cn2eb"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_lki8s"]
+[ext_resource type="PackedScene" uid="uid://dn5kkw48uiw21" path="res://EXPLORATION/wilderness_encounter.tscn" id="6_t6bmd"]
 
 [sub_resource type="Environment" id="Environment_3xosi"]
 
@@ -95,3 +96,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.487591)
 
 [node name="InteractableItem" parent="." unique_id=1606038511 instance=ExtResource("2_3xosi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6044545, 1.9073486e-06, -3.6319332)
+
+[node name="WildernessEncounter" parent="." unique_id=1096219808 instance=ExtResource("6_t6bmd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.725801, 0, -10.332844)
+polygon = PackedVector2Array(-30, -30, 30, -30, 30, 30, -30, 30)
+alchemons = Array[int]([2, 3])
