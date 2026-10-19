@@ -1,0 +1,93 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scenes/pc/pc.gd" id="1_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_case"]
+size = Vector3(0.3, 0.6, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="Mat_case"]
+albedo_color = Color(0.2, 0.2, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_monitor"]
+size = Vector3(0.9, 0.55, 0.06)
+
+[sub_resource type="StandardMaterial3D" id="Mat_screen"]
+albedo_color = Color(0.1, 0.9, 0.6, 1)
+emission_enabled = true
+emission = Color(0.1, 0.9, 0.6, 1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_stand"]
+size = Vector3(0.1, 0.2, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_keyboard"]
+size = Vector3(0.6, 0.03, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_desk"]
+size = Vector3(1.6, 0.08, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape_body"]
+size = Vector3(1.6, 1.0, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape_area"]
+size = Vector3(2.6, 2.0, 2.2)
+
+[sub_resource type="StandardMaterial3D" id="Mat_desk"]
+albedo_color = Color(0.45, 0.32, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_dark"]
+albedo_color = Color(0.08, 0.08, 0.1, 1)
+
+[node name="PC" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Body" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape_body")
+
+[node name="Mesh" type="Node3D" parent="Body"]
+
+[node name="Desk" type="MeshInstance3D" parent="Body/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("BoxMesh_desk")
+surface_material_override/0 = SubResource("Mat_desk")
+
+[node name="Case" type="MeshInstance3D" parent="Body/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 1.1, 0)
+mesh = SubResource("BoxMesh_case")
+surface_material_override/0 = SubResource("Mat_case")
+
+[node name="MonitorStand" type="MeshInstance3D" parent="Body/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.89, -0.15)
+mesh = SubResource("BoxMesh_stand")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="Monitor" type="MeshInstance3D" parent="Body/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 1.2, -0.15)
+mesh = SubResource("BoxMesh_monitor")
+surface_material_override/0 = SubResource("Mat_screen")
+
+[node name="Keyboard" type="MeshInstance3D" parent="Body/Mesh"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.81, 0.2)
+mesh = SubResource("BoxMesh_keyboard")
+surface_material_override/0 = SubResource("Mat_dark")
+
+[node name="InteractArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.6)
+shape = SubResource("BoxShape_area")
+
+[node name="Prompt" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+billboard = 1
+no_depth_test = true
+fixed_size = true
+pixel_size = 0.0015
+text = "[E] Use PC"
+font_size = 48
+outline_size = 12

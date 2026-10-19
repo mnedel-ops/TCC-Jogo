@@ -5,6 +5,7 @@
 [ext_resource type="Resource" uid="uid://fhcne48rwxjc" path="res://DATABASE/Inventory/Itens/MetaloideMethod.tres" id="3_ccscm"]
 [ext_resource type="Resource" uid="uid://cinfsi6tw4ff1" path="res://DATABASE/Inventory/Itens/AmetalMethod.tres" id="4_yun4j"]
 [ext_resource type="Resource" uid="uid://cvokrnrlvijd3" path="res://DATABASE/Inventory/Itens/MetalMethod.tres" id="5_qo03w"]
+[ext_resource type="PackedScene" path="res://scenes/pc/pc.tscn" id="6_yun4j"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_icno0"]
 size = Vector3(20, 0.5, 20)
@@ -74,3 +75,6 @@ item_data = ExtResource("4_yun4j")
 [node name="InteractableItem3" parent="." unique_id=1954754111 instance=ExtResource("2_vsrvg")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.3171983, 1.9073486e-06, -2.8360991)
 item_data = ExtResource("5_qo03w")
+
+[node name="PC" parent="." unique_id=1056453128 instance=ExtResource("6_yun4j")]
+transform = Transform3D(-0.0027575896, 0, 0.9999962, 0, 1, 0, -0.9999962, 0, -0.0027575896, -6.605629, 0, -0.5006399)
