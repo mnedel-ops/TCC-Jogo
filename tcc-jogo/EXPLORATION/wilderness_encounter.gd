@@ -2,6 +2,9 @@
 class_name WildernessEncounter
 extends Area3D
 
+@export_range(1, 100) var min_level: int = 2
+@export_range(1, 100) var max_level: int = 4
+
 ## Wilderness Encounter: bush area that can start a random fight.
 ## Check 1: chance that a fight happens. Check 2: which Alchemon from the list.
 ## Shape is per instance: edit `polygon` (and `height`) in the Inspector.
@@ -99,7 +102,8 @@ func _roll() -> void:
 		return
 	var species_id: int = alchemons[randi() % alchemons.size()]   # check 2: who
 	print("Wilderness Encounter: species ", species_id)
-	CombatSignal.enemy_node = null           # no NPC to move to the corner
+	CombatSignal.enemy_node = null
+	CombatSignal.enemy_level = randi_range(mini(min_level, max_level), maxi(min_level, max_level))
 	CombatSignal.combat_start.emit(species_id, -1)
 
 

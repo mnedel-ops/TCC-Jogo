@@ -10,6 +10,7 @@ extends Control
 @export var database: AlchemonDatabase
 @export var player_species_ids: Array[AlchemonInstance] = []
 @export var enemy_species_ids: Array[int] = []
+@export var enemy_level: int = -1
 
 ## BattlefieldSlot -> Node3D. Set by CombatSceneManager BEFORE add_child,
 ## because _ready() hands it to the balloons.
@@ -34,8 +35,7 @@ var _highlighted: Node3D = null
 
 
 func _ready() -> void:
-	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids)
-
+	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids, enemy_level)
 	if state.player_ids.is_empty():
 		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
 		ui.set_turn_text("Erro de configuracao - veja o console.")
@@ -64,6 +64,7 @@ func _ready() -> void:
 	commands.target_hovered.connect(_on_target_hovered)
 
 	_start_action_selection()
+
 
 
 func _name_of(id: int) -> String:

@@ -98,6 +98,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.487591)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6044545, 1.9073486e-06, -3.6319332)
 
 [node name="WildernessEncounter" parent="." unique_id=1096219808 instance=ExtResource("6_t6bmd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.725801, 0, -10.332844)
-polygon = PackedVector2Array(-30, -30, 30, -30, 30, 30, -30, 30)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.059639, 0, -11.552645)
+min_level = 3
+polygon = PackedVector2Array(-15, -15, 15, -15, 15, 15, -15, 15)
 alchemons = Array[int]([2, 3])

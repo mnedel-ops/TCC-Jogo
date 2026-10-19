@@ -4,8 +4,8 @@ extends RefCounted
 ## Constroi um CombatState inicial a partir do database + listas de species_id.
 ## Nao decide regra de combate (isso e CombatRules); so monta estado inicial.
 ## Tambem aloca slots iniciais no battlefield via BattlefieldRules.
-
-static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstance], enemy_species_ids: Array[int]) -> CombatState:
+const DEFAULT_ENEMY_LEVEL := 1
+static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstance], enemy_species_ids: Array[int], enemy_level: int = -1) -> CombatState:
 	var state := CombatState.new()
 	var next_instance_id := 0
 	var player_slot_index := 0
@@ -47,7 +47,7 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 			break
 
 		var c := CombatantState.new(next_instance_id, species_id, template.max_hp, false, slot, template.max_valence_electrons)
-		_seed_enemy_stats(c, template)
+		_seed_enemy_stats(c, template, enemy_level)
 		state.combatants[c.id] = c
 		state.enemy_ids.append(c.id)
 		BattlefieldRules.assign_combatant(state.battlefield, c.id, slot)
@@ -105,8 +105,8 @@ static func _seed_player_stats(combatant: CombatantState, template: AlchemonShee
 	if instance.mechanical_speed > 0: combatant.mechanical_speed = instance.mechanical_speed
 	if instance.action_energy > 0: combatant.action_energy = instance.action_energy
 
-static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet) -> void:
-	combatant.level = 1
+static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet, enemy_level: int = -1) -> void:
+	combatant.level = enemy_level if enemy_level >= 1 else DEFAULT_ENEMY_LEVEL
 	combatant.experience = 0
 	combatant.individual_value = 1
 	combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, combatant.individual_value, combatant.level)
