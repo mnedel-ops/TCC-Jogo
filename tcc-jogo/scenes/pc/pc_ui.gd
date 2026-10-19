@@ -317,13 +317,16 @@ func _refresh_alchemy() -> void:
 	for a in _stored:
 		_alch_rows.append({"kind": "mon", "ref": a, "tag": "Stored"})
 	_alch_rows.append({"kind": "craft"})
+	_alch_rows.append({"kind": "back"})
 	for i in _alch_rows.size():
 		var r: Dictionary = _alch_rows[i]
 		if r.kind == "mon":
 			var mark := "[x]" if _alch_picked.has(i) else "[ ]"
 			_alch_list.add_item("%s %s - %s" % [mark, r.tag, _name_of(r.ref)])
-		else:
+		elif r.kind == "craft":
 			_alch_list.add_item(">> Make Component (%d selected)" % _alch_picked.size())
+		else:
+			_alch_list.add_item("<< Back")
 	if not keep.is_empty():
 		_alch_list.select(mini(keep[0], _alch_list.item_count - 1))
 	elif _alch_list.item_count > 0:
@@ -340,6 +343,8 @@ func _refresh_stored() -> void:
 	for i in _stored.size():
 		_st_rows.append({"src": "stored", "idx": i})
 		_st_list.add_item("[Stored] " + _name_of(_stored[i]))
+	_st_rows.append({"src": "back", "idx": -1})
+	_st_list.add_item("<< Back")
 	_st_info.text = "Party: %d/%d   Stored: %d" % [_party.size(), max_party_size, _stored.size()]
 	if _st_list.item_count > 0:
 		_st_list.select(mini(keep[0] if not keep.is_empty() else 0, _st_list.item_count - 1))
@@ -359,6 +364,9 @@ func _alchemy_select() -> void:
 		else:
 			_alch_picked[i] = true
 		_alch_info.text = ""
+	elif row.kind == "back":
+		_go_list()
+		return
 	else:
 		if _alch_picked.is_empty():
 			_alch_info.text = "Select at least 1 Alchemon first."
@@ -379,6 +387,9 @@ func _stored_select() -> void:
 	if sel.is_empty():
 		return
 	var row: Dictionary = _st_rows[sel[0]]
+	if row.src == "back":
+		_go_list()
+		return
 	if row.src == "party":
 		if _party.size() <= 1:
 			_st_info.text = "Need at least 1 Alchemon in party."

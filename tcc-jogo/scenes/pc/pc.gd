@@ -45,9 +45,7 @@ func _on_body_entered(body: Node3D) -> void:
 
 
 func _on_body_exited(body: Node3D) -> void:
-	if body == _player:
-		if _is_open:
-			close_pc()
+	if body == _player and not _is_open:
 		_player = null
 		prompt.visible = false
 
@@ -80,12 +78,16 @@ func close_pc() -> void:
 	Input.mouse_mode = _saved_mouse_mode
 	if _player:
 		_lock_player(false)
-		prompt.visible = true
+		prompt.visible = interact_area.overlaps_body(_player)
 	closed.emit()
 
 
-## Freeze player. Uses player's set_input_locked(bool) if it has one,
-## else disables the whole player node (no move, no camera, no input).
+## Freeze player. Uses player's set_input_locked(bool) if it has one.
+## Else turn off processing + input on player and all children.
+## NOT process_mode DISABLED: that removes the body from physics space,
+## Area3D fires body_exited, PC closes instantly.
+var _saved_flags: Dictionary = {}
+
 func _lock_player(locked: bool) -> void:
 	if _player == null:
 		return
@@ -93,9 +95,35 @@ func _lock_player(locked: bool) -> void:
 		_player.set_input_locked(locked)
 		return
 	if locked:
-		_saved_process_mode = _player.process_mode
+		_saved_flags.clear()
 		if "velocity" in _player:
 			_player.velocity = Vector3.ZERO
-		_player.process_mode = Node.PROCESS_MODE_DISABLED
+		_freeze_tree(_player)
 	else:
-		_player.process_mode = _saved_process_mode
+		for n in _saved_flags:
+			if not is_instance_valid(n):
+				continue
+			var f: Dictionary = _saved_flags[n]
+			n.set_process(f.process)
+			n.set_physics_process(f.physics)
+			n.set_process_input(f.input)
+			n.set_process_unhandled_input(f.unhandled)
+			n.set_process_unhandled_key_input(f.key)
+		_saved_flags.clear()
+
+
+func _freeze_tree(n: Node) -> void:
+	_saved_flags[n] = {
+		"process": n.is_processing(),
+		"physics": n.is_physics_processing(),
+		"input": n.is_processing_input(),
+		"unhandled": n.is_processing_unhandled_input(),
+		"key": n.is_processing_unhandled_key_input(),
+	}
+	n.set_process(false)
+	n.set_physics_process(false)
+	n.set_process_input(false)
+	n.set_process_unhandled_input(false)
+	n.set_process_unhandled_key_input(false)
+	for c in n.get_children():
+		_freeze_tree(c)
