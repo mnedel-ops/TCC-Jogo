@@ -67,6 +67,7 @@ func setup(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondDat
 	_bond = bond
 	_db = database
 	_alch_picked.clear()
+	_purge_nulls()
 	_refresh_all()
 
 
@@ -93,7 +94,22 @@ func _stored() -> Array:
 	return _storage.instances if _storage != null else []
 
 
+## Empty slots in the .tres arrays (a deleted or broken sub-resource) show as
+## null. Remove them so the lists never touch a Nil instance.
+func _purge_nulls() -> void:
+	if _party_data != null and _party_data.party.has(null):
+		push_warning("PCUI: null entry in PlayerPartyData.party removed. Check PlayerCurrentAlchemon.tres.")
+		while _party_data.party.has(null):
+			_party_data.party.erase(null)
+	if _storage != null and _storage.instances.has(null):
+		push_warning("PCUI: null entry in CapturedStorage.instances removed. Check captured_storage.tres.")
+		while _storage.instances.has(null):
+			_storage.instances.erase(null)
+
+
 func _label_of(inst: AlchemonInstance) -> String:
+	if inst == null:
+		return "(empty)"
 	var n := inst.creature_name
 	if n == "" and _db != null:
 		var sheet := _db.get_by_id(inst.species_id)
@@ -102,6 +118,8 @@ func _label_of(inst: AlchemonInstance) -> String:
 
 
 func _short_name(inst: AlchemonInstance) -> String:
+	if inst == null:
+		return "(empty)"
 	var n := inst.creature_name
 	if n == "" and _db != null:
 		var sheet := _db.get_by_id(inst.species_id)
