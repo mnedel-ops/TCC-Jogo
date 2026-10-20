@@ -28,6 +28,8 @@ var item_database: ItemDatabase
 var commands: BattleCommands
 var _command_actor_id := -1
 var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
+## Component (bond) the player made at the PC. Set by CombatSceneManager BEFORE add_child.
+var player_bond: PlayerBondData
 ## BattlefieldSlot -> Node3D of that creature (mesh to highlight when targeted).
 ## Set by CombatSceneManager BEFORE add_child.
 var actor_nodes: Dictionary = {}
@@ -35,7 +37,7 @@ var _highlighted: Node3D = null
 
 
 func _ready() -> void:
-	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids, enemy_level)
+	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids, enemy_level, player_bond)
 	if state.player_ids.is_empty():
 		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
 		ui.set_turn_text("Erro de configuracao - veja o console.")
@@ -386,8 +388,9 @@ func _capture_was_attempted(result: CombatResult) -> bool:
 ## Copy this battle's captures into the persistent array. Drains, so no double add.
 func _sync_captures() -> void:
 	if captured_storage != null:
+		var lvl := enemy_level if enemy_level >= 1 else CombatStateFactory.DEFAULT_ENEMY_LEVEL
 		for species_id in state.captured_species_ids:
-			captured_storage.add(species_id)
+			captured_storage.add(species_id, database.get_by_id(species_id), lvl)
 	state.captured_species_ids.clear()
 
 

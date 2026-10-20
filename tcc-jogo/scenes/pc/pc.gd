@@ -10,6 +10,12 @@ signal closed
 @export var player_group: StringName = &"player"
 @export var ui_scene: PackedScene = preload("res://scenes/pc/pc_ui.tscn")
 
+## Real game data. Same .tres files the rest of the game uses.
+@export var party: PlayerPartyData = preload("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
+@export var storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")
+@export var bond: PlayerBondData = preload("res://DATABASE/Alchemons/player_bond.tres")
+@export var database: AlchemonDatabase = preload("res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres")
+
 @onready var interact_area: Area3D = $InteractArea
 @onready var prompt: Label3D = $Prompt
 
@@ -61,8 +67,8 @@ func open_pc() -> void:
 	if ui_scene:
 		_ui = ui_scene.instantiate()
 		get_tree().current_scene.add_child(_ui)
-		if _ui.has_method("setup"):
-			_ui.setup(_player)
+		_ui.setup(party, storage, bond, database)
+		_ui.party_changed.connect(func(): CombatSignal.party_changed.emit())
 		if _ui.has_signal("exit_requested"):
 			_ui.exit_requested.connect(close_pc)
 	opened.emit(_player)

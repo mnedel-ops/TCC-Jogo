@@ -5,7 +5,9 @@ extends RefCounted
 ## Nao decide regra de combate (isso e CombatRules); so monta estado inicial.
 ## Tambem aloca slots iniciais no battlefield via BattlefieldRules.
 const DEFAULT_ENEMY_LEVEL := 1
-static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstance], enemy_species_ids: Array[int], enemy_level: int = -1) -> CombatState:
+## player_bond = the Component the player made at the PC (null = none).
+## Player NEVER auto-bonds here. Enemies (NPC) do, automatically.
+static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstance], enemy_species_ids: Array[int], enemy_level: int = -1, player_bond: PlayerBondData = null) -> CombatState:
 	var state := CombatState.new()
 	var next_instance_id := 0
 	var player_slot_index := 0
@@ -54,17 +56,9 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		next_instance_id += 1
 		enemy_slot_index += 1
 
-# CombatStateFactory.build, logo antes do "return state":
-	if state.player_ids.size() == 2:
-		var p0 := state.get_combatant(state.player_ids[0])
-		var p1 := state.get_combatant(state.player_ids[1])
-		var sheet0 := database.get_by_id(p0.species_id)
-		var sheet1 := database.get_by_id(p1.species_id)
-		var kind := AlchemyStation.determine_bond_kind([sheet0, sheet1])
-		if kind != BondRules.NONE:
-			BondRules.apply_bond(kind, [p0, p1], [sheet0, sheet1])
-	
-	_try_bond(state, database, state.player_ids)
+	# Player: bond comes from the PC (PlayerBondData). No auto-bond.
+	_apply_player_bond(state, database, player_bond)
+	# NPC / enemies: automatic.
 	_try_bond(state, database, state.enemy_ids)
 	
 	for id in state.player_ids + state.enemy_ids:
@@ -75,6 +69,29 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 	
 	return state
 	
+
+## Applies the bond the player made at the PC. Skips (with warning) if the
+## data is stale instead of crashing the fight.
+static func _apply_player_bond(state: CombatState, database: AlchemonDatabase, bond: PlayerBondData) -> void:
+	if bond == null or not bond.is_active():
+		return
+	var parts: Array[CombatantState] = []
+	var sheets: Array[AlchemonSheet] = []
+	for i in bond.member_indices:
+		if i < 0 or i >= state.player_ids.size():
+			push_warning("PlayerBondData: member index %d not in party. Bond skipped." % i)
+			return
+		var c := state.get_combatant(state.player_ids[i])
+		var sheet := database.get_by_id(c.species_id)
+		if sheet == null:
+			return
+		parts.append(c)
+		sheets.append(sheet)
+	if AlchemyStation.determine_bond_kind(sheets) != bond.kind:
+		push_warning("PlayerBondData out of date (kind no longer valid). Bond skipped.")
+		return
+	BondRules.apply_bond(bond.kind, parts, sheets)
+
 
 static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array) -> void:
 	if ids.size() != 2:

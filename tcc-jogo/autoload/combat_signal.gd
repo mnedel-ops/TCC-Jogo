@@ -1,6 +1,8 @@
 extends Node
 signal combat_start(alchemonA: int, alchemonB: int)
 signal combat_ended
+## PC changed the party. FollowerManager respawns the followers.
+signal party_changed
 signal player_party(alchemonA:int, alchemonB: int)
 
 ## Enemy NPC that started the fight. Set BEFORE emitting combat_start.

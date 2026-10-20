@@ -4,30 +4,34 @@ extends CanvasLayer
 ##  1) Option list: Alchemy / Stored / Exit  (up/down to move)
 ##  2) Option menu: opens with "menu_interact". "ui_cancel" goes back.
 ## Every select inside menus also uses "menu_interact".
+##
+## Alchemy = make the Component (bond) the player carries into every fight.
+## Stored  = swap party <-> storage (instances keep level/XP/IV/HP).
 
 signal exit_requested
-## Player pick Alchemons + "Make Component" row. Hook your recipe logic here.
-signal craft_requested(selected: Array)
+signal bond_changed
+## Party order changed. PC forwards to CombatSignal.party_changed.
 signal party_changed
 
 @export var select_action: StringName = &"menu_interact"
 @export var back_action: StringName = &"ui_cancel"
-@export var party_property: StringName = &"party"
-@export var stored_property: StringName = &"stored_alchemons"
-@export var max_party_size := 6
+## Battlefield only has 2 player slots.
+@export var max_party_size := 2
 
 enum Level { LIST, OPTION }
 
 const OPTIONS := ["Alchemy", "Stored", "Exit"]
 const DESCRIPTIONS := {
-	"Alchemy": "Component manager.\nUse Alchemons from party and storage to make Components.",
+	"Alchemy": "Make the Component (bond).\nPick 2 Alchemons from party + storage.\nThe Component goes into every fight.",
 	"Stored": "Stored Alchemons.\nSwap captured Alchemons with your party.",
 	"Exit": "Close the PC.",
 }
 
-var _player: Node = null
-var _party: Array = []
-var _stored: Array = []
+var _party_data: PlayerPartyData
+var _storage: CapturedStorage
+var _bond: PlayerBondData
+var _db: AlchemonDatabase
+
 var _level := Level.LIST
 var _current_option := ""
 var _ready_to_input := false
@@ -37,27 +41,32 @@ var _pages: Dictionary = {}
 var _hint: Label
 
 # Alchemy
+var _alch_header: Label
 var _alch_list: ItemList
-var _alch_rows: Array = []        # {"kind": "mon"/"craft", "ref": Variant}
-var _alch_picked: Dictionary = {} # row index -> true
+var _alch_rows: Array = []   # {"kind": "mon"/"make"/"break"/"back", "inst": AlchemonInstance, "tag": String}
+var _alch_picked: Array[AlchemonInstance] = []
 var _alch_info: Label
 
 # Stored
 var _st_list: ItemList
-var _st_rows: Array = []          # {"src": "party"/"stored", "idx": int}
+var _st_rows: Array = []     # {"src": "party"/"stored"/"back", "inst": AlchemonInstance}
 var _st_info: Label
 
 # Exit
 var _exit_yes: Button
 var _exit_no: Button
 
-# Idle (description)
+# Idle
 var _idle_label: Label
 
 
-func setup(player: Node) -> void:
-	_player = player
-	_load_data()
+## Called by PCStation right after add_child.
+func setup(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, database: AlchemonDatabase) -> void:
+	_party_data = party
+	_storage = storage
+	_bond = bond
+	_db = database
+	_alch_picked.clear()
 	_refresh_all()
 
 
@@ -67,40 +76,54 @@ func _ready() -> void:
 		if not InputMap.has_action(a):
 			push_warning("PCUI: InputMap missing action '%s'" % a)
 	_build_ui()
-	if _party.is_empty() and _stored.is_empty():
-		_load_data()
-	_refresh_all()
 	_menu.select(0)
-	_on_menu_selected(0)
 	_go_list()
 	# Ignore input for 1 frame: the key that opened the PC must not select.
 	await get_tree().process_frame
 	_ready_to_input = true
 
 
-# ---------- data ----------
+# ---------- data helpers ----------
 
-func _load_data() -> void:
-	var p = _player.get(party_property) if _player else null
-	var s = _player.get(stored_property) if _player else null
-	if p is Array and s is Array:
-		_party = p
-		_stored = s
-	else:
-		push_warning("PCUI: player lacks '%s'/'%s'. Using demo data." % [party_property, stored_property])
-		_party = [{"name": "Flamling"}, {"name": "Aquaby"}]
-		_stored = [{"name": "Leafox"}, {"name": "Rockit"}, {"name": "Voltik"}]
+func _party() -> Array:
+	return _party_data.party if _party_data != null else []
 
 
-func _name_of(a) -> String:
-	if a is Dictionary:
-		return str(a.get("name", "???"))
-	if a is Object:
-		var n = a.get("name")
-		if n == null:
-			n = a.get("alchemon_name")
-		return str(n) if n != null else "???"
-	return str(a)
+func _stored() -> Array:
+	return _storage.instances if _storage != null else []
+
+
+func _label_of(inst: AlchemonInstance) -> String:
+	var n := inst.creature_name
+	if n == "" and _db != null:
+		var sheet := _db.get_by_id(inst.species_id)
+		n = sheet.creature_name if sheet != null else "???"
+	return "%s  Lv.%d" % [n, inst.level]
+
+
+func _short_name(inst: AlchemonInstance) -> String:
+	var n := inst.creature_name
+	if n == "" and _db != null:
+		var sheet := _db.get_by_id(inst.species_id)
+		n = sheet.creature_name if sheet != null else "???"
+	return n
+
+
+func _kind_label(kind: String) -> String:
+	match kind:
+		BondRules.MIXTURE: return "Mixture"
+		BondRules.COMPOUND: return "Compound"
+	return "none"
+
+
+func _bond_text() -> String:
+	if _bond == null or not _bond.is_active():
+		return "Current Component: none"
+	var names: Array[String] = []
+	for i in _bond.member_indices:
+		if i >= 0 and i < _party().size():
+			names.append(_short_name(_party()[i]))
+	return "Current Component: %s (%s)" % [_kind_label(_bond.kind), " + ".join(names)]
 
 
 # ---------- build ----------
@@ -175,14 +198,18 @@ func _build_idle_page() -> Control:
 
 func _build_alchemy_page() -> Control:
 	var page := VBoxContainer.new()
+	_alch_header = Label.new()
+	_alch_header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	page.add_child(_alch_header)
 	var h := Label.new()
-	h.text = "Alchemy - pick Alchemons to make a Component"
+	h.text = "Pick 2 Alchemons (party + storage), then Make Component"
 	page.add_child(h)
 	_alch_list = ItemList.new()
 	_alch_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_alch_list.item_activated.connect(func(_i): _alchemy_select())
 	page.add_child(_alch_list)
 	_alch_info = Label.new()
+	_alch_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_alch_info)
 	return page
 
@@ -190,13 +217,14 @@ func _build_alchemy_page() -> Control:
 func _build_stored_page() -> Control:
 	var page := VBoxContainer.new()
 	var h := Label.new()
-	h.text = "Stored - select to swap between Party and Stored"
+	h.text = "Stored - select to move between Party and Stored"
 	page.add_child(h)
 	_st_list = ItemList.new()
 	_st_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_st_list.item_activated.connect(func(_i): _stored_select())
 	page.add_child(_st_list)
 	_st_info = Label.new()
+	_st_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_st_info)
 	return page
 
@@ -312,40 +340,46 @@ func _refresh_alchemy() -> void:
 	var keep := _alch_list.get_selected_items()
 	_alch_list.clear()
 	_alch_rows.clear()
-	for a in _party:
-		_alch_rows.append({"kind": "mon", "ref": a, "tag": "Party"})
-	for a in _stored:
-		_alch_rows.append({"kind": "mon", "ref": a, "tag": "Stored"})
-	_alch_rows.append({"kind": "craft"})
+	_alch_header.text = _bond_text()
+
+	for inst in _party():
+		_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Party"})
+	for inst in _stored():
+		_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Stored"})
+	_alch_rows.append({"kind": "make"})
+	if _bond != null and _bond.is_active():
+		_alch_rows.append({"kind": "break"})
 	_alch_rows.append({"kind": "back"})
-	for i in _alch_rows.size():
-		var r: Dictionary = _alch_rows[i]
-		if r.kind == "mon":
-			var mark := "[x]" if _alch_picked.has(i) else "[ ]"
-			_alch_list.add_item("%s %s - %s" % [mark, r.tag, _name_of(r.ref)])
-		elif r.kind == "craft":
-			_alch_list.add_item(">> Make Component (%d selected)" % _alch_picked.size())
-		else:
-			_alch_list.add_item("<< Back")
-	if not keep.is_empty():
-		_alch_list.select(mini(keep[0], _alch_list.item_count - 1))
-	elif _alch_list.item_count > 0:
-		_alch_list.select(0)
+
+	for r in _alch_rows:
+		match r.kind:
+			"mon":
+				var mark := "[x]" if _alch_picked.has(r.inst) else "[ ]"
+				_alch_list.add_item("%s [%s] %s" % [mark, r.tag, _label_of(r.inst)])
+			"make":
+				_alch_list.add_item(">> Make Component (%d/2 selected)" % _alch_picked.size())
+			"break":
+				_alch_list.add_item("xx Break Component")
+			"back":
+				_alch_list.add_item("<< Back")
+
+	if _alch_list.item_count > 0:
+		_alch_list.select(mini(keep[0] if not keep.is_empty() else 0, _alch_list.item_count - 1))
 
 
 func _refresh_stored() -> void:
 	var keep := _st_list.get_selected_items()
 	_st_list.clear()
 	_st_rows.clear()
-	for i in _party.size():
-		_st_rows.append({"src": "party", "idx": i})
-		_st_list.add_item("[Party]  " + _name_of(_party[i]))
-	for i in _stored.size():
-		_st_rows.append({"src": "stored", "idx": i})
-		_st_list.add_item("[Stored] " + _name_of(_stored[i]))
-	_st_rows.append({"src": "back", "idx": -1})
+	for inst in _party():
+		_st_rows.append({"src": "party", "inst": inst})
+		_st_list.add_item("[Party]  " + _label_of(inst))
+	for inst in _stored():
+		_st_rows.append({"src": "stored", "inst": inst})
+		_st_list.add_item("[Stored] " + _label_of(inst))
+	_st_rows.append({"src": "back", "inst": null})
 	_st_list.add_item("<< Back")
-	_st_info.text = "Party: %d/%d   Stored: %d" % [_party.size(), max_party_size, _stored.size()]
+	_st_info.text = "Party: %d/%d   Stored: %d" % [_party().size(), max_party_size, _stored().size()]
 	if _st_list.item_count > 0:
 		_st_list.select(mini(keep[0] if not keep.is_empty() else 0, _st_list.item_count - 1))
 
@@ -356,30 +390,73 @@ func _alchemy_select() -> void:
 	var sel := _alch_list.get_selected_items()
 	if sel.is_empty():
 		return
-	var i: int = sel[0]
-	var row: Dictionary = _alch_rows[i]
-	if row.kind == "mon":
-		if _alch_picked.has(i):
-			_alch_picked.erase(i)
-		else:
-			_alch_picked[i] = true
-		_alch_info.text = ""
-	elif row.kind == "back":
-		_go_list()
-		return
-	else:
-		if _alch_picked.is_empty():
-			_alch_info.text = "Select at least 1 Alchemon first."
-		else:
-			var picked: Array = []
-			for k in _alch_picked:
-				picked.append(_alch_rows[k].ref)
-			if _player and _player.has_method("craft_component"):
-				_player.craft_component(picked)
-			craft_requested.emit(picked)
-			_alch_picked.clear()
-			_alch_info.text = "Component request sent."
+	var row: Dictionary = _alch_rows[sel[0]]
+	match row.kind:
+		"mon":
+			if _alch_picked.has(row.inst):
+				_alch_picked.erase(row.inst)
+				_alch_info.text = ""
+			elif _alch_picked.size() >= 2:
+				_alch_info.text = "Max 2. Unselect one first."
+			else:
+				_alch_picked.append(row.inst)
+				_alch_info.text = ""
+		"make":
+			_make_component()
+		"break":
+			_bond.clear()
+			_alch_info.text = "Component broken."
+			bond_changed.emit()
+		"back":
+			_go_list()
+			return
 	_refresh_all()
+
+
+## Validates the chosen pair with AlchemyStation. Valid -> the pair becomes the
+## party (the other Alchemons go to storage) and the bond is saved.
+func _make_component() -> void:
+	if _alch_picked.size() != 2:
+		_alch_info.text = "Select exactly 2 Alchemons."
+		return
+	if _db == null or _bond == null or _party_data == null or _storage == null:
+		_alch_info.text = "PC data missing (party / storage / bond / database)."
+		return
+
+	var sheets: Array[AlchemonSheet] = []
+	for inst in _alch_picked:
+		sheets.append(_db.get_by_id(inst.species_id))
+	if sheets.has(null):
+		_alch_info.text = "Unknown species in selection."
+		return
+
+	var kind := AlchemyStation.determine_bond_kind(sheets)
+	if kind == BondRules.NONE:
+		_alch_info.text = "Impossible bond. These two cannot form a Component."
+		return
+
+	# Keep party order stable: chosen ones in the order they appear now.
+	var chosen: Array[AlchemonInstance] = []
+	for r in _alch_rows:
+		if r.kind == "mon" and _alch_picked.has(r.inst):
+			chosen.append(r.inst)
+
+	# Old party members not chosen -> storage. Chosen from storage leave it.
+	for inst in _party_data.party.duplicate():
+		if not chosen.has(inst):
+			_storage.add_instance(inst)
+	for inst in chosen:
+		if _storage.instances.has(inst):
+			_storage.remove_instance(inst)
+	_party_data.party.clear()
+	for inst in chosen:
+		_party_data.party.append(inst)
+
+	_bond.set_bond(kind, [0, 1])
+	_alch_info.text = "Made: %s (%s + %s)" % [_kind_label(kind), _short_name(chosen[0]), _short_name(chosen[1])]
+	_alch_picked.clear()
+	party_changed.emit()
+	bond_changed.emit()
 
 
 func _stored_select() -> void:
@@ -390,20 +467,27 @@ func _stored_select() -> void:
 	if row.src == "back":
 		_go_list()
 		return
+
 	if row.src == "party":
-		if _party.size() <= 1:
+		if _party().size() <= 1:
 			_st_info.text = "Need at least 1 Alchemon in party."
 			return
-		var a = _party[row.idx]
-		_party.remove_at(row.idx)
-		_stored.append(a)
+		_party_data.party.erase(row.inst)
+		_storage.add_instance(row.inst)
 	else:
-		if _party.size() >= max_party_size:
-			_st_info.text = "Party FULL (%d/%d)" % [_party.size(), max_party_size]
+		if _party().size() >= max_party_size:
+			_st_info.text = "Party FULL (%d/%d). Send one to Stored first." % [_party().size(), max_party_size]
 			return
-		var b = _stored[row.idx]
-		_stored.remove_at(row.idx)
-		_party.append(b)
+		_storage.remove_instance(row.inst)
+		_party_data.party.append(row.inst)
+
+	# Party changed -> old Component is no longer valid.
+	var broke := _bond != null and _bond.is_active()
+	if broke:
+		_bond.clear()
+		bond_changed.emit()
 	_alch_picked.clear()
 	party_changed.emit()
 	_refresh_all()
+	if broke:
+		_st_info.text += "   (Component broken: party changed)"

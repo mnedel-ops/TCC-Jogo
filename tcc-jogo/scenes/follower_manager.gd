@@ -33,6 +33,7 @@ func _ready() -> void:
 		set_follower(m)
 	CombatSignal.combat_start.connect(_on_combat_start)
 	CombatSignal.combat_ended.connect(_on_combat_ended)
+	CombatSignal.party_changed.connect(refresh_followers)
 	
 
 
@@ -87,6 +88,16 @@ func set_follower(index: int):
 		if follow != null:
 			follow.set_follow_target(marker)
 	_followers.append(alchemonfollowerinstance)
+
+
+## Party changed at the PC: respawn followers to match PlayerPartyData.
+func refresh_followers() -> void:
+	for f in _followers:
+		if is_instance_valid(f):
+			f.queue_free()
+	_followers.clear()
+	for m in equipe_player.species_ids.size():
+		set_follower(m)
 
 
 func _on_combat_start(_a: int, _b: int) -> void:
