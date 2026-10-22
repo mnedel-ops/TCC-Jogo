@@ -44,6 +44,11 @@ static func compute_temperature_delta(level: int, power: int, attack: int) -> fl
 	return raw
 
 ## GDD 7.2, sem EV: floor(0.01 * (2*Base + IV) * Level) + 5
+## Max HP at a level. Level 1 = species base HP (sheet.max_hp). Each level adds
+## the growth the stat formula gives (same curve as the other stats).
+static func compute_max_hp(base_hp: int, individual_value: int, level: int) -> int:
+	return base_hp + compute_stat(base_hp, individual_value, level) - compute_stat(base_hp, individual_value, 1)
+
 static func compute_stat(base: int, individual_value: int, level: int) -> int:
 	var raw := 0.01 * (2.0 * base + individual_value) * level
 	return int(floor(raw)) + 5

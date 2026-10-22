@@ -337,7 +337,7 @@ func _add_pair(grid: GridContainer, key_text: String, value_text: String) -> voi
 func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 	_clear(_stats_grid)
 	# instance value if set (-1 = unset), else the GDD formula from the species base
-	var max_hp := inst.max_hp if inst.max_hp > 0 else s.max_hp
+	var max_hp := AlchemonFormulas.compute_max_hp(s.max_hp, inst.individual_value, inst.level)
 	var hp := inst.current_hp if inst.current_hp >= 0 else max_hp
 	var iv := inst.individual_value
 	var lvl := inst.level

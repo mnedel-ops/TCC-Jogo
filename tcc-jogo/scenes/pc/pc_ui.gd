@@ -161,11 +161,12 @@ func _stats_text(inst: AlchemonInstance) -> String:
 	var def := inst.defense if inst.defense > 0 else AlchemonFormulas.compute_stat(sheet.base_defense, iv, inst.level)
 	var spd := inst.mechanical_speed if inst.mechanical_speed > 0 else AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, inst.level)
 	var en := inst.action_energy if inst.action_energy > 0 else AlchemonFormulas.compute_stat(sheet.base_action_energy, iv, inst.level)
-	var hp := inst.current_hp if inst.current_hp > 0 else sheet.max_hp
+	var max_hp := AlchemonFormulas.compute_max_hp(sheet.max_hp, iv, inst.level)
+	var hp := inst.current_hp if inst.current_hp > 0 else max_hp
 
 	return "%s\nLv.%d   (%s)\n\nHP: %d/%d\nXP: %d/%d\nValence e-: %d\n\nAttack: %d\nDefense: %d\nMech. Speed: %d\nAction Energy: %d\nIV: %d" % [
 		n, inst.level, AlchemonType.type_name(sheet.element_type),
-		hp, sheet.max_hp,
+		hp, max_hp,
 		inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP,
 		sheet.max_valence_electrons,
 		atk, def, spd, en, iv]

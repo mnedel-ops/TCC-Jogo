@@ -444,6 +444,9 @@ func _sync_party_state() -> void:
 		if c != null and persistent_alchemon != null:
 			persistent_alchemon.current_hp = maxi(c.hp, 0)
 			persistent_alchemon.level = c.level
+			var sheet := database.get_by_id(c.species_id)
+			if sheet != null:   # base max HP for this level (no temporary bond bonus)
+				persistent_alchemon.max_hp = AlchemonFormulas.compute_max_hp(sheet.max_hp, c.individual_value, c.level)
 			persistent_alchemon.defense = c.defense
 			persistent_alchemon.mechanical_speed = c.mechanical_speed
 			persistent_alchemon.action_energy = c.action_energy

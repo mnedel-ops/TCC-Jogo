@@ -280,8 +280,17 @@ func _refresh_cursor() -> void:
 			Color(GOLD, 0.18) if on else Color(0, 0, 0, 0),
 			GOLD if on else Color(0, 0, 0, 0), 6))
 	if _cursor < _rows.size():
-		_scroll.ensure_control_visible.call_deferred(_rows[_cursor])
+		_scroll_to_cursor.call_deferred()
 	_show_detail()
+
+
+## Deferred: rows may be rebuilt/freed before this runs. Re-check at call time.
+func _scroll_to_cursor() -> void:
+	if _cursor < 0 or _cursor >= _rows.size():
+		return
+	var row := _rows[_cursor]
+	if is_instance_valid(row) and _scroll.is_ancestor_of(row):
+		_scroll.ensure_control_visible(row)
 
 
 func _move_cursor(delta: int) -> void:

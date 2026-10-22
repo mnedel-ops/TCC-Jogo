@@ -24,8 +24,9 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 			push_warning("Too many players for battlefield (max 2 slots)")
 			break
 # If current_hp hasn't been set yet (or was defaulted to -1), initialize it to max_hp
+		var lvl_max_hp := AlchemonFormulas.compute_max_hp(template.max_hp, instance.individual_value, instance.level)
 		if instance.current_hp <= 0:
-			instance.current_hp = template.max_hp
+			instance.current_hp = lvl_max_hp
 			
 		var c := CombatantState.new(next_instance_id, instance.species_id, instance.current_hp, true, slot, template.max_valence_electrons)
 		
@@ -108,7 +109,8 @@ static func _seed_player_stats(combatant: CombatantState, template: AlchemonShee
 	combatant.experience = instance.experience
 	combatant.individual_value = instance.individual_value
 	
-	combatant.max_hp = template.max_hp
+	combatant.max_hp = AlchemonFormulas.compute_max_hp(template.max_hp, instance.individual_value, instance.level)
+	combatant.hp = mini(combatant.hp, combatant.max_hp)
 	combatant.temperature = template.temperature
 
 	# _seed_player_stats
@@ -126,6 +128,8 @@ static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet
 	combatant.level = enemy_level if enemy_level >= 1 else DEFAULT_ENEMY_LEVEL
 	combatant.experience = 0
 	combatant.individual_value = 1
+	combatant.max_hp = AlchemonFormulas.compute_max_hp(template.max_hp, combatant.individual_value, combatant.level)
+	combatant.hp = combatant.max_hp
 	combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, combatant.individual_value, combatant.level)
 	combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, combatant.individual_value, combatant.level)
 	combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, combatant.individual_value, combatant.level)
