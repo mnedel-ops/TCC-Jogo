@@ -19,6 +19,12 @@ signal target_hovered(target_id: int)
 
 signal capture_confirmed(item_index: int, target_id: int)
 
+## Shown when the player tries to capture in a trainer battle.
+const CAPTURE_BLOCKED_TEXT := "You can't capture another trainer's Alchemon!"
+
+## true = trainer battle. Capture items open no target list, show a notice instead.
+var capture_blocked := false
+
 enum Cmd { ATTACK, ITEM, FLEE }
 enum Mode { LOCKED, ICONS, DROPDOWN, TARGET }
 
@@ -220,9 +226,12 @@ func _open_menu(cmd: int) -> void:
 		Cmd.ITEM:
 			var rows: Array = []
 			for it in _items:
-				var kind := "capture" if it.get("capture", false) else "item"
-				rows.append({"cells": [it.name, it.effect],
-					"callback": _open_targets.bind(kind, it.index)})
+				var is_capture: bool = it.get("capture", false)
+				var kind := "capture" if is_capture else "item"
+				var cb: Callable = _open_targets.bind(kind, it.index)
+				if is_capture and capture_blocked:
+					cb = _show_notice.bind(CAPTURE_BLOCKED_TEXT)
+				rows.append({"cells": [it.name, it.effect], "callback": cb})
 			if rows.is_empty():
 				rows.append({"cells": ["Sem itens", ""], "enabled": false})
 			_menu = _build_list("", ["Nome", "Efeito"], rows, [180, 300], 0)
@@ -260,6 +269,40 @@ func _activate_menu() -> void:
 func _pick_flee() -> void:
 	lock()
 	flee_confirmed.emit()
+
+
+# ------------------------------------------------------------------- notice
+
+var _notice: PanelContainer
+var _notice_tween: Tween
+
+## Small pop-up at top center of the screen. Fades out by itself.
+func _show_notice(text: String) -> void:
+	if _notice != null and is_instance_valid(_notice):
+		_notice.queue_free()
+	if _notice_tween != null and _notice_tween.is_valid():
+		_notice_tween.kill()
+
+	_notice = PanelContainer.new()
+	_notice.top_level = true                     # position in screen coords, ignores bar
+	_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_notice.z_index = 100
+	_notice.add_theme_stylebox_override("panel", _box(Color(0.35, 0.05, 0.05, 0.95), Color(1, 0.4, 0.4), 8))
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_color_override("font_color", Color(1, 0.9, 0.9))
+	_notice.add_child(lbl)
+	add_child(_notice)
+
+	await get_tree().process_frame               # wait for size
+	if _notice == null or not is_instance_valid(_notice):
+		return
+	_notice.position = Vector2((get_viewport_rect().size.x - _notice.size.x) * 0.5, 24.0)
+
+	_notice_tween = create_tween()
+	_notice_tween.tween_interval(1.8)
+	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 0.4)
+	_notice_tween.tween_callback(_notice.queue_free)
 
 
 # ------------------------------------------------------ level 1: target dropdown

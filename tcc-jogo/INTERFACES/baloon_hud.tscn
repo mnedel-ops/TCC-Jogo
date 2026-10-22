@@ -27,4 +27,3 @@ layout_mode = 2
 
 [node name="ValenceEnergy" type="ProgressBar" parent="PanelContainer/VBoxContainer" unique_id=162079631]
 layout_mode = 2
-fill_mode = 1

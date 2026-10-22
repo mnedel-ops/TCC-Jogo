@@ -14,3 +14,7 @@ var enemy_level: int = -1
 ## true from combat_start until characters are back home. NPCs must not start
 ## a fight while true (they leave/enter their combat area when moved).
 var in_combat: bool = false
+## true = fight against another trainer's (NPC) Alchemons: no capturing.
+## Set BEFORE emitting combat_start. Wild encounters set false. Consumed by
+## CombatSceneManager (reset to false after reading).
+var is_trainer_battle: bool = false

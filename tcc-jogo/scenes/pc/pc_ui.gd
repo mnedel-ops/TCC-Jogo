@@ -51,6 +51,8 @@ var _alch_info: Label
 var _st_list: ItemList
 var _st_rows: Array = []     # {"src": "party"/"stored"/"back", "inst": AlchemonInstance}
 var _st_info: Label
+var _st_stats: Label
+var _alch_stats: Label
 
 # Exit
 var _exit_yes: Button
@@ -144,6 +146,63 @@ func _bond_text() -> String:
 	return "Current Component: %s (%s)" % [_kind_label(_bond.kind), " + ".join(names)]
 
 
+## Stat sheet for one instance. Same numbers combat uses (CombatStateFactory):
+## stats from formula, instance overrides win when > 0.
+func _stats_text(inst: AlchemonInstance) -> String:
+	if inst == null:
+		return ""
+	var sheet: AlchemonSheet = _db.get_by_id(inst.species_id) if _db != null else null
+	var n := _short_name(inst)
+	if sheet == null:
+		return "%s\nLv.%d\n(no species data)" % [n, inst.level]
+
+	var iv := inst.individual_value
+	var atk := AlchemonFormulas.compute_stat(sheet.base_attack, iv, inst.level)
+	var def := inst.defense if inst.defense > 0 else AlchemonFormulas.compute_stat(sheet.base_defense, iv, inst.level)
+	var spd := inst.mechanical_speed if inst.mechanical_speed > 0 else AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, inst.level)
+	var en := inst.action_energy if inst.action_energy > 0 else AlchemonFormulas.compute_stat(sheet.base_action_energy, iv, inst.level)
+	var hp := inst.current_hp if inst.current_hp > 0 else sheet.max_hp
+
+	return "%s\nLv.%d   (%s)\n\nHP: %d/%d\nXP: %d/%d\nValence e-: %d\n\nAttack: %d\nDefense: %d\nMech. Speed: %d\nAction Energy: %d\nIV: %d" % [
+		n, inst.level, AlchemonType.type_name(sheet.element_type),
+		hp, sheet.max_hp,
+		inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP,
+		sheet.max_valence_electrons,
+		atk, def, spd, en, iv]
+
+
+func _make_stats_label() -> Label:
+	var l := Label.new()
+	l.custom_minimum_size = Vector2(230, 0)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	return l
+
+
+func _stats_panel(l: Label) -> PanelContainer:
+	var pc := PanelContainer.new()
+	pc.add_child(l)
+	return pc
+
+
+func _update_stats(list: ItemList, rows: Array, label: Label, inst_key := "inst") -> void:
+	if list == null or label == null:
+		return
+	var sel := list.get_selected_items()
+	if sel.is_empty() or sel[0] >= rows.size():
+		label.text = ""
+		return
+	var row: Dictionary = rows[sel[0]]
+	label.text = _stats_text(row.get(inst_key)) if row.get(inst_key) != null else ""
+
+
+func _on_st_selected(_i: int) -> void:
+	_update_stats(_st_list, _st_rows, _st_stats)
+
+
+func _on_alch_selected(_i: int) -> void:
+	_update_stats(_alch_list, _alch_rows, _alch_stats)
+
+
 # ---------- build ----------
 
 func _build_ui() -> void:
@@ -225,7 +284,15 @@ func _build_alchemy_page() -> Control:
 	_alch_list = ItemList.new()
 	_alch_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_alch_list.item_activated.connect(func(_i): _alchemy_select())
-	page.add_child(_alch_list)
+	_alch_list.item_selected.connect(_on_alch_selected)
+	_alch_stats = _make_stats_label()
+	var arow := HBoxContainer.new()
+	arow.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	arow.add_theme_constant_override("separation", 12)
+	page.add_child(arow)
+	arow.add_child(_alch_list)
+	_alch_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	arow.add_child(_stats_panel(_alch_stats))
 	_alch_info = Label.new()
 	_alch_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_alch_info)
@@ -240,7 +307,15 @@ func _build_stored_page() -> Control:
 	_st_list = ItemList.new()
 	_st_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_st_list.item_activated.connect(func(_i): _stored_select())
-	page.add_child(_st_list)
+	_st_list.item_selected.connect(_on_st_selected)
+	_st_stats = _make_stats_label()
+	var srow := HBoxContainer.new()
+	srow.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	srow.add_theme_constant_override("separation", 12)
+	page.add_child(srow)
+	srow.add_child(_st_list)
+	_st_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	srow.add_child(_stats_panel(_st_stats))
 	_st_info = Label.new()
 	_st_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_st_info)
@@ -383,6 +458,7 @@ func _refresh_alchemy() -> void:
 
 	if _alch_list.item_count > 0:
 		_alch_list.select(mini(keep[0] if not keep.is_empty() else 0, _alch_list.item_count - 1))
+	_update_stats(_alch_list, _alch_rows, _alch_stats)
 
 
 func _refresh_stored() -> void:
@@ -400,6 +476,7 @@ func _refresh_stored() -> void:
 	_st_info.text = "Party: %d/%d   Stored: %d" % [_party().size(), max_party_size, _stored().size()]
 	if _st_list.item_count > 0:
 		_st_list.select(mini(keep[0] if not keep.is_empty() else 0, _st_list.item_count - 1))
+	_update_stats(_st_list, _st_rows, _st_stats)
 
 
 # ---------- actions ----------

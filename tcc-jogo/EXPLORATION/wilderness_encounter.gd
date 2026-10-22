@@ -103,6 +103,7 @@ func _roll() -> void:
 	var species_id: int = alchemons[randi() % alchemons.size()]   # check 2: who
 	print("Wilderness Encounter: species ", species_id)
 	CombatSignal.enemy_node = null
+	CombatSignal.is_trainer_battle = false
 	CombatSignal.enemy_level = randi_range(mini(min_level, max_level), maxi(min_level, max_level))
 	CombatSignal.combat_start.emit(species_id, -1)
 

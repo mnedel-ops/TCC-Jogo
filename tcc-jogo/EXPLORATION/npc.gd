@@ -53,6 +53,7 @@ func _on_combat_area_entered(area: Area3D) -> void:
 
 		CombatSignal.enemy_node = self
 		CombatSignal.enemy_level = alchemon_level
+		CombatSignal.is_trainer_battle = true
 		CombatSignal.combat_start.emit(alchemon1, alchemon2)
 		
 func _on_combat_area_exited(area: Area3D) -> void: #nao acho que precise deste

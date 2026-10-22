@@ -1,0 +1,369 @@
+diff --git a/tcc-jogo/COMBAT/combat_controller_states.gd b/tcc-jogo/COMBAT/combat_controller_states.gd
+index 791f6ac..b967292 100644
+--- a/tcc-jogo/COMBAT/combat_controller_states.gd
++++ b/tcc-jogo/COMBAT/combat_controller_states.gd
+@@ -28,6 +28,8 @@ var item_database: ItemDatabase
+ var commands: BattleCommands
+ var _command_actor_id := -1
+ var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
++## true = fighting another trainer's Alchemons. Capture is blocked. Set by CombatSceneManager BEFORE add_child.
++var is_trainer_battle := false
+ ## Component (bond) the player made at the PC. Set by CombatSceneManager BEFORE add_child.
+ var player_bond: PlayerBondData
+ ## BattlefieldSlot -> Node3D of that creature (mesh to highlight when targeted).
+@@ -59,6 +61,7 @@ func _ready() -> void:
+ 	ui.position.y = COMMANDS_AREA_HEIGHT
+ 	commands = BattleCommands.new()                          # 1. create
+ 	add_child(commands)                                      # 2. add to tree
++	commands.capture_blocked = is_trainer_battle
+ 	commands.attack_confirmed.connect(_on_command_attack)    # 3. connect
+ 	commands.item_confirmed.connect(_on_command_item)
+ 	commands.capture_confirmed.connect(_on_command_capture)
+@@ -235,6 +238,10 @@ func _on_command_attack(attack_index: int, target_id: int) -> void:
+ 	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
+ 
+ func _on_command_capture(item_index: int, target_id: int) -> void:
++	if is_trainer_battle:   # backup: BattleCommands already blocks this
++		ui.log_message(BattleCommands.CAPTURE_BLOCKED_TEXT)
++		_prompt_action_for_current()
++		return
+ 	_confirm_action(_command_actor_id, "capture", target_id, -1, item_index)
+ 
+ func _on_command_item(item_index: int, target_id: int) -> void:
+diff --git a/tcc-jogo/EXPLORATION/npc.gd b/tcc-jogo/EXPLORATION/npc.gd
+index 2f50b38..10f568d 100644
+--- a/tcc-jogo/EXPLORATION/npc.gd
++++ b/tcc-jogo/EXPLORATION/npc.gd
+@@ -53,6 +53,7 @@ func _on_combat_area_entered(area: Area3D) -> void:
+ 
+ 		CombatSignal.enemy_node = self
+ 		CombatSignal.enemy_level = alchemon_level
++		CombatSignal.is_trainer_battle = true
+ 		CombatSignal.combat_start.emit(alchemon1, alchemon2)
+ 		
+ func _on_combat_area_exited(area: Area3D) -> void: #nao acho que precise deste
+diff --git a/tcc-jogo/EXPLORATION/wilderness_encounter.gd b/tcc-jogo/EXPLORATION/wilderness_encounter.gd
+index 6edbce1..d76e99d 100644
+--- a/tcc-jogo/EXPLORATION/wilderness_encounter.gd
++++ b/tcc-jogo/EXPLORATION/wilderness_encounter.gd
+@@ -103,6 +103,7 @@ func _roll() -> void:
+ 	var species_id: int = alchemons[randi() % alchemons.size()]   # check 2: who
+ 	print("Wilderness Encounter: species ", species_id)
+ 	CombatSignal.enemy_node = null
++	CombatSignal.is_trainer_battle = false
+ 	CombatSignal.enemy_level = randi_range(mini(min_level, max_level), maxi(min_level, max_level))
+ 	CombatSignal.combat_start.emit(species_id, -1)
+ 
+diff --git a/tcc-jogo/INTERFACES/baloon_hud.gd b/tcc-jogo/INTERFACES/baloon_hud.gd
+index 08bf979..68a9ecb 100644
+--- a/tcc-jogo/INTERFACES/baloon_hud.gd
++++ b/tcc-jogo/INTERFACES/baloon_hud.gd
+@@ -5,25 +5,63 @@ extends Control
+ var target: Node3D
+ var _hidden_by_state := false
+ 
++const HP_COLOR := Color(0.25, 0.8, 0.3)       # green
++const ENERGY_COLOR := Color(0.25, 0.55, 1.0)  # blue
++const BAR_HEIGHT := 6.0                       # thin bars
++const TEXT_SIZE := 12
++
+ @onready var panel: PanelContainer = $PanelContainer
+ @onready var name_label: Label = $PanelContainer/VBoxContainer/Name
+ @onready var hp_bar: ProgressBar = $PanelContainer/VBoxContainer/HP
+ @onready var energy_bar: ProgressBar = $PanelContainer/VBoxContainer/ValenceEnergy
+ 
+-func bind(p_target: Node3D) -> void:
+-	target = p_target
++var _hp_label: Label
++var _energy_label: Label
++
++
++func _ready() -> void:
++	_hp_label = _setup_bar(hp_bar, HP_COLOR)
++	_energy_label = _setup_bar(energy_bar, ENERGY_COLOR)
++
++
++## Thin colored bar + a "HP 2/3" style label right above it. No percentage text.
++func _setup_bar(bar: ProgressBar, color: Color) -> Label:
++	bar.show_percentage = false
++	bar.fill_mode = ProgressBar.FILL_BEGIN_TO_END
++	bar.custom_minimum_size.y = BAR_HEIGHT
++
++	var fill := StyleBoxFlat.new()
++	fill.bg_color = color
++	var back := StyleBoxFlat.new()
++	back.bg_color = Color(0.1, 0.1, 0.12, 0.85)
++	bar.add_theme_stylebox_override("fill", fill)
++	bar.add_theme_stylebox_override("background", back)
++
++	var lbl := Label.new()
++	lbl.add_theme_font_size_override("font_size", TEXT_SIZE)
++	lbl.add_theme_color_override("font_color", color.lightened(0.35))
++	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
++	var box := bar.get_parent()
++	box.add_child(lbl)
++	box.move_child(lbl, bar.get_index())          # label above its bar
++	return lbl
++
+ 
+ func update_entry(e: Dictionary) -> void:
+ 	name_label.text = "%s Lv%d" % [e.name, e.level]
+ 	hp_bar.max_value = e.max_hp
+ 	energy_bar.max_value = e.max_energy
++	_hp_label.text = "HP %d/%d" % [e.hp, e.max_hp]
++	_energy_label.text = "Energia %d/%d" % [e.energy, e.max_energy]
+ 	_tween_bar(hp_bar, e.hp)
+ 	_tween_bar(energy_bar, e.energy)
+ 	_hidden_by_state = not e.visible   # dead / cation
+ 
++
+ func _tween_bar(bar: ProgressBar, value: float) -> void:
+ 	create_tween().tween_property(bar, "value", value, 0.25)
+ 
++
+ func _process(_delta: float) -> void:
+ 	var cam := get_viewport().get_camera_3d()
+ 	if target == null or cam == null:
+diff --git a/tcc-jogo/INTERFACES/baloon_hud.tscn b/tcc-jogo/INTERFACES/baloon_hud.tscn
+index bb93d98..9466588 100644
+--- a/tcc-jogo/INTERFACES/baloon_hud.tscn
++++ b/tcc-jogo/INTERFACES/baloon_hud.tscn
+@@ -27,4 +27,3 @@ layout_mode = 2
+ 
+ [node name="ValenceEnergy" type="ProgressBar" parent="PanelContainer/VBoxContainer" unique_id=162079631]
+ layout_mode = 2
+-fill_mode = 1
+diff --git a/tcc-jogo/INTERFACES/battle_commands.gd b/tcc-jogo/INTERFACES/battle_commands.gd
+index b081c4d..7a5fed0 100644
+--- a/tcc-jogo/INTERFACES/battle_commands.gd
++++ b/tcc-jogo/INTERFACES/battle_commands.gd
+@@ -19,6 +19,12 @@ signal target_hovered(target_id: int)
+ 
+ signal capture_confirmed(item_index: int, target_id: int)
+ 
++## Shown when the player tries to capture in a trainer battle.
++const CAPTURE_BLOCKED_TEXT := "You can't capture another trainer's Alchemon!"
++
++## true = trainer battle. Capture items open no target list, show a notice instead.
++var capture_blocked := false
++
+ enum Cmd { ATTACK, ITEM, FLEE }
+ enum Mode { LOCKED, ICONS, DROPDOWN, TARGET }
+ 
+@@ -220,9 +226,12 @@ func _open_menu(cmd: int) -> void:
+ 		Cmd.ITEM:
+ 			var rows: Array = []
+ 			for it in _items:
+-				var kind := "capture" if it.get("capture", false) else "item"
+-				rows.append({"cells": [it.name, it.effect],
+-					"callback": _open_targets.bind(kind, it.index)})
++				var is_capture: bool = it.get("capture", false)
++				var kind := "capture" if is_capture else "item"
++				var cb: Callable = _open_targets.bind(kind, it.index)
++				if is_capture and capture_blocked:
++					cb = _show_notice.bind(CAPTURE_BLOCKED_TEXT)
++				rows.append({"cells": [it.name, it.effect], "callback": cb})
+ 			if rows.is_empty():
+ 				rows.append({"cells": ["Sem itens", ""], "enabled": false})
+ 			_menu = _build_list("", ["Nome", "Efeito"], rows, [180, 300], 0)
+@@ -262,6 +271,40 @@ func _pick_flee() -> void:
+ 	flee_confirmed.emit()
+ 
+ 
++# ------------------------------------------------------------------- notice
++
++var _notice: PanelContainer
++var _notice_tween: Tween
++
++## Small pop-up at top center of the screen. Fades out by itself.
++func _show_notice(text: String) -> void:
++	if _notice != null and is_instance_valid(_notice):
++		_notice.queue_free()
++	if _notice_tween != null and _notice_tween.is_valid():
++		_notice_tween.kill()
++
++	_notice = PanelContainer.new()
++	_notice.top_level = true                     # position in screen coords, ignores bar
++	_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
++	_notice.z_index = 100
++	_notice.add_theme_stylebox_override("panel", _box(Color(0.35, 0.05, 0.05, 0.95), Color(1, 0.4, 0.4), 8))
++	var lbl := Label.new()
++	lbl.text = text
++	lbl.add_theme_color_override("font_color", Color(1, 0.9, 0.9))
++	_notice.add_child(lbl)
++	add_child(_notice)
++
++	await get_tree().process_frame               # wait for size
++	if _notice == null or not is_instance_valid(_notice):
++		return
++	_notice.position = Vector2((get_viewport_rect().size.x - _notice.size.x) * 0.5, 24.0)
++
++	_notice_tween = create_tween()
++	_notice_tween.tween_interval(1.8)
++	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 0.4)
++	_notice_tween.tween_callback(_notice.queue_free)
++
++
+ # ------------------------------------------------------ level 1: target dropdown
+ 
+ ## Opens to the right of the main dropdown, top aligned with the chosen row.
+diff --git a/tcc-jogo/autoload/combat_signal.gd b/tcc-jogo/autoload/combat_signal.gd
+index 49d64d5..c87645d 100644
+--- a/tcc-jogo/autoload/combat_signal.gd
++++ b/tcc-jogo/autoload/combat_signal.gd
+@@ -14,3 +14,7 @@ var enemy_level: int = -1
+ ## true from combat_start until characters are back home. NPCs must not start
+ ## a fight while true (they leave/enter their combat area when moved).
+ var in_combat: bool = false
++## true = fight against another trainer's (NPC) Alchemons: no capturing.
++## Set BEFORE emitting combat_start. Wild encounters set false. Consumed by
++## CombatSceneManager (reset to false after reading).
++var is_trainer_battle: bool = false
+diff --git a/tcc-jogo/combat_scene_manager.gd b/tcc-jogo/combat_scene_manager.gd
+index e690699..0f69687 100644
+--- a/tcc-jogo/combat_scene_manager.gd
++++ b/tcc-jogo/combat_scene_manager.gd
+@@ -44,6 +44,8 @@ func _on_combat_start(index: int, id2: int) -> void:
+ 	CombatSignal.enemy_node = null
+ 	var enemy_level := CombatSignal.enemy_level
+ 	CombatSignal.enemy_level = -1   # consume, no stale value next fight
++	var is_trainer := CombatSignal.is_trainer_battle
++	CombatSignal.is_trainer_battle = false   # consume too
+ 	# Anchors = offsets from the battle center (midpoint player <-> enemy),
+ 	# so the fight always happens on screen, wherever it started.
+ 	anchors_root.global_position = _get_battle_center()
+@@ -53,6 +55,7 @@ func _on_combat_start(index: int, id2: int) -> void:
+ 	var enemy_ids := _get_enemy_species_ids(index, id2)
+ 	combatScenes.enemy_species_ids = enemy_ids
+ 	combatScenes.enemy_level = enemy_level
++	combatScenes.is_trainer_battle = is_trainer
+ 	combatScenes.inventory = inventory
+ 	combatScenes.item_database = item_database
+ 	combatScenes.captured_storage = captured_storage
+diff --git a/tcc-jogo/scenes/pc/pc_ui.gd b/tcc-jogo/scenes/pc/pc_ui.gd
+index 43691a3..912717f 100644
+--- a/tcc-jogo/scenes/pc/pc_ui.gd
++++ b/tcc-jogo/scenes/pc/pc_ui.gd
+@@ -51,6 +51,8 @@ var _alch_info: Label
+ var _st_list: ItemList
+ var _st_rows: Array = []     # {"src": "party"/"stored"/"back", "inst": AlchemonInstance}
+ var _st_info: Label
++var _st_stats: Label
++var _alch_stats: Label
+ 
+ # Exit
+ var _exit_yes: Button
+@@ -144,6 +146,63 @@ func _bond_text() -> String:
+ 	return "Current Component: %s (%s)" % [_kind_label(_bond.kind), " + ".join(names)]
+ 
+ 
++## Stat sheet for one instance. Same numbers combat uses (CombatStateFactory):
++## stats from formula, instance overrides win when > 0.
++func _stats_text(inst: AlchemonInstance) -> String:
++	if inst == null:
++		return ""
++	var sheet: AlchemonSheet = _db.get_by_id(inst.species_id) if _db != null else null
++	var n := _short_name(inst)
++	if sheet == null:
++		return "%s\nLv.%d\n(no species data)" % [n, inst.level]
++
++	var iv := inst.individual_value
++	var atk := AlchemonFormulas.compute_stat(sheet.base_attack, iv, inst.level)
++	var def := inst.defense if inst.defense > 0 else AlchemonFormulas.compute_stat(sheet.base_defense, iv, inst.level)
++	var spd := inst.mechanical_speed if inst.mechanical_speed > 0 else AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, inst.level)
++	var en := inst.action_energy if inst.action_energy > 0 else AlchemonFormulas.compute_stat(sheet.base_action_energy, iv, inst.level)
++	var hp := inst.current_hp if inst.current_hp > 0 else sheet.max_hp
++
++	return "%s\nLv.%d   (%s)\n\nHP: %d/%d\nXP: %d/%d\nValence e-: %d\n\nAttack: %d\nDefense: %d\nMech. Speed: %d\nAction Energy: %d\nIV: %d" % [
++		n, inst.level, AlchemonType.type_name(sheet.element_type),
++		hp, sheet.max_hp,
++		inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP,
++		sheet.max_valence_electrons,
++		atk, def, spd, en, iv]
++
++
++func _make_stats_label() -> Label:
++	var l := Label.new()
++	l.custom_minimum_size = Vector2(230, 0)
++	l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
++	return l
++
++
++func _stats_panel(l: Label) -> PanelContainer:
++	var pc := PanelContainer.new()
++	pc.add_child(l)
++	return pc
++
++
++func _update_stats(list: ItemList, rows: Array, label: Label, inst_key := "inst") -> void:
++	if list == null or label == null:
++		return
++	var sel := list.get_selected_items()
++	if sel.is_empty() or sel[0] >= rows.size():
++		label.text = ""
++		return
++	var row: Dictionary = rows[sel[0]]
++	label.text = _stats_text(row.get(inst_key)) if row.get(inst_key) != null else ""
++
++
++func _on_st_selected(_i: int) -> void:
++	_update_stats(_st_list, _st_rows, _st_stats)
++
++
++func _on_alch_selected(_i: int) -> void:
++	_update_stats(_alch_list, _alch_rows, _alch_stats)
++
++
+ # ---------- build ----------
+ 
+ func _build_ui() -> void:
+@@ -225,7 +284,15 @@ func _build_alchemy_page() -> Control:
+ 	_alch_list = ItemList.new()
+ 	_alch_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+ 	_alch_list.item_activated.connect(func(_i): _alchemy_select())
+-	page.add_child(_alch_list)
++	_alch_list.item_selected.connect(_on_alch_selected)
++	_alch_stats = _make_stats_label()
++	var arow := HBoxContainer.new()
++	arow.size_flags_vertical = Control.SIZE_EXPAND_FILL
++	arow.add_theme_constant_override("separation", 12)
++	page.add_child(arow)
++	arow.add_child(_alch_list)
++	_alch_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
++	arow.add_child(_stats_panel(_alch_stats))
+ 	_alch_info = Label.new()
+ 	_alch_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+ 	page.add_child(_alch_info)
+@@ -240,7 +307,15 @@ func _build_stored_page() -> Control:
+ 	_st_list = ItemList.new()
+ 	_st_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+ 	_st_list.item_activated.connect(func(_i): _stored_select())
+-	page.add_child(_st_list)
++	_st_list.item_selected.connect(_on_st_selected)
++	_st_stats = _make_stats_label()
++	var srow := HBoxContainer.new()
++	srow.size_flags_vertical = Control.SIZE_EXPAND_FILL
++	srow.add_theme_constant_override("separation", 12)
++	page.add_child(srow)
++	srow.add_child(_st_list)
++	_st_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
++	srow.add_child(_stats_panel(_st_stats))
+ 	_st_info = Label.new()
+ 	_st_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+ 	page.add_child(_st_info)
+@@ -383,6 +458,7 @@ func _refresh_alchemy() -> void:
+ 
+ 	if _alch_list.item_count > 0:
+ 		_alch_list.select(mini(keep[0] if not keep.is_empty() else 0, _alch_list.item_count - 1))
++	_update_stats(_alch_list, _alch_rows, _alch_stats)
+ 
+ 
+ func _refresh_stored() -> void:
+@@ -400,6 +476,7 @@ func _refresh_stored() -> void:
+ 	_st_info.text = "Party: %d/%d   Stored: %d" % [_party().size(), max_party_size, _stored().size()]
+ 	if _st_list.item_count > 0:
+ 		_st_list.select(mini(keep[0] if not keep.is_empty() else 0, _st_list.item_count - 1))
++	_update_stats(_st_list, _st_rows, _st_stats)
+ 
+ 
+ # ---------- actions ----------

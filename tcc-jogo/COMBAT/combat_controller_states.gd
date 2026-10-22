@@ -28,6 +28,8 @@ var item_database: ItemDatabase
 var commands: BattleCommands
 var _command_actor_id := -1
 var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
+## true = fighting another trainer's Alchemons. Capture is blocked. Set by CombatSceneManager BEFORE add_child.
+var is_trainer_battle := false
 ## Component (bond) the player made at the PC. Set by CombatSceneManager BEFORE add_child.
 var player_bond: PlayerBondData
 ## BattlefieldSlot -> Node3D of that creature (mesh to highlight when targeted).
@@ -59,6 +61,7 @@ func _ready() -> void:
 	ui.position.y = COMMANDS_AREA_HEIGHT
 	commands = BattleCommands.new()                          # 1. create
 	add_child(commands)                                      # 2. add to tree
+	commands.capture_blocked = is_trainer_battle
 	commands.attack_confirmed.connect(_on_command_attack)    # 3. connect
 	commands.item_confirmed.connect(_on_command_item)
 	commands.capture_confirmed.connect(_on_command_capture)
@@ -235,6 +238,10 @@ func _on_command_attack(attack_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
 
 func _on_command_capture(item_index: int, target_id: int) -> void:
+	if is_trainer_battle:   # backup: BattleCommands already blocks this
+		ui.log_message(BattleCommands.CAPTURE_BLOCKED_TEXT)
+		_prompt_action_for_current()
+		return
 	_confirm_action(_command_actor_id, "capture", target_id, -1, item_index)
 
 func _on_command_item(item_index: int, target_id: int) -> void:

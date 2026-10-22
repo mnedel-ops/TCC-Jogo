@@ -44,6 +44,8 @@ func _on_combat_start(index: int, id2: int) -> void:
 	CombatSignal.enemy_node = null
 	var enemy_level := CombatSignal.enemy_level
 	CombatSignal.enemy_level = -1   # consume, no stale value next fight
+	var is_trainer := CombatSignal.is_trainer_battle
+	CombatSignal.is_trainer_battle = false   # consume too
 	# Anchors = offsets from the battle center (midpoint player <-> enemy),
 	# so the fight always happens on screen, wherever it started.
 	anchors_root.global_position = _get_battle_center()
@@ -53,6 +55,7 @@ func _on_combat_start(index: int, id2: int) -> void:
 	var enemy_ids := _get_enemy_species_ids(index, id2)
 	combatScenes.enemy_species_ids = enemy_ids
 	combatScenes.enemy_level = enemy_level
+	combatScenes.is_trainer_battle = is_trainer
 	combatScenes.inventory = inventory
 	combatScenes.item_database = item_database
 	combatScenes.captured_storage = captured_storage
