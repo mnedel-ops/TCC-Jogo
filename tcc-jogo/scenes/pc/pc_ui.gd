@@ -146,8 +146,7 @@ func _bond_text() -> String:
 	return "Current Component: %s (%s)" % [_kind_label(_bond.kind), " + ".join(names)]
 
 
-## Stat sheet for one instance. Same numbers combat uses (CombatStateFactory):
-## stats from formula, instance overrides win when > 0.
+## Stat sheet for one instance. Same numbers combat uses: AlchemonInstance.compute_stats().
 func _stats_text(inst: AlchemonInstance) -> String:
 	if inst == null:
 		return ""
@@ -157,12 +156,13 @@ func _stats_text(inst: AlchemonInstance) -> String:
 		return "%s\nLv.%d\n(no species data)" % [n, inst.level]
 
 	var iv := inst.individual_value
-	var atk := AlchemonFormulas.compute_stat(sheet.base_attack, iv, inst.level)
-	var def := inst.defense if inst.defense > 0 else AlchemonFormulas.compute_stat(sheet.base_defense, iv, inst.level)
-	var spd := inst.mechanical_speed if inst.mechanical_speed > 0 else AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, inst.level)
-	var en := inst.action_energy if inst.action_energy > 0 else AlchemonFormulas.compute_stat(sheet.base_action_energy, iv, inst.level)
-	var max_hp := AlchemonFormulas.compute_max_hp(sheet.max_hp, iv, inst.level)
-	var hp := inst.current_hp if inst.current_hp > 0 else max_hp
+	var stats := inst.compute_stats(sheet)
+	var atk: int = stats.attack
+	var def: int = stats.defense
+	var spd: int = stats.mechanical_speed
+	var en: int = stats.action_energy
+	var max_hp: int = stats.max_hp
+	var hp := inst.hp_or_full(max_hp)
 
 	return "%s\nLv.%d   (%s)\n\nHP: %d/%d\nXP: %d/%d\nValence e-: %d\n\nAttack: %d\nDefense: %d\nMech. Speed: %d\nAction Energy: %d\nIV: %d" % [
 		n, inst.level, AlchemonType.type_name(sheet.element_type),

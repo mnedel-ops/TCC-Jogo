@@ -15,6 +15,8 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 
 	# Create player combatants and assign slots
 	for instance in player_party:
+		if instance == null:
+			continue
 		var template := database.get_by_id(instance.species_id)
 		if template == null:
 			continue
@@ -23,15 +25,14 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		if player_slot_index >= 2:
 			push_warning("Too many players for battlefield (max 2 slots)")
 			break
-# If current_hp hasn't been set yet (or was defaulted to -1), initialize it to max_hp
-		var lvl_max_hp := AlchemonFormulas.compute_max_hp(template.max_hp, instance.individual_value, instance.level)
-		if instance.current_hp <= 0:
-			instance.current_hp = lvl_max_hp
-			
-		var c := CombatantState.new(next_instance_id, instance.species_id, instance.current_hp, true, slot, template.max_valence_electrons)
-		
-		_seed_player_stats(c, template, instance)
-		
+
+		instance.ensure_uid()
+		if instance.is_fainted() and CreatureSync.REVIVE_FAINTED_ON_BATTLE_START:
+			instance.current_hp = AlchemonInstance.UNSET   # = full, see CreatureSync
+		elif instance.is_fainted():
+			continue   # stays KO'd, cannot fight
+
+		var c := _combatant_from(next_instance_id, instance, template, true, slot)
 		state.combatants[c.id] = c
 		state.player_ids.append(c.id)
 		BattlefieldRules.assign_combatant(state.battlefield, c.id, slot)
@@ -49,10 +50,14 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 			push_warning("Too many enemies for battlefield (max 2 slots)")
 			break
 
-		var c := CombatantState.new(next_instance_id, species_id, template.max_hp, false, slot, template.max_valence_electrons)
-		_seed_enemy_stats(c, template, enemy_level)
+		# Wild/NPC creatures are real individuals too (IV, personality), so a
+		# capture can keep exactly what was fought.
+		var lvl := enemy_level if enemy_level >= 1 else DEFAULT_ENEMY_LEVEL
+		var enemy_inst := CreatureFactory.create(species_id, lvl)
+		var c := _combatant_from(next_instance_id, enemy_inst, template, false, slot)
 		state.combatants[c.id] = c
 		state.enemy_ids.append(c.id)
+		state.enemy_instances[c.id] = enemy_inst
 		BattlefieldRules.assign_combatant(state.battlefield, c.id, slot)
 		next_instance_id += 1
 		enemy_slot_index += 1
@@ -104,34 +109,22 @@ static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array
 	if kind != BondRules.NONE:
 		BondRules.apply_bond(kind, [c0, c1], sheets)
 
-static func _seed_player_stats(combatant: CombatantState, template: AlchemonSheet, instance: AlchemonInstance) -> void:
-	combatant.level = instance.level
-	combatant.experience = instance.experience
-	combatant.individual_value = instance.individual_value
-	
-	combatant.max_hp = AlchemonFormulas.compute_max_hp(template.max_hp, instance.individual_value, instance.level)
-	combatant.hp = mini(combatant.hp, combatant.max_hp)
-	combatant.temperature = template.temperature
-
-	# _seed_player_stats
-	combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, combatant.individual_value, combatant.level)
-	combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, combatant.individual_value, combatant.level)
-	combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, combatant.individual_value, combatant.level)
-	combatant.action_energy = AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
-	
-	# CombatStateFactory._seed_player_stats, no fim
-	if instance.defense > 0: combatant.defense = instance.defense
-	if instance.mechanical_speed > 0: combatant.mechanical_speed = instance.mechanical_speed
-	if instance.action_energy > 0: combatant.action_energy = instance.action_energy
-
-static func _seed_enemy_stats(combatant: CombatantState, template: AlchemonSheet, enemy_level: int = -1) -> void:
-	combatant.level = enemy_level if enemy_level >= 1 else DEFAULT_ENEMY_LEVEL
-	combatant.experience = 0
-	combatant.individual_value = 1
-	combatant.max_hp = AlchemonFormulas.compute_max_hp(template.max_hp, combatant.individual_value, combatant.level)
-	combatant.hp = combatant.max_hp
-	combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, combatant.individual_value, combatant.level)
-	combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, combatant.individual_value, combatant.level)
-	combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, combatant.individual_value, combatant.level)
-	combatant.action_energy = AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
-	combatant.temperature = template.temperature
+## instance -> battle state. Stats come ONLY from instance.compute_stats(), so
+## there is one formula path for player, enemy and every UI screen.
+static func _combatant_from(id: int, instance: AlchemonInstance, template: AlchemonSheet, is_player: bool, slot: int) -> CombatantState:
+	var stats := instance.compute_stats(template)
+	var c := CombatantState.new(id, instance.species_id, stats.max_hp, is_player, slot, template.max_valence_electrons)
+	c.source_uid = instance.uid
+	c.level = instance.level
+	c.experience = instance.experience
+	c.individual_value = instance.individual_value
+	c.max_hp = stats.max_hp
+	c.hp = instance.hp_or_full(stats.max_hp)
+	c.attack = stats.attack
+	c.defense = stats.defense
+	c.mechanical_speed = stats.mechanical_speed
+	c.action_energy = stats.action_energy
+	c.temperature = template.temperature
+	if CreatureSync.PERSIST_ENERGY and instance.current_energy != AlchemonInstance.UNSET:
+		c.valence_electrons = clampi(instance.current_energy, 0, c.max_valence_electrons)
+	return c

@@ -32,7 +32,7 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
 		CombatResult.Outcome.ATTACK_MISS:
 			_apply_energy_cost(state, result.actor_id, result.energy_cost)
 		CombatResult.Outcome.CAPTURE_SUCCESS:
-			_apply_capture(state, result.target_id)
+			_apply_capture(state, result.target_id, database)
 			_grant_xp(state, database, result.actor_id, result.target_id)
 		_:
 			pass # ATTACK_MISS, CAPTURE_FAIL, FLEE_*, INVALID_*, ALREADY_DEAD: nada pra mutar
@@ -65,11 +65,19 @@ static func _apply_heal(state: CombatState, target_id: int, amount: int) -> void
 		return
 	target.hp = mini(target.hp + amount, target.max_hp)
 
-static func _apply_capture(state: CombatState, target_id: int) -> void:
+static func _apply_capture(state: CombatState, target_id: int, database: AlchemonDatabase) -> void:
 	var target := state.get_combatant(target_id)
 	if target == null or not target.alive:
 		return
-	state.captured_species_ids.append(target.species_id)
+	# Keep the exact individual that was fought, with the HP it had.
+	var inst: AlchemonInstance = state.enemy_instances.get(target_id)
+	var template := database.get_by_id(target.species_id)
+	if inst == null:
+		inst = CreatureFactory.create(target.species_id, target.level)
+	if template != null:
+		CreatureSync.write_back(inst, target, template)
+	inst.current_hp = maxi(inst.current_hp, 1)   # captured alive
+	state.captured_instances.append(inst)
 	target.hp = 0
 	_kill(state, target)
 

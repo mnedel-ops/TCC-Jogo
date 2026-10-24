@@ -18,8 +18,12 @@ extends Resource
 @export var player_won: bool = false
 
 @export var arena_temperature: float = 273.15 #Em Kelvin
-## species_id of each creature captured this battle. Only the applier writes.
-@export var captured_species_ids: Array[int] = []
+## Enemy side: combatant id -> the AlchemonInstance it was built from. Lets a
+## capture keep the exact individual (IV, personality...) that was fought.
+var enemy_instances: Dictionary = {}
+## Creatures captured this battle (full individuals). Only the applier writes;
+## the controller drains it into CapturedStorage.
+var captured_instances: Array[AlchemonInstance] = []
 
 var battlefield: Battlefield
 var battle_phase: BattlePhaseMachine

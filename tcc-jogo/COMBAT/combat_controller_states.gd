@@ -395,10 +395,9 @@ func _capture_was_attempted(result: CombatResult) -> bool:
 ## Copy this battle's captures into the persistent array. Drains, so no double add.
 func _sync_captures() -> void:
 	if captured_storage != null:
-		var lvl := enemy_level if enemy_level >= 1 else CombatStateFactory.DEFAULT_ENEMY_LEVEL
-		for species_id in state.captured_species_ids:
-			captured_storage.add(species_id, database.get_by_id(species_id), lvl)
-	state.captured_species_ids.clear()
+		for inst in state.captured_instances:
+			captured_storage.add_instance(inst)
+	state.captured_instances.clear()
 
 
 func _show_combat_end() -> void:
@@ -436,18 +435,5 @@ func _log_event(event: CombatEvent) -> void:
 
 func _sync_party_state() -> void:
 	_sync_captures()
-	for i in range(min(player_species_ids.size(), state.player_ids.size())):
-		var combatant_id: int = state.player_ids[i]
-		var c: CombatantState = state.get_combatant(combatant_id)
-		var persistent_alchemon: AlchemonInstance = player_species_ids[i]
-
-		if c != null and persistent_alchemon != null:
-			persistent_alchemon.current_hp = maxi(c.hp, 0)
-			persistent_alchemon.level = c.level
-			var sheet := database.get_by_id(c.species_id)
-			if sheet != null:   # base max HP for this level (no temporary bond bonus)
-				persistent_alchemon.max_hp = AlchemonFormulas.compute_max_hp(sheet.max_hp, c.individual_value, c.level)
-			persistent_alchemon.defense = c.defense
-			persistent_alchemon.mechanical_speed = c.mechanical_speed
-			persistent_alchemon.action_energy = c.action_energy
-			persistent_alchemon.experience = c.experience
+	CreatureSync.apply_battle(player_species_ids, state, database)
+	CombatSignal.creatures_synced.emit()

@@ -336,15 +336,16 @@ func _add_pair(grid: GridContainer, key_text: String, value_text: String) -> voi
 
 func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 	_clear(_stats_grid)
-	# instance value if set (-1 = unset), else the GDD formula from the species base
-	var max_hp := AlchemonFormulas.compute_max_hp(s.max_hp, inst.individual_value, inst.level)
-	var hp := inst.current_hp if inst.current_hp >= 0 else max_hp
+	# Same numbers combat uses (AlchemonInstance.compute_stats, personality included)
+	var stats := inst.compute_stats(s)
+	var max_hp: int = stats.max_hp
+	var hp := inst.hp_or_full(max_hp)
 	var iv := inst.individual_value
 	var lvl := inst.level
-	var attack := AlchemonFormulas.compute_attack(s.base_attack, iv, lvl)
-	var defense := inst.defense if inst.defense >= 0 else AlchemonFormulas.compute_stat(s.base_defense, iv, lvl)
-	var speed := inst.mechanical_speed if inst.mechanical_speed >= 0 else AlchemonFormulas.compute_stat(s.base_mechanical_speed, iv, lvl)
-	var energy := inst.action_energy if inst.action_energy >= 0 else AlchemonFormulas.compute_stat(s.base_action_energy, iv, lvl)
+	var attack: int = stats.attack
+	var defense: int = stats.defense
+	var speed: int = stats.mechanical_speed
+	var energy: int = stats.action_energy
 
 	var rows: Array = [
 		["Tipo", AlchemonType.type_name(s.element_type)],

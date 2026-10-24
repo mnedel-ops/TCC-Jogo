@@ -11,6 +11,7 @@ signal arena_hotter_than_myself(slot: int) #Emitido quando o Alchemon sofrer alt
 
 @export var id: int = -1              # id de INSTANCIA nessa batalha (unico por combatente, nao por especie)
 @export var species_id: int = -1      # chave pra buscar nome/ataques no AlchemonDatabase
+@export var source_uid: String = ""  # AlchemonInstance.uid this combatant was built from (CreatureSync matches by this)
 @export var slot: int = -1            # battlefield slot position (BattlefieldSlot.*)
 @export var hp: int = 0
 @export var max_hp: int = 0

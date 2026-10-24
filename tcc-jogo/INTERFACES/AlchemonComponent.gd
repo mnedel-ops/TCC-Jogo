@@ -22,9 +22,10 @@ func refresh() -> void:
 		var sheet := database.get_by_id(inst.species_id)
 		if sheet == null:
 			continue
-		var max_hp := AlchemonFormulas.compute_max_hp(sheet.max_hp, inst.individual_value, inst.level)
-		var hp := max_hp if inst.current_hp <= 0 else inst.current_hp
-		var atk := AlchemonFormulas.compute_attack(sheet.base_attack, inst.individual_value, inst.level)
+		var stats := inst.compute_stats(sheet)
+		var max_hp: int = stats.max_hp
+		var hp := inst.hp_or_full(max_hp)
+		var atk: int = stats.attack
 		var label := Label.new()
 		label.text = "%s  Lv%d  HP %d/%d  XP %d/%d  ATK %d" % [sheet.creature_name, inst.level, hp, max_hp, inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP, atk]
 		list.add_child(label)

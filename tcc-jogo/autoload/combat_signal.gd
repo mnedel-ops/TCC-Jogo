@@ -1,6 +1,11 @@
 extends Node
 signal combat_start(alchemonA: int, alchemonB: int)
 signal combat_ended
+## Battle results (HP, XP, level, captures) were written into the persistent
+## creatures. Emitted by the combat controller AFTER CreatureSync. Prefer this
+## over combat_ended for saving: combat_ended also fires from CombatRules, before
+## the write-back.
+signal creatures_synced
 ## PC changed the party. FollowerManager respawns the followers.
 signal party_changed
 signal player_party(alchemonA:int, alchemonB: int)

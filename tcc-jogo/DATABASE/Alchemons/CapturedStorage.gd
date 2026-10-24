@@ -18,13 +18,18 @@ var species_ids: Array[int]:
 ## Called by combat after a capture. template = sheet of the species
 ## (fills name + HP). level = level of the captured creature.
 func add(species_id: int, template: AlchemonSheet = null, level: int = 1) -> void:
-	var inst := AlchemonInstance.new()
-	inst.species_id = species_id
-	inst.level = maxi(level, 1)
+	var inst := CreatureFactory.create(species_id, level)
 	if template != null:
 		inst.init_from_template(template)
 	instances.append(inst)
 	emit_changed()
+
+
+func find_by_uid(uid: String) -> AlchemonInstance:
+	for i in instances:
+		if i != null and i.uid == uid:
+			return i
+	return null
 
 
 func add_instance(inst: AlchemonInstance) -> void:
