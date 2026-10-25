@@ -7,9 +7,14 @@ extends RefCounted
 const MISS_CHANCE := 1.0 / 6.0
 const FLEE_CHANCE := 5.0 / 6.0
 
-const CAPTURE_CHANCE := 2.0 / 6.0
-## Wrong-type method still works, much less. 0.0 = guaranteed fail.
-const CAPTURE_CHANCE_WRONG_METHOD := 1.0 / 6.0
+## X of the capture formula (AlchemonFormulas.compute_capture_value), by
+## Separation Tool category. PLACEHOLDERS - the GDD does not list the values yet.
+## The formula has no species catch rate, so `a` can never exceed X: X must be
+## large. With these, a full-HP target is caught ~1/3 (right type) or ~1/6
+## (wrong type), the same odds as before, and it rises to ~100% near 0 HP.
+const TOOL_MULTIPLIER_MATCH := 255.0
+## Wrong-type tool still works, much less. 0.0 = guaranteed fail.
+const TOOL_MULTIPLIER_WRONG := 127.0
 
 const CRIT_CHANCE := 0.125
 const CRIT_MULTIPLIER := 1.5
@@ -132,8 +137,14 @@ static func _resolve_item(state: CombatState, command: ActionCommand, target_id:
 		return CombatResult.invalid_action(actor.id, target.id, "unknown_item")
 	return CombatResult.item_used(actor.id, target.id, data.heal_amount)   # 0 = does nothing
 
-static func capture_chance(method_type: int, target_type: int) -> float:
-	return CAPTURE_CHANCE if method_type == target_type else CAPTURE_CHANCE_WRONG_METHOD
+static func tool_multiplier(method_type: int, target_type: int) -> float:
+	return TOOL_MULTIPLIER_MATCH if method_type == target_type else TOOL_MULTIPLIER_WRONG
+
+
+## Capture succeeds when a 0..254 roll lands under `a` (a = 255 always works).
+## Chance = a / 255 per throw.
+static func capture_roll_succeeds(a: int, roll: int) -> bool:
+	return roll < a
 
 
 static func _resolve_capture(state: CombatState, command: ActionCommand, database: AlchemonDatabase, target_id: int, item_database: ItemDatabase) -> CombatResult:
@@ -149,8 +160,10 @@ static func _resolve_capture(state: CombatState, command: ActionCommand, databas
 	var target_template := database.get_by_id(target.species_id)
 	if target_template == null:
 		return CombatResult.invalid_action(actor.id, target.id, "unknown_species")
-	var chance := capture_chance(method.capture_type, target_template.element_type)
-	return CombatResult.capture_success(actor.id, target.id) if randf() < chance else CombatResult.capture_fail(actor.id, target.id)
+	var x := tool_multiplier(method.capture_type, target_template.element_type)
+	var a := AlchemonFormulas.compute_capture_value(target.max_hp, target.hp, x)
+	var roll := randi_range(0, AlchemonFormulas.CAPTURE_VALUE_MAX - 1)
+	return CombatResult.capture_success(actor.id, target.id) if capture_roll_succeeds(a, roll) else CombatResult.capture_fail(actor.id, target.id)
 
 static func resolve_flee() -> CombatResult:
 	return CombatResult.flee_success() if randf() < FLEE_CHANCE else CombatResult.flee_fail()

@@ -43,6 +43,26 @@ static func compute_temperature_delta(level: int, power: int, attack: int) -> fl
 	var raw :float = (float(level) / 10.0 + 1.0) * (float(power) / 10.0) * (float(attack) / 100.0)
 	return raw
 
+## GDD - Captura (sistema classico de Pokemon):
+##   a = max( floor( (3*HPmax - 2*HPatual) * X / (3*HPmax) ), 1 ), a <= 255
+## X = multiplicador da Ferramenta de Separacao usada.
+## Referencia original usa inteiros de 8 bits: se 3*HPmax passar de 255, os
+## dois termos (3*HPmax e 2*HPatual) sao divididos por 4 - duas divisoes por 2,
+## arredondando para baixo a cada etapa - ANTES da formula.
+const CAPTURE_VALUE_MAX := 255
+
+static func compute_capture_value(hp_max: int, hp_current: int, tool_multiplier: float) -> int:
+	var hp_max_safe := maxi(hp_max, 1)
+	var max_term := 3 * hp_max_safe
+	var cur_term := 2 * clampi(hp_current, 0, hp_max_safe)
+	if max_term > CAPTURE_VALUE_MAX:
+		max_term = (max_term >> 1) >> 1
+		cur_term = (cur_term >> 1) >> 1
+	max_term = maxi(max_term, 1)
+	var a := int(floor(float(max_term - cur_term) * tool_multiplier / float(max_term)))
+	return clampi(a, 1, CAPTURE_VALUE_MAX)
+
+
 ## GDD 7.2, sem EV: floor(0.01 * (2*Base + IV) * Level) + 5
 ## Max HP at a level. Level 1 = species base HP (sheet.max_hp). Each level adds
 ## the growth the stat formula gives (same curve as the other stats).
