@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_pd")
 player_name = "Muleke"
-money = 0
+money = 500
 play_time_seconds = 0.0
 badges = Array[Resource]([])
 badge_slots = 8

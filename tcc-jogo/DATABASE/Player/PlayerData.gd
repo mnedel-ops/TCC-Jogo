@@ -6,7 +6,8 @@ extends Resource
 
 @export var player_name := "Muleke"
 @export var team_name := ""   # empty = "Equipe do <player_name>"
-@export var money := 0
+## Coins. New game starts with 500.
+@export var money := 500
 ## Time played in previous sessions (seconds). Save this.
 @export var play_time_seconds := 0.0
 @export var portrait: Texture2D
@@ -19,6 +20,11 @@ extends Resource
 ## tree is paused (menu open), so no autoload needed for now.
 func get_play_time() -> float:
 	return play_time_seconds + Time.get_ticks_msec() / 1000.0
+
+
+func add_money(amount: int) -> void:
+	money = maxi(money + amount, 0)
+	emit_changed()
 
 
 func get_team_name() -> String:

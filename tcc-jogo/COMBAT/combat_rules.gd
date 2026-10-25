@@ -169,7 +169,7 @@ static func _mark_battle_outcome(state: CombatState, player_won: bool) -> void:
 	state.phase = BattlePhaseRules.COMBAT_OVER
 	state.phase = BattlePhaseRules.VICTORY if player_won else BattlePhaseRules.DEFEAT
 	state.battle_phase.force_phase(state.phase)
-	CombatSignal.combat_ended.emit()
+	# combat_ended is emitted by the controller AFTER the rewards screen.
 
 
 

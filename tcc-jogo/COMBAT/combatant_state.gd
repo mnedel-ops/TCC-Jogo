@@ -19,6 +19,8 @@ signal arena_hotter_than_myself(slot: int) #Emitido quando o Alchemon sofrer alt
 @export var max_valence_electrons: int = 0
 @export var level: int = 1
 @export var experience: int = 0
+@export var start_level: int = 1        # level/xp when the battle began - rewards are the difference
+@export var start_experience: int = 0
 @export var individual_value: int = 1
 @export var attack: int = 1
 @export var defense: int = 1

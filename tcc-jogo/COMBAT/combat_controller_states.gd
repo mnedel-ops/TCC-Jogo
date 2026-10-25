@@ -28,6 +28,8 @@ var item_database: ItemDatabase
 var commands: BattleCommands
 var _command_actor_id := -1
 var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
+## Player profile (coins). Set by CombatSceneManager BEFORE add_child.
+var player_data: PlayerData
 ## true = fighting another trainer's Alchemons. Capture is blocked. Set by CombatSceneManager BEFORE add_child.
 var is_trainer_battle := false
 ## Component (bond) the player made at the PC. Set by CombatSceneManager BEFORE add_child.
@@ -402,12 +404,19 @@ func _sync_captures() -> void:
 
 func _show_combat_end() -> void:
 	commands.hide_menu()
-	_sync_party_state()
+	var rewards := BattleRewards.build(state, database, player_species_ids, is_trainer_battle)
+	if player_data != null and rewards.money > 0:
+		player_data.add_money(rewards.money)
+	_sync_party_state()   # also autosaves, so coins + creatures are saved together
 	ui.show_combat_end(state.player_won)
+
+	# Wait for any input, THEN hand control back to exploration.
+	var screen := BattleRewardsScreen.new()
+	add_child(screen)
+	screen.show_rewards(rewards)
+	await screen.dismissed
+	screen.queue_free()
 	CombatSignal.combat_ended.emit()
-	
-	# Give the player time to see the outcome screen before despawning combat
-	await get_tree().create_timer(2.0).timeout
 	queue_free()
 
 

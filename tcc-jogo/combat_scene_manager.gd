@@ -17,6 +17,8 @@ var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")
 @onready var follower_manager: Node = $"../FollowerManager"
 @onready var follower_holder: Node3D = $"../FollowerHolder"
 @export var captured_storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")
+## Player profile (coins). Same .tres the Player page shows.
+@export var player_data: PlayerData = preload("res://DATABASE/Player/player.tres")
 ## Component (bond) made at the PC. Same .tres the PC writes to.
 @export var player_bond: PlayerBondData = preload("res://DATABASE/Alchemons/player_bond.tres")
 
@@ -60,6 +62,7 @@ func _on_combat_start(index: int, id2: int) -> void:
 	combatScenes.item_database = item_database
 	combatScenes.captured_storage = captured_storage
 	combatScenes.player_bond = player_bond
+	combatScenes.player_data = player_data
 	
 	combatScenes.anchors = { #Combat positions
 		BattlefieldSlot.PLAYER_SLOT_1: anchors_root.get_node("P1"),

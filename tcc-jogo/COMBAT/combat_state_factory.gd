@@ -117,6 +117,8 @@ static func _combatant_from(id: int, instance: AlchemonInstance, template: Alche
 	c.source_uid = instance.uid
 	c.level = instance.level
 	c.experience = instance.experience
+	c.start_level = instance.level
+	c.start_experience = instance.experience
 	c.individual_value = instance.individual_value
 	c.max_hp = stats.max_hp
 	c.hp = instance.hp_or_full(stats.max_hp)
