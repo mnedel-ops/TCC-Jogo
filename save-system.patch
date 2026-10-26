@@ -11,7 +11,7 @@ index 25c35ea..a4b6d7b 100644
  	if player_data != null and rewards.money > 0:
  		player_data.add_money(rewards.money)
 diff --git a/tcc-jogo/DATABASE/SaveGame.gd b/tcc-jogo/DATABASE/SaveGame.gd
-index a2efbc0..f1e87c0 100644
+index a2efbc0..48bdc68 100644
 --- a/tcc-jogo/DATABASE/SaveGame.gd
 +++ b/tcc-jogo/DATABASE/SaveGame.gd
 @@ -15,7 +15,8 @@ extends RefCounted
@@ -20,29 +20,30 @@ index a2efbc0..f1e87c0 100644
  
 -static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData) -> Dictionary:
 +## defeated = {npc_id: true}, owned by GameSession. Optional so old callers still work.
-+static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}) -> Dictionary:
++static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null) -> Dictionary:
  	var party_list: Array = []
  	for inst in party.party:
  		if inst != null:
-@@ -42,6 +43,7 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
+@@ -42,6 +43,8 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
  		"party": party_list,
  		"storage": storage_list,
  		"bond": {"kind": bond.kind, "member_uids": bond_uids},
 +		"defeated_npcs": defeated.keys(),
++		"inventory": inventory.items.duplicate() if inventory != null else [],
  		"player": {
  			"name": player.player_name,
  			"team_name": player.team_name,
-@@ -55,7 +57,8 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
+@@ -55,7 +58,8 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
  ## Validates and parses EVERYTHING first, then commits. A bad file returns an
  ## error and leaves the live resources untouched.
  ## Mutates the arrays in place so every scene already holding the resource sees it.
 -static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData) -> Error:
 +## defeated is cleared + refilled in place. Save without the key = nobody defeated.
-+static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}) -> Error:
++static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null) -> Error:
  	data = _migrate(data)
  	var version := int(data.get("format_version", 0))
  	if version < 1 or version > FORMAT_VERSION:
-@@ -64,11 +67,20 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
+@@ -64,11 +68,32 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
  	if not (data.get("party") is Array) or not (data.get("storage") is Array):
  		return ERR_INVALID_DATA
  
@@ -53,6 +54,14 @@ index a2efbc0..f1e87c0 100644
 +			if id is String and id != "":
 +				new_defeated[id] = true
 +
++	# Item indices. JSON numbers come back as float. Save without the key = keep bag as is.
++	var new_items: Array[int] = []
++	var has_items: bool = data.get("inventory") is Array
++	if has_items:
++		for n in data["inventory"]:
++			if n is float or n is int:
++				new_items.append(int(n))
++
  	var seen := {}
  	var new_party := _load_list(data["party"], seen)
  	var new_storage := _load_list(data["storage"], seen)
@@ -60,6 +69,10 @@ index a2efbc0..f1e87c0 100644
  	# --- commit ---
 +	defeated.clear()
 +	defeated.merge(new_defeated)
++	if inventory != null and has_items:
++		inventory.items.clear()
++		inventory.items.append_array(new_items)
++		inventory.emit_changed()
  	party.party.clear()
  	party.party.append_array(new_party)
  	storage.instances.clear()
@@ -91,6 +104,19 @@ index 10f568d..51172b3 100644
  	if CombatSignal.in_combat:
  		return # characters being moved around by the battle, ignore
  	if area.is_in_group("player") and is_combat_zone !=true:
+diff --git a/tcc-jogo/INTERFACES/battle_rewards_screen.gd b/tcc-jogo/INTERFACES/battle_rewards_screen.gd
+index 5a413dc..057c9f4 100644
+--- a/tcc-jogo/INTERFACES/battle_rewards_screen.gd
++++ b/tcc-jogo/INTERFACES/battle_rewards_screen.gd
+@@ -108,7 +108,7 @@ func _input(event: InputEvent) -> void:
+ 	var pressed := false
+ 	if event is InputEventKey:
+ 		pressed = event.pressed and not event.echo
+-	elif event is InputEventMouseButton or event is InputEventJoypadButton:
++	elif event is InputEventJoypadButton:   # mouse is ignored in game
+ 		pressed = event.pressed
+ 	if pressed:
+ 		_done = true
 diff --git a/tcc-jogo/Level.gd b/tcc-jogo/Level.gd
 index 1cdf9e7..81f1858 100644
 --- a/tcc-jogo/Level.gd
@@ -136,10 +162,10 @@ index 63d8de4..3356b95 100644
  ## creatures. Emitted by the combat controller AFTER CreatureSync. Prefer this
  ## over combat_ended for saving: combat_ended also fires from CombatRules, before
 diff --git a/tcc-jogo/autoload/game_session.gd b/tcc-jogo/autoload/game_session.gd
-index 2330acf..0c91727 100644
+index 2330acf..abc77df 100644
 --- a/tcc-jogo/autoload/game_session.gd
 +++ b/tcc-jogo/autoload/game_session.gd
-@@ -14,7 +14,8 @@ signal loaded
+@@ -14,24 +14,33 @@ signal loaded
  ## Change BEFORE add_child (tests do) - _ready already loads from it.
  var save_path := "user://saves/slot_1.json"
  
@@ -149,43 +175,50 @@ index 2330acf..0c91727 100644
  @export var autosave := true
  
  var party: PlayerPartyData = load("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
-@@ -22,11 +23,17 @@ var storage: CapturedStorage = load("res://DATABASE/Alchemons/captured_storage.t
+ var storage: CapturedStorage = load("res://DATABASE/Alchemons/captured_storage.tres")
  var bond: PlayerBondData = load("res://DATABASE/Alchemons/player_bond.tres")
  var player: PlayerData = load("res://DATABASE/Player/player.tres")
- 
++var inventory: InventoryData = load("res://DATABASE/Inventory/inventory.tres")
++
 +## NPC ids (see Level.npc_id_for) the player already beat. Saved in the JSON.
 +## Dictionary used as a set: {id: true}. Never replace it, SaveGame fills it in place.
 +var defeated_npcs := {}
-+
+ 
  var _loading := false
 +var _starter_snapshot := {}   # starter .tres state, taken once, used by new_game()
  
  
  func _ready() -> void:
  	_give_uids()
-+	_starter_snapshot = SaveGame.serialize(party, storage, bond, player)
++	_starter_snapshot = SaveGame.serialize(party, storage, bond, player, {}, inventory)
  	if load_on_start and has_save():
  		load_game()
  	CombatSignal.creatures_synced.connect(_autosave) # battle results already written to the creatures
-@@ -39,7 +46,7 @@ func has_save() -> bool:
+ 	CombatSignal.party_changed.connect(_autosave)
+ 	bond.changed.connect(_autosave)                 # PC makes/breaks a Component
++	inventory.changed.connect(_on_inventory_changed)
+ 
+ 
+ func has_save() -> bool:
+@@ -39,7 +48,7 @@ func has_save() -> bool:
  
  
  func save_game() -> Error:
 -	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player))
-+	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player, defeated_npcs))
++	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player, defeated_npcs, inventory))
  	if err != OK:
  		push_error("GameSession: save failed (%s)." % error_string(err))
  	else:
-@@ -53,7 +60,7 @@ func load_game(notify_scene := true) -> Error:
+@@ -53,7 +62,7 @@ func load_game(notify_scene := true) -> Error:
  	if data.is_empty():
  		return ERR_FILE_NOT_FOUND
  	_loading = true   # apply() touches the bond -> its `changed` must not autosave
 -	var err := SaveGame.apply(data, party, storage, bond, player)
-+	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs)
++	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory)
  	_loading = false
  	if err != OK:
  		push_error("GameSession: load failed (%s). Starting from default data." % error_string(err))
-@@ -64,6 +71,33 @@ func load_game(notify_scene := true) -> Error:
+@@ -64,12 +73,45 @@ func load_game(notify_scene := true) -> Error:
  	return OK
  
  
@@ -196,7 +229,7 @@ index 2330acf..0c91727 100644
 +	data["player"]["play_time"] = 0.0
 +	data["defeated_npcs"] = []
 +	_loading = true
-+	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs)
++	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory)
 +	_loading = false
 +	if err != OK:
 +		push_error("GameSession: new game failed (%s)." % error_string(err))
@@ -219,6 +252,18 @@ index 2330acf..0c91727 100644
  func delete_save() -> void:
  	for p in [save_path, save_path + ".bak", save_path + ".tmp"]:
  		if FileAccess.file_exists(p):
+ 			DirAccess.remove_absolute(p)
+ 
+ 
++## Item picked up / used. In battle skip: creatures_synced saves item + HP together at the end.
++func _on_inventory_changed() -> void:
++	if not CombatSignal.in_combat:
++		_autosave()
++
++
+ func _autosave() -> void:
+ 	if autosave and not _loading:
+ 		save_game()
 diff --git a/tcc-jogo/combat_scene_manager.gd b/tcc-jogo/combat_scene_manager.gd
 index f2a553b..5b6f999 100644
 --- a/tcc-jogo/combat_scene_manager.gd
@@ -257,6 +302,24 @@ index e859a29..a7943f4 100644
  config/features=PackedStringArray("4.6", "GL Compatibility")
  config/icon="res://icon.svg"
  
+diff --git a/tcc-jogo/scenes/main.tscn b/tcc-jogo/scenes/main.tscn
+index 182c6c9..90c2b5f 100644
+--- a/tcc-jogo/scenes/main.tscn
++++ b/tcc-jogo/scenes/main.tscn
+@@ -9,9 +9,13 @@
+ [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
+ [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
+ [ext_resource type="PackedScene" uid="uid://c1s742glubqgs" path="res://INTERFACES/game_menu.tscn" id="10_choun"]
++[ext_resource type="Script" path="res://scenes/mouse_blocker.gd" id="99_mouseblk"]
+ 
+ [node name="main" type="Node3D" unique_id=1718374945]
+ 
++[node name="MouseBlocker" type="Node" parent="."]
++script = ExtResource("99_mouseblk")
++
+ [node name="GameMenu" parent="." unique_id=825610973 instance=ExtResource("10_choun")]
+ 
+ [node name="SceneManager" type="Node" parent="." unique_id=396373712 node_paths=PackedStringArray("level_holder", "player", "camera_rig") groups=["scene_manager"]]
 diff --git a/tcc-jogo/scenes/menu.gd b/tcc-jogo/scenes/menu.gd
 new file mode 100644
 index 0000000..0ccee1b
@@ -387,11 +450,71 @@ index 0000000..c93fb91
 +
 +[node name="OverwriteDialog" type="ConfirmationDialog" parent="."]
 +unique_name_in_owner = true
+diff --git a/tcc-jogo/scenes/mouse_blocker.gd b/tcc-jogo/scenes/mouse_blocker.gd
+new file mode 100644
+index 0000000..233b0b9
+--- /dev/null
++++ b/tcc-jogo/scenes/mouse_blocker.gd
+@@ -0,0 +1,20 @@
++extends Node
++
++## Gameplay is keyboard/gamepad only. Eats every mouse event in _input, which runs
++## BEFORE the GUI, so buttons in menus / combat / PC get no click and no hover.
++## Also keeps the cursor captured, because menus set it VISIBLE when they open.
++## Lives in main.tscn only: the title menu (scenes/menu.tscn) still takes the mouse.
++
++func _ready() -> void:
++	process_mode = Node.PROCESS_MODE_ALWAYS   # keep working while the tree is paused (menus)
++	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
++
++
++func _input(event: InputEvent) -> void:
++	if event is InputEventMouseButton or event is InputEventMouseMotion:
++		get_viewport().set_input_as_handled()
++
++
++func _process(_delta: float) -> void:
++	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
++		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+diff --git a/tcc-jogo/test/test_battle_rewards.gd b/tcc-jogo/test/test_battle_rewards.gd
+index 979750b..95e0835 100644
+--- a/tcc-jogo/test/test_battle_rewards.gd
++++ b/tcc-jogo/test/test_battle_rewards.gd
+@@ -125,8 +125,19 @@ func test_screen_ignores_input_until_delay_then_dismisses_on_any_key() -> void:
+ 	assert_int(hits.size()).is_equal(1)
+ 
+ 
+-func test_mouse_and_gamepad_also_dismiss() -> void:
+-	for ev in [InputEventMouseButton.new(), InputEventJoypadButton.new()]:
++func test_gamepad_also_dismisses_mouse_does_not() -> void:
++	var mouse := InputEventMouseButton.new()
++	mouse.pressed = true
++	var s := BattleRewardsScreen.new()
++	add_child(auto_free(s))
++	var mouse_hits := []
++	s.dismissed.connect(func(): mouse_hits.append(1))
++	s.show_rewards(BattleRewards.new())
++	await get_tree().create_timer(BattleRewardsScreen.INPUT_DELAY + 0.2).timeout
++	s._input(mouse)
++	assert_int(mouse_hits.size()).is_equal(0)
++
++	for ev in [InputEventJoypadButton.new()]:
+ 		var screen := BattleRewardsScreen.new()
+ 		add_child(auto_free(screen))
+ 		var hits := []
 diff --git a/tcc-jogo/test/test_creature_persistence.gd b/tcc-jogo/test/test_creature_persistence.gd
-index 63073ef..cf23e14 100644
+index 63073ef..b88c2ae 100644
 --- a/tcc-jogo/test/test_creature_persistence.gd
 +++ b/tcc-jogo/test/test_creature_persistence.gd
-@@ -375,3 +375,50 @@ func test_session_gives_starters_uids_and_saves_and_loads() -> void:
+@@ -358,6 +358,7 @@ func _session(path: String) -> Node:
+ 	s.storage = s.storage.duplicate(true)
+ 	s.bond = s.bond.duplicate(true)
+ 	s.player = s.player.duplicate(true)
++	s.inventory = s.inventory.duplicate(true)
+ 	add_child(s)
+ 	return auto_free(s)
+ 
+@@ -375,3 +376,85 @@ func test_session_gives_starters_uids_and_saves_and_loads() -> void:
  	assert_int(s.load_game(false)).is_equal(OK)   # false: the real autoload must not hear party_changed and autosave
  	assert_int(s.party.party[0].level).is_equal(9)
  	assert_str(s.party.party[0].uid).is_equal(uid)
@@ -442,3 +565,38 @@ index 63073ef..cf23e14 100644
 +	s.defeated_npcs.clear()
 +	assert_int(s.load_game(false)).is_equal(OK)
 +	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_true()
++
++
++func test_inventory_roundtrip_via_disk() -> void:
++	var w := _world()
++	var bag := InventoryData.new()
++	bag.items = [3, 3, 5]
++	assert_int(SaveGame.write_file(TMP_SAVE, SaveGame.serialize(w.party, w.storage, w.bond, w.player, {}, bag))).is_equal(OK)
++
++	var bag2 := InventoryData.new()
++	bag2.items = [9]   # must be replaced
++	assert_int(SaveGame.apply(SaveGame.read_file(TMP_SAVE), w.party, w.storage, w.bond, w.player, {}, bag2)).is_equal(OK)
++	assert_array(bag2.items).is_equal([3, 3, 5])
++	assert_int(bag2.get_quantity(3)).is_equal(2)
++
++
++func test_old_save_without_inventory_keeps_bag() -> void:
++	var w := _world()
++	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
++	data.erase("inventory")
++	var bag := InventoryData.new()
++	bag.items = [4]
++	assert_int(SaveGame.apply(data, w.party, w.storage, w.bond, w.player, {}, bag)).is_equal(OK)
++	assert_array(bag.items).is_equal([4])
++
++
++func test_session_inventory_saved_and_new_game_resets() -> void:
++	var s := _session(TMP_SAVE)
++	var starter: Array = s.inventory.items.duplicate()
++	s.inventory.add_item(7)
++	assert_int(s.save_game()).is_equal(OK)
++	s.inventory.items.clear()
++	assert_int(s.load_game(false)).is_equal(OK)
++	assert_bool(s.inventory.items.has(7)).is_true()
++	assert_int(s.new_game()).is_equal(OK)
++	assert_array(s.inventory.items).is_equal(starter)
