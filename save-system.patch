@@ -1,0 +1,444 @@
+diff --git a/tcc-jogo/COMBAT/combat_controller_states.gd b/tcc-jogo/COMBAT/combat_controller_states.gd
+index 25c35ea..a4b6d7b 100644
+--- a/tcc-jogo/COMBAT/combat_controller_states.gd
++++ b/tcc-jogo/COMBAT/combat_controller_states.gd
+@@ -404,6 +404,7 @@ func _sync_captures() -> void:
+ 
+ func _show_combat_end() -> void:
+ 	commands.hide_menu()
++	CombatSignal.battle_finished.emit(state.player_won, is_trainer_battle)
+ 	var rewards := BattleRewards.build(state, database, player_species_ids, is_trainer_battle)
+ 	if player_data != null and rewards.money > 0:
+ 		player_data.add_money(rewards.money)
+diff --git a/tcc-jogo/DATABASE/SaveGame.gd b/tcc-jogo/DATABASE/SaveGame.gd
+index a2efbc0..f1e87c0 100644
+--- a/tcc-jogo/DATABASE/SaveGame.gd
++++ b/tcc-jogo/DATABASE/SaveGame.gd
+@@ -15,7 +15,8 @@ extends RefCounted
+ const FORMAT_VERSION := 1
+ 
+ 
+-static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData) -> Dictionary:
++## defeated = {npc_id: true}, owned by GameSession. Optional so old callers still work.
++static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}) -> Dictionary:
+ 	var party_list: Array = []
+ 	for inst in party.party:
+ 		if inst != null:
+@@ -42,6 +43,7 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
+ 		"party": party_list,
+ 		"storage": storage_list,
+ 		"bond": {"kind": bond.kind, "member_uids": bond_uids},
++		"defeated_npcs": defeated.keys(),
+ 		"player": {
+ 			"name": player.player_name,
+ 			"team_name": player.team_name,
+@@ -55,7 +57,8 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
+ ## Validates and parses EVERYTHING first, then commits. A bad file returns an
+ ## error and leaves the live resources untouched.
+ ## Mutates the arrays in place so every scene already holding the resource sees it.
+-static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData) -> Error:
++## defeated is cleared + refilled in place. Save without the key = nobody defeated.
++static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}) -> Error:
+ 	data = _migrate(data)
+ 	var version := int(data.get("format_version", 0))
+ 	if version < 1 or version > FORMAT_VERSION:
+@@ -64,11 +67,20 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
+ 	if not (data.get("party") is Array) or not (data.get("storage") is Array):
+ 		return ERR_INVALID_DATA
+ 
++	var new_defeated := {}
++	var raw_defeated = data.get("defeated_npcs", [])
++	if raw_defeated is Array:
++		for id in raw_defeated:
++			if id is String and id != "":
++				new_defeated[id] = true
++
+ 	var seen := {}
+ 	var new_party := _load_list(data["party"], seen)
+ 	var new_storage := _load_list(data["storage"], seen)
+ 
+ 	# --- commit ---
++	defeated.clear()
++	defeated.merge(new_defeated)
+ 	party.party.clear()
+ 	party.party.append_array(new_party)
+ 	storage.instances.clear()
+diff --git a/tcc-jogo/EXPLORATION/npc.gd b/tcc-jogo/EXPLORATION/npc.gd
+index 10f568d..51172b3 100644
+--- a/tcc-jogo/EXPLORATION/npc.gd
++++ b/tcc-jogo/EXPLORATION/npc.gd
+@@ -12,6 +12,8 @@ class_name NPC
+ @export var alchemon1:int =1
+ @export var alchemon2: int =1
+ var alchemon_level: int = -1
++## Stable id set by Level ("scene_1/SpawnPoint"). Key in the save's defeated list.
++var npc_id: String = ""
+ 
+ 
+ func _ready() -> void:
+@@ -43,7 +45,14 @@ func talk():
+ 	
+ 
+ #Func do combate
++func mark_defeated() -> void:
++	figther = false
++	GameSession.mark_npc_defeated(npc_id)
++
++
+ func _on_combat_area_entered(area: Area3D) -> void:
++	if not figther:
++		return
+ 	if CombatSignal.in_combat:
+ 		return # characters being moved around by the battle, ignore
+ 	if area.is_in_group("player") and is_combat_zone !=true:
+diff --git a/tcc-jogo/Level.gd b/tcc-jogo/Level.gd
+index 1cdf9e7..81f1858 100644
+--- a/tcc-jogo/Level.gd
++++ b/tcc-jogo/Level.gd
+@@ -24,7 +24,10 @@ func  place_npcs():
+ 		npc_scene_guy.position = marker.position as Vector3
+ 		npc_scene_guy.rotation = marker.rotation as Vector3
+ 		
+-		npc_scene_guy.figther = marker.is_fighter
++		var id := npc_id_for(marker)
++		npc_scene_guy.npc_id = id
++		# Already beaten (loaded save): still spawns and can talk, never fights again.
++		npc_scene_guy.figther = marker.is_fighter and not GameSession.is_npc_defeated(id)
+ 		if npc_scene_guy.figther:
+ 			npc_scene_guy.alchemon1 = marker.alchemons_ids[0] if marker.alchemons_ids.size() > 0 else -1
+ 			npc_scene_guy.alchemon2 = marker.alchemons_ids[1] if marker.alchemons_ids.size() > 1 else -1
+@@ -32,3 +35,13 @@ func  place_npcs():
+ 		
+ 		NPCHolder_guy.add_child(npc_scene_guy)
+ 		existo.emit()
++
++
++## "<level scene file name>/<marker name>". Stable across runs as long as the
++## marker keeps its name in the level scene. Rename a marker = that NPC fights again.
++func npc_id_for(marker: NPCSpawnPoint) -> String:
++	var root: Node = owner if owner != null else get_parent()
++	var level_name := root.scene_file_path.get_file().get_basename()
++	if level_name == "":
++		level_name = String(root.name)
++	return "%s/%s" % [level_name, marker.name]
+diff --git a/tcc-jogo/autoload/combat_signal.gd b/tcc-jogo/autoload/combat_signal.gd
+index 63d8de4..3356b95 100644
+--- a/tcc-jogo/autoload/combat_signal.gd
++++ b/tcc-jogo/autoload/combat_signal.gd
+@@ -1,6 +1,9 @@
+ extends Node
+ signal combat_start(alchemonA: int, alchemonB: int)
+ signal combat_ended
++## Outcome known, before the rewards screen. CombatSceneManager uses it to mark
++## the beaten trainer NPC as defeated.
++signal battle_finished(player_won: bool, was_trainer: bool)
+ ## Battle results (HP, XP, level, captures) were written into the persistent
+ ## creatures. Emitted by the combat controller AFTER CreatureSync. Prefer this
+ ## over combat_ended for saving: combat_ended also fires from CombatRules, before
+diff --git a/tcc-jogo/autoload/game_session.gd b/tcc-jogo/autoload/game_session.gd
+index 2330acf..0c91727 100644
+--- a/tcc-jogo/autoload/game_session.gd
++++ b/tcc-jogo/autoload/game_session.gd
+@@ -14,7 +14,8 @@ signal loaded
+ ## Change BEFORE add_child (tests do) - _ready already loads from it.
+ var save_path := "user://saves/slot_1.json"
+ 
+-@export var load_on_start := true
++## false = the title menu (scenes/menu.tscn) decides: New Game / Load Game.
++@export var load_on_start := false
+ @export var autosave := true
+ 
+ var party: PlayerPartyData = load("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
+@@ -22,11 +23,17 @@ var storage: CapturedStorage = load("res://DATABASE/Alchemons/captured_storage.t
+ var bond: PlayerBondData = load("res://DATABASE/Alchemons/player_bond.tres")
+ var player: PlayerData = load("res://DATABASE/Player/player.tres")
+ 
++## NPC ids (see Level.npc_id_for) the player already beat. Saved in the JSON.
++## Dictionary used as a set: {id: true}. Never replace it, SaveGame fills it in place.
++var defeated_npcs := {}
++
+ var _loading := false
++var _starter_snapshot := {}   # starter .tres state, taken once, used by new_game()
+ 
+ 
+ func _ready() -> void:
+ 	_give_uids()
++	_starter_snapshot = SaveGame.serialize(party, storage, bond, player)
+ 	if load_on_start and has_save():
+ 		load_game()
+ 	CombatSignal.creatures_synced.connect(_autosave) # battle results already written to the creatures
+@@ -39,7 +46,7 @@ func has_save() -> bool:
+ 
+ 
+ func save_game() -> Error:
+-	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player))
++	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player, defeated_npcs))
+ 	if err != OK:
+ 		push_error("GameSession: save failed (%s)." % error_string(err))
+ 	else:
+@@ -53,7 +60,7 @@ func load_game(notify_scene := true) -> Error:
+ 	if data.is_empty():
+ 		return ERR_FILE_NOT_FOUND
+ 	_loading = true   # apply() touches the bond -> its `changed` must not autosave
+-	var err := SaveGame.apply(data, party, storage, bond, player)
++	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs)
+ 	_loading = false
+ 	if err != OK:
+ 		push_error("GameSession: load failed (%s). Starting from default data." % error_string(err))
+@@ -64,6 +71,33 @@ func load_game(notify_scene := true) -> Error:
+ 	return OK
+ 
+ 
++## Back to starter party / storage / coins / badges / no defeated NPCs.
++## Does NOT touch the save file: the first autosave overwrites it.
++func new_game() -> Error:
++	var data := _starter_snapshot.duplicate(true)
++	data["player"]["play_time"] = 0.0
++	data["defeated_npcs"] = []
++	_loading = true
++	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs)
++	_loading = false
++	if err != OK:
++		push_error("GameSession: new game failed (%s)." % error_string(err))
++		return err
++	loaded.emit()
++	return OK
++
++
++func is_npc_defeated(id: String) -> bool:
++	return defeated_npcs.has(id)
++
++
++func mark_npc_defeated(id: String) -> void:
++	if id == "" or defeated_npcs.has(id):
++		return
++	defeated_npcs[id] = true
++	_autosave()
++
++
+ func delete_save() -> void:
+ 	for p in [save_path, save_path + ".bak", save_path + ".tmp"]:
+ 		if FileAccess.file_exists(p):
+diff --git a/tcc-jogo/combat_scene_manager.gd b/tcc-jogo/combat_scene_manager.gd
+index f2a553b..5b6f999 100644
+--- a/tcc-jogo/combat_scene_manager.gd
++++ b/tcc-jogo/combat_scene_manager.gd
+@@ -38,6 +38,7 @@ var _moved: bool = false # true only if characters really went to corners
+ func _ready() -> void:
+ 	CombatSignal.combat_start.connect(_on_combat_start)
+ 	CombatSignal.combat_ended.connect(_on_combat_ended)
++	CombatSignal.battle_finished.connect(_on_battle_finished)
+ 
+ 
+ func _on_combat_start(index: int, id2: int) -> void:
+@@ -76,6 +77,12 @@ func _on_combat_start(index: int, id2: int) -> void:
+ 	_send_characters_to_corners()
+ 
+ 
++## _enemy is still set here (cleared in _finish_battle, after combat_ended).
++func _on_battle_finished(player_won: bool, was_trainer: bool) -> void:
++	if player_won and was_trainer and _enemy is NPC:
++		(_enemy as NPC).mark_defeated()
++
++
+ func _on_combat_ended() -> void:
+ 	_free_enemy_actors()
+ 	_send_characters_home()
+diff --git a/tcc-jogo/project.godot b/tcc-jogo/project.godot
+index e859a29..a7943f4 100644
+--- a/tcc-jogo/project.godot
++++ b/tcc-jogo/project.godot
+@@ -11,7 +11,7 @@ config_version=5
+ [application]
+ 
+ config/name="TCC-Jogo"
+-run/main_scene="uid://qpi32vuj8vcr"
++run/main_scene="res://scenes/menu.tscn"
+ config/features=PackedStringArray("4.6", "GL Compatibility")
+ config/icon="res://icon.svg"
+ 
+diff --git a/tcc-jogo/scenes/menu.gd b/tcc-jogo/scenes/menu.gd
+new file mode 100644
+index 0000000..0ccee1b
+--- /dev/null
++++ b/tcc-jogo/scenes/menu.gd
+@@ -0,0 +1,52 @@
++extends Control
++
++## Title screen: New Game / Load Game / Quit.
++## No class_name on purpose: INTERFACES/menu.gd already owns "Menu".
++
++const GAME_SCENE := "res://scenes/main.tscn"
++
++@onready var new_button: Button = %NewGameButton
++@onready var load_button: Button = %LoadGameButton
++@onready var quit_button: Button = %QuitButton
++@onready var overwrite_dialog: ConfirmationDialog = %OverwriteDialog
++@onready var message: Label = %MessageLabel
++
++
++func _ready() -> void:
++	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
++	get_tree().paused = false
++
++	overwrite_dialog.dialog_text = "A saved game exists. Starting a new game will overwrite it. Continue?"
++	overwrite_dialog.ok_button_text = "New Game"
++	overwrite_dialog.cancel_button_text = "Cancel"
++
++	new_button.pressed.connect(_on_new_pressed)
++	load_button.pressed.connect(_on_load_pressed)
++	quit_button.pressed.connect(get_tree().quit)
++	overwrite_dialog.confirmed.connect(_start_new_game)
++
++	load_button.disabled = not GameSession.has_save()
++	(new_button if load_button.disabled else load_button).grab_focus()
++
++
++func _on_new_pressed() -> void:
++	if GameSession.has_save():
++		overwrite_dialog.popup_centered()
++	else:
++		_start_new_game()
++
++
++func _start_new_game() -> void:
++	if GameSession.new_game() != OK:
++		message.text = "Could not start a new game."
++		return
++	get_tree().change_scene_to_file(GAME_SCENE)
++
++
++func _on_load_pressed() -> void:
++	# false = main.tscn is not loaded yet, FollowerManager reads the party in _ready.
++	if GameSession.load_game(false) != OK:
++		message.text = "Save file is missing or corrupt."
++		load_button.disabled = not GameSession.has_save()
++		return
++	get_tree().change_scene_to_file(GAME_SCENE)
+diff --git a/tcc-jogo/scenes/menu.tscn b/tcc-jogo/scenes/menu.tscn
+new file mode 100644
+index 0000000..c93fb91
+--- /dev/null
++++ b/tcc-jogo/scenes/menu.tscn
+@@ -0,0 +1,66 @@
++[gd_scene format=3]
++
++[ext_resource type="Script" path="res://scenes/menu.gd" id="1_menu"]
++
++[node name="Menu" type="Control"]
++layout_mode = 3
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++grow_horizontal = 2
++grow_vertical = 2
++script = ExtResource("1_menu")
++
++[node name="Background" type="ColorRect" parent="."]
++layout_mode = 1
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++grow_horizontal = 2
++grow_vertical = 2
++color = Color(0.07, 0.08, 0.11, 1)
++
++[node name="Center" type="CenterContainer" parent="."]
++layout_mode = 1
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++grow_horizontal = 2
++grow_vertical = 2
++
++[node name="VBox" type="VBoxContainer" parent="Center"]
++custom_minimum_size = Vector2(280, 0)
++layout_mode = 2
++theme_override_constants/separation = 14
++
++[node name="Title" type="Label" parent="Center/VBox"]
++layout_mode = 2
++theme_override_font_sizes/font_size = 40
++text = "Alchemons"
++horizontal_alignment = 1
++
++[node name="NewGameButton" type="Button" parent="Center/VBox"]
++unique_name_in_owner = true
++custom_minimum_size = Vector2(0, 44)
++layout_mode = 2
++text = "New Game"
++
++[node name="LoadGameButton" type="Button" parent="Center/VBox"]
++unique_name_in_owner = true
++custom_minimum_size = Vector2(0, 44)
++layout_mode = 2
++text = "Load Game"
++
++[node name="QuitButton" type="Button" parent="Center/VBox"]
++unique_name_in_owner = true
++custom_minimum_size = Vector2(0, 44)
++layout_mode = 2
++text = "Quit"
++
++[node name="MessageLabel" type="Label" parent="Center/VBox"]
++unique_name_in_owner = true
++layout_mode = 2
++horizontal_alignment = 1
++
++[node name="OverwriteDialog" type="ConfirmationDialog" parent="."]
++unique_name_in_owner = true
+diff --git a/tcc-jogo/test/test_creature_persistence.gd b/tcc-jogo/test/test_creature_persistence.gd
+index 63073ef..cf23e14 100644
+--- a/tcc-jogo/test/test_creature_persistence.gd
++++ b/tcc-jogo/test/test_creature_persistence.gd
+@@ -375,3 +375,50 @@ func test_session_gives_starters_uids_and_saves_and_loads() -> void:
+ 	assert_int(s.load_game(false)).is_equal(OK)   # false: the real autoload must not hear party_changed and autosave
+ 	assert_int(s.party.party[0].level).is_equal(9)
+ 	assert_str(s.party.party[0].uid).is_equal(uid)
++
++
++# ---------------------------------------------------------------- defeated NPCs / new game
++
++func test_defeated_npcs_roundtrip_via_disk() -> void:
++	var w := _world()
++	var defeated := {"scene_1/SpawnPoint": true, "scene_2/SpawnPoint3": true}
++	assert_int(SaveGame.write_file(TMP_SAVE, SaveGame.serialize(w.party, w.storage, w.bond, w.player, defeated))).is_equal(OK)
++
++	var w2 := _world(0, 0)
++	var loaded := {"stale/Npc": true}   # must be replaced, not merged
++	assert_int(SaveGame.apply(SaveGame.read_file(TMP_SAVE), w2.party, w2.storage, w2.bond, w2.player, loaded)).is_equal(OK)
++	assert_int(loaded.size()).is_equal(2)
++	assert_bool(loaded.has("scene_1/SpawnPoint")).is_true()
++	assert_bool(loaded.has("stale/Npc")).is_false()
++
++
++func test_old_save_without_defeated_key_loads_empty() -> void:
++	var w := _world()
++	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
++	data.erase("defeated_npcs")
++	var loaded := {"x/y": true}
++	assert_int(SaveGame.apply(data, w.party, w.storage, w.bond, w.player, loaded)).is_equal(OK)
++	assert_bool(loaded.is_empty()).is_true()
++
++
++func test_session_new_game_resets_progress() -> void:
++	var s := _session(TMP_SAVE)
++	var starter_money: int = s.player.money
++	var starter_party: int = s.party.party.size()
++	s.player.money = 9999
++	s.party.party.clear()
++	s.mark_npc_defeated("scene_1/SpawnPoint")
++	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_true()
++	assert_int(s.new_game()).is_equal(OK)
++	assert_int(s.player.money).is_equal(starter_money)
++	assert_int(s.party.party.size()).is_equal(starter_party)
++	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_false()
++	assert_float(s.player.get_play_time()).is_less(5.0)
++
++
++func test_session_defeated_survives_save_load() -> void:
++	var s := _session(TMP_SAVE)
++	s.mark_npc_defeated("scene_1/SpawnPoint")   # autosaves
++	s.defeated_npcs.clear()
++	assert_int(s.load_game(false)).is_equal(OK)
++	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_true()
