@@ -108,7 +108,7 @@ func _input(event: InputEvent) -> void:
 	var pressed := false
 	if event is InputEventKey:
 		pressed = event.pressed and not event.echo
-	elif event is InputEventMouseButton or event is InputEventJoypadButton:
+	elif event is InputEventJoypadButton:   # mouse is ignored in game
 		pressed = event.pressed
 	if pressed:
 		_done = true

@@ -9,8 +9,12 @@
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
 [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
 [ext_resource type="PackedScene" uid="uid://c1s742glubqgs" path="res://INTERFACES/game_menu.tscn" id="10_choun"]
+[ext_resource type="Script" path="res://scenes/mouse_blocker.gd" id="99_mouseblk"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
+
+[node name="MouseBlocker" type="Node" parent="."]
+script = ExtResource("99_mouseblk")
 
 [node name="GameMenu" parent="." unique_id=825610973 instance=ExtResource("10_choun")]
 

@@ -12,6 +12,8 @@ class_name NPC
 @export var alchemon1:int =1
 @export var alchemon2: int =1
 var alchemon_level: int = -1
+## Stable id set by Level ("scene_1/SpawnPoint"). Key in the save's defeated list.
+var npc_id: String = ""
 
 
 func _ready() -> void:
@@ -43,7 +45,14 @@ func talk():
 	
 
 #Func do combate
+func mark_defeated() -> void:
+	figther = false
+	GameSession.mark_npc_defeated(npc_id)
+
+
 func _on_combat_area_entered(area: Area3D) -> void:
+	if not figther:
+		return
 	if CombatSignal.in_combat:
 		return # characters being moved around by the battle, ignore
 	if area.is_in_group("player") and is_combat_zone !=true:

@@ -17,12 +17,13 @@ enum Mode { CLOSED, LIST, PAGE }
 ## name = label | icon = texture path ("" = letter placeholder)
 ## page = scene path, root extends MenuPage ("" = placeholder page)
 ## action = "exit" asks to quit instead of opening a page.
+## action = "save" writes the save file (replaces the old one) and shows a toast.
 @export var entries: Array[Dictionary] = [
 	{"name": "Table", "icon": "", "page": "res://INTERFACES/pages/table_page.tscn"},
 	{"name": "Bag", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
 	{"name": "Alchemons", "icon": "", "page": "res://INTERFACES/pages/alchemons_page.tscn"},
 	{"name": "Player", "icon": "", "page": "res://INTERFACES/pages/player_page.tscn"},
-	{"name": "Save", "icon": "", "page": ""},
+	{"name": "Save", "icon": "", "page": "", "action": "save"},
 	{"name": "Exit", "icon": "", "page": "", "action": "exit"},
 ]
 @export var icon_size := Vector2(40, 40)
@@ -42,6 +43,8 @@ var _labels: Array[Label] = []
 var _page_panel: PanelContainer
 var _page: MenuPage
 var _exit_dialog: ConfirmationDialog
+var _toast: Label
+var _toast_id := 0
 
 
 func _ready() -> void:
@@ -96,6 +99,15 @@ func _build() -> void:
 	_exit_dialog.cancel_button_text = "Cancelar"
 	_exit_dialog.confirmed.connect(func(): get_tree().quit())
 	add_child(_exit_dialog)
+
+	_toast = Label.new()
+	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_toast.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_toast.offset_bottom = -48.0
+	_toast.add_theme_font_size_override("font_size", 22)
+	_toast.visible = false
+	_root.add_child(_toast)
 
 
 func _add_slot(parent: Control, i: int) -> void:
@@ -188,6 +200,7 @@ func open_menu() -> void:
 
 
 func close_menu() -> void:
+	_toast.visible = false
 	_clear_page()
 	_mode = Mode.CLOSED
 	_root.visible = false
@@ -205,6 +218,10 @@ func _open_entry(i: int) -> void:
 		_exit_dialog.popup_centered()
 		return
 
+	if e.get("action", "") == "save":
+		_save_game()
+		return
+
 	_clear_page()
 	_open_index = i
 	_page = _make_page(e)
@@ -215,6 +232,20 @@ func _open_entry(i: int) -> void:
 	_refresh_rows()
 	_page.on_open()
 	page_opened.emit(e.get("name", ""))
+
+
+## Same file every time: GameSession.save_game() replaces the old one
+## (the previous save is kept once as slot_1.json.bak).
+func _save_game() -> void:
+	var ok := GameSession.save_game() == OK
+	_toast.text = "Game saved." if ok else "Could not save the game!"
+	_toast.add_theme_color_override("font_color", GOLD if ok else Color(1, 0.4, 0.4))
+	_toast.visible = true
+	_toast_id += 1
+	var id := _toast_id
+	await get_tree().create_timer(1.5, true).timeout   # true = still ticks while paused
+	if id == _toast_id:                                # a newer save restarts the timer
+		_toast.visible = false
 
 
 func _make_page(e: Dictionary) -> MenuPage:

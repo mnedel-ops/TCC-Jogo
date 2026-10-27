@@ -38,6 +38,7 @@ var _moved: bool = false # true only if characters really went to corners
 func _ready() -> void:
 	CombatSignal.combat_start.connect(_on_combat_start)
 	CombatSignal.combat_ended.connect(_on_combat_ended)
+	CombatSignal.battle_finished.connect(_on_battle_finished)
 
 
 func _on_combat_start(index: int, id2: int) -> void:
@@ -74,6 +75,12 @@ func _on_combat_start(index: int, id2: int) -> void:
 	combat_holder.add_child(combatScenes)
 
 	_send_characters_to_corners()
+
+
+## _enemy is still set here (cleared in _finish_battle, after combat_ended).
+func _on_battle_finished(player_won: bool, was_trainer: bool) -> void:
+	if player_won and was_trainer and _enemy is NPC:
+		(_enemy as NPC).mark_defeated()
 
 
 func _on_combat_ended() -> void:

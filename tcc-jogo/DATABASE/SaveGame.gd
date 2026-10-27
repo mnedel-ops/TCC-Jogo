@@ -15,7 +15,8 @@ extends RefCounted
 const FORMAT_VERSION := 1
 
 
-static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData) -> Dictionary:
+## defeated = {npc_id: true}, owned by GameSession. Optional so old callers still work.
+static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Dictionary:
 	var party_list: Array = []
 	for inst in party.party:
 		if inst != null:
@@ -42,6 +43,9 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 		"party": party_list,
 		"storage": storage_list,
 		"bond": {"kind": bond.kind, "member_uids": bond_uids},
+		"defeated_npcs": defeated.keys(),
+		"inventory": inventory.items.duplicate() if inventory != null else [],
+		"position": position.duplicate(),   # {level, x, y, z, yaw}; {} = start of the game
 		"player": {
 			"name": player.player_name,
 			"team_name": player.team_name,
@@ -55,7 +59,8 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 ## Validates and parses EVERYTHING first, then commits. A bad file returns an
 ## error and leaves the live resources untouched.
 ## Mutates the arrays in place so every scene already holding the resource sees it.
-static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData) -> Error:
+## defeated is cleared + refilled in place. Save without the key = nobody defeated.
+static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Error:
 	data = _migrate(data)
 	var version := int(data.get("format_version", 0))
 	if version < 1 or version > FORMAT_VERSION:
@@ -64,11 +69,37 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 	if not (data.get("party") is Array) or not (data.get("storage") is Array):
 		return ERR_INVALID_DATA
 
+	var new_defeated := {}
+	var raw_defeated = data.get("defeated_npcs", [])
+	if raw_defeated is Array:
+		for id in raw_defeated:
+			if id is String and id != "":
+				new_defeated[id] = true
+
+	# Item indices. JSON numbers come back as float. Save without the key = keep bag as is.
+	var new_items: Array[int] = []
+	var has_items: bool = data.get("inventory") is Array
+	if has_items:
+		for n in data["inventory"]:
+			if n is float or n is int:
+				new_items.append(int(n))
+
+	# Where the player stood. Missing / malformed = {} = the game starts at its first spawn.
+	var new_position := _read_position(data.get("position"))
+
 	var seen := {}
 	var new_party := _load_list(data["party"], seen)
 	var new_storage := _load_list(data["storage"], seen)
 
 	# --- commit ---
+	defeated.clear()
+	defeated.merge(new_defeated)
+	position.clear()
+	position.merge(new_position)
+	if inventory != null and has_items:
+		inventory.items.clear()
+		inventory.items.append_array(new_items)
+		inventory.emit_changed()
 	party.party.clear()
 	party.party.append_array(new_party)
 	storage.instances.clear()
@@ -166,3 +197,18 @@ static func read_file(path: String) -> Dictionary:
 				push_warning("SaveGame: %s unreadable, recovered from backup." % path)
 			return parsed
 	return {}
+
+
+static func _read_position(raw) -> Dictionary:
+	if not (raw is Dictionary):
+		return {}
+	var level = raw.get("level")
+	if not (level is String) or level == "":
+		return {}
+	var out := {"level": level}
+	for k in ["x", "y", "z", "yaw"]:
+		var v = raw.get(k, 0.0)
+		if not (v is float or v is int) or not is_finite(float(v)):
+			return {}
+		out[k] = float(v)
+	return out

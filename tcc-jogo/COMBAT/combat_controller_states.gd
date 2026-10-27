@@ -404,6 +404,7 @@ func _sync_captures() -> void:
 
 func _show_combat_end() -> void:
 	commands.hide_menu()
+	CombatSignal.battle_finished.emit(state.player_won, is_trainer_battle)
 	var rewards := BattleRewards.build(state, database, player_species_ids, is_trainer_battle)
 	if player_data != null and rewards.money > 0:
 		player_data.add_money(rewards.money)

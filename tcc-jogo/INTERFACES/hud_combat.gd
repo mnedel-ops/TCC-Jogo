@@ -16,6 +16,7 @@ func update_all(entries: Array[Dictionary]) -> void:
 				continue
 			b = BALLOON_SCENE.instantiate()
 			add_child(b)
+
 			b.bind(anchor)
 			_balloons[e.id] = b
 		b.update_entry(e)

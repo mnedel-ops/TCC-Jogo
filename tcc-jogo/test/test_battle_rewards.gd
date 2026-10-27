@@ -125,8 +125,19 @@ func test_screen_ignores_input_until_delay_then_dismisses_on_any_key() -> void:
 	assert_int(hits.size()).is_equal(1)
 
 
-func test_mouse_and_gamepad_also_dismiss() -> void:
-	for ev in [InputEventMouseButton.new(), InputEventJoypadButton.new()]:
+func test_gamepad_also_dismisses_mouse_does_not() -> void:
+	var mouse := InputEventMouseButton.new()
+	mouse.pressed = true
+	var s := BattleRewardsScreen.new()
+	add_child(auto_free(s))
+	var mouse_hits := []
+	s.dismissed.connect(func(): mouse_hits.append(1))
+	s.show_rewards(BattleRewards.new())
+	await get_tree().create_timer(BattleRewardsScreen.INPUT_DELAY + 0.2).timeout
+	s._input(mouse)
+	assert_int(mouse_hits.size()).is_equal(0)
+
+	for ev in [InputEventJoypadButton.new()]:
 		var screen := BattleRewardsScreen.new()
 		add_child(auto_free(screen))
 		var hits := []

@@ -358,6 +358,7 @@ func _session(path: String) -> Node:
 	s.storage = s.storage.duplicate(true)
 	s.bond = s.bond.duplicate(true)
 	s.player = s.player.duplicate(true)
+	s.inventory = s.inventory.duplicate(true)
 	add_child(s)
 	return auto_free(s)
 
@@ -375,3 +376,137 @@ func test_session_gives_starters_uids_and_saves_and_loads() -> void:
 	assert_int(s.load_game(false)).is_equal(OK)   # false: the real autoload must not hear party_changed and autosave
 	assert_int(s.party.party[0].level).is_equal(9)
 	assert_str(s.party.party[0].uid).is_equal(uid)
+
+
+# ---------------------------------------------------------------- defeated NPCs / new game
+
+func test_defeated_npcs_roundtrip_via_disk() -> void:
+	var w := _world()
+	var defeated := {"scene_1/SpawnPoint": true, "scene_2/SpawnPoint3": true}
+	assert_int(SaveGame.write_file(TMP_SAVE, SaveGame.serialize(w.party, w.storage, w.bond, w.player, defeated))).is_equal(OK)
+
+	var w2 := _world(0, 0)
+	var loaded := {"stale/Npc": true}   # must be replaced, not merged
+	assert_int(SaveGame.apply(SaveGame.read_file(TMP_SAVE), w2.party, w2.storage, w2.bond, w2.player, loaded)).is_equal(OK)
+	assert_int(loaded.size()).is_equal(2)
+	assert_bool(loaded.has("scene_1/SpawnPoint")).is_true()
+	assert_bool(loaded.has("stale/Npc")).is_false()
+
+
+func test_old_save_without_defeated_key_loads_empty() -> void:
+	var w := _world()
+	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	data.erase("defeated_npcs")
+	var loaded := {"x/y": true}
+	assert_int(SaveGame.apply(data, w.party, w.storage, w.bond, w.player, loaded)).is_equal(OK)
+	assert_bool(loaded.is_empty()).is_true()
+
+
+func test_session_new_game_resets_progress() -> void:
+	var s := _session(TMP_SAVE)
+	var starter_money: int = s.player.money
+	var starter_party: int = s.party.party.size()
+	s.player.money = 9999
+	s.party.party.clear()
+	s.mark_npc_defeated("scene_1/SpawnPoint")
+	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_true()
+	assert_int(s.new_game()).is_equal(OK)
+	assert_int(s.player.money).is_equal(starter_money)
+	assert_int(s.party.party.size()).is_equal(starter_party)
+	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_false()
+	assert_float(s.player.get_play_time()).is_less(5.0)
+
+
+func test_session_defeated_survives_save_load() -> void:
+	var s := _session(TMP_SAVE)
+	s.mark_npc_defeated("scene_1/SpawnPoint")
+	assert_int(s.save_game()).is_equal(OK)
+	s.defeated_npcs.clear()
+	assert_int(s.load_game(false)).is_equal(OK)
+	assert_bool(s.is_npc_defeated("scene_1/SpawnPoint")).is_true()
+
+
+func test_inventory_roundtrip_via_disk() -> void:
+	var w := _world()
+	var bag := InventoryData.new()
+	bag.items = [3, 3, 5]
+	assert_int(SaveGame.write_file(TMP_SAVE, SaveGame.serialize(w.party, w.storage, w.bond, w.player, {}, bag))).is_equal(OK)
+
+	var bag2 := InventoryData.new()
+	bag2.items = [9]   # must be replaced
+	assert_int(SaveGame.apply(SaveGame.read_file(TMP_SAVE), w.party, w.storage, w.bond, w.player, {}, bag2)).is_equal(OK)
+	assert_array(bag2.items).is_equal([3, 3, 5])
+	assert_int(bag2.get_quantity(3)).is_equal(2)
+
+
+func test_old_save_without_inventory_keeps_bag() -> void:
+	var w := _world()
+	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	data.erase("inventory")
+	var bag := InventoryData.new()
+	bag.items = [4]
+	assert_int(SaveGame.apply(data, w.party, w.storage, w.bond, w.player, {}, bag)).is_equal(OK)
+	assert_array(bag.items).is_equal([4])
+
+
+func test_session_inventory_saved_and_new_game_resets() -> void:
+	var s := _session(TMP_SAVE)
+	var starter: Array = s.inventory.items.duplicate()
+	s.inventory.add_item(7)
+	assert_int(s.save_game()).is_equal(OK)
+	s.inventory.items.clear()
+	assert_int(s.load_game(false)).is_equal(OK)
+	assert_bool(s.inventory.items.has(7)).is_true()
+	assert_int(s.new_game()).is_equal(OK)
+	assert_array(s.inventory.items).is_equal(starter)
+
+
+func test_no_file_until_player_saves_and_save_replaces() -> void:
+	DirAccess.remove_absolute(TMP_SAVE)
+	var s := _session(TMP_SAVE)
+	s.mark_npc_defeated("scene_1/SpawnPoint")
+	s.inventory.add_item(7)
+	s.party.changed.emit()
+	assert_bool(FileAccess.file_exists(TMP_SAVE)).is_false()   # autosave is off
+
+	assert_int(s.save_game()).is_equal(OK)                      # Save button
+	s.player.money += 50
+	assert_int(s.save_game()).is_equal(OK)                      # save again = same file, new content
+	var data := SaveGame.read_file(TMP_SAVE)
+	assert_int(int(data["player"]["money"])).is_equal(s.player.money)
+
+
+func test_position_roundtrip_and_resume_once() -> void:
+	var s := _session(TMP_SAVE)
+	s.world_position = {"level": "res://scenes/scene_2.tscn", "x": 1.5, "y": 0.25, "z": -7.0, "yaw": 1.2}
+	assert_int(s.save_game()).is_equal(OK)    # no scene manager in the test tree: keeps the dict
+	s.world_position = {}
+	assert_int(s.load_game(false)).is_equal(OK)
+	assert_str(s.world_position["level"]).is_equal("res://scenes/scene_2.tscn")
+	assert_float(s.world_position["x"]).is_equal(1.5)
+	assert_float(s.world_position["yaw"]).is_equal_approx(1.2, 0.0001)
+	assert_bool(s.take_resume_position().is_empty()).is_false()
+	assert_bool(s.take_resume_position().is_empty()).is_true()   # consumed: a door/reload must not teleport again
+
+
+func test_new_game_forgets_position() -> void:
+	var s := _session(TMP_SAVE)
+	s.world_position = {"level": "res://scenes/scene_2.tscn", "x": 1.0, "y": 0.0, "z": 1.0, "yaw": 0.0}
+	assert_int(s.new_game()).is_equal(OK)
+	assert_bool(s.world_position.is_empty()).is_true()
+	assert_bool(s.take_resume_position().is_empty()).is_true()
+
+
+func test_bad_or_missing_position_loads_as_empty() -> void:
+	var w := _world()
+	for bad in [null, 5, {}, {"level": ""}, {"level": "res://a.tscn", "x": "no", "y": 0, "z": 0}]:
+		var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+		data["position"] = bad
+		var pos := {"level": "stale"}
+		assert_int(SaveGame.apply(data, w.party, w.storage, w.bond, w.player, {}, null, pos)).is_equal(OK)
+		assert_bool(pos.is_empty()).is_true()
+	var old := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	old.erase("position")
+	var pos2 := {"level": "stale"}
+	assert_int(SaveGame.apply(old, w.party, w.storage, w.bond, w.player, {}, null, pos2)).is_equal(OK)
+	assert_bool(pos2.is_empty()).is_true()

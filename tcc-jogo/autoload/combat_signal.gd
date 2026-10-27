@@ -1,6 +1,9 @@
 extends Node
 signal combat_start(alchemonA: int, alchemonB: int)
 signal combat_ended
+## Outcome known, before the rewards screen. CombatSceneManager uses it to mark
+## the beaten trainer NPC as defeated.
+signal battle_finished(player_won: bool, was_trainer: bool)
 ## Battle results (HP, XP, level, captures) were written into the persistent
 ## creatures. Emitted by the combat controller AFTER CreatureSync. Prefer this
 ## over combat_ended for saving: combat_ended also fires from CombatRules, before

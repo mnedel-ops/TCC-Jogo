@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="TCC-Jogo"
-run/main_scene="uid://qpi32vuj8vcr"
+run/main_scene="res://scenes/menu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
