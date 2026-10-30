@@ -22,7 +22,7 @@ enum Level { LIST, OPTION }
 
 const OPTIONS := ["Alchemy", "Stored", "Exit"]
 const DESCRIPTIONS := {
-	"Alchemy": "Make the Component (bond).\nPick 2 Alchemons from party + storage.\nThe Component goes into every fight.",
+	"Alchemy": "Make the Component (bond).\nPick 2 Alchemons from party + storage.\nThe Component goes into every fight.\nWith an active Component you can only break it.",
 	"Stored": "Stored Alchemons.\nSwap captured Alchemons with your party.",
 	"Exit": "Close the PC.",
 }
@@ -430,19 +430,28 @@ func _refresh_all() -> void:
 	_refresh_stored()
 
 
+func _has_active_bond() -> bool:
+	return _bond != null and _bond.is_active()
+
+
 func _refresh_alchemy() -> void:
 	var keep := _alch_list.get_selected_items()
 	_alch_list.clear()
 	_alch_rows.clear()
 	_alch_header.text = _bond_text()
 
-	for inst in _party():
-		_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Party"})
-	for inst in _stored():
-		_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Stored"})
-	_alch_rows.append({"kind": "make"})
-	if _bond != null and _bond.is_active():
+	if _has_active_bond():
+		# A Component is active: the only thing allowed is breaking it.
+		_alch_picked.clear()
 		_alch_rows.append({"kind": "break"})
+		if _alch_info.text == "":
+			_alch_info.text = "A Component is active. Break it to make a new one."
+	else:
+		for inst in _party():
+			_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Party"})
+		for inst in _stored():
+			_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Stored"})
+		_alch_rows.append({"kind": "make"})
 	_alch_rows.append({"kind": "back"})
 
 	for r in _alch_rows:
@@ -512,6 +521,9 @@ func _alchemy_select() -> void:
 ## Validates the chosen pair with AlchemyStation. Valid -> the pair becomes the
 ## party (the other Alchemons go to storage) and the bond is saved.
 func _make_component() -> void:
+	if _has_active_bond():
+		_alch_info.text = "Break the current Component first."
+		return
 	if _alch_picked.size() != 2:
 		_alch_info.text = "Select exactly 2 Alchemons."
 		return

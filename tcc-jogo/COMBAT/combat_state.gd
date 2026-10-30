@@ -52,8 +52,10 @@ func get_alive_ids(ids: Array[int]) -> Array[int]:
 	return alive_ids
 
 
-## Alive AND not a bonded Compound Cation. A Cation is invulnerable/
-## untargetable and never acts (BondRules._apply_compound) - this is the
+## Alive AND not an inactive member of a Compound (Cation or Anion). Both are
+## untargetable and never act: only the Compound's active member does
+## (BondRules._apply_compound_group). When the active member falls, the others
+## are released and count again. This is the
 ## list to use for turn order, targeting, and action-selection, never
 ## get_alive_ids directly (that one still counts a Cation as "alive" for
 ## combat-end checks, which is correct - the pair isn't defeated).
@@ -61,7 +63,7 @@ func get_active_ids(ids: Array[int]) -> Array[int]:
 	var active_ids: Array[int] = []
 	for id in get_alive_ids(ids):
 		var c := get_combatant(id)
-		if c.bond_kind == BondRules.COMPOUND and c.is_bond_cation:
+		if c.bond_kind == BondRules.COMPOUND and (c.is_bond_cation or c.is_bond_inactive):
 			continue
 		active_ids.append(id)
 	return active_ids

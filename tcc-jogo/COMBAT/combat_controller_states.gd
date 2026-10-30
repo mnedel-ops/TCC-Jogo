@@ -89,7 +89,7 @@ func _log_initiative_order() -> void:
 func _bond_tag(c: CombatantState) -> String:
 	match c.bond_kind:
 		BondRules.NONE:
-			return "Cagao"
+			return ""
 		BondRules.MIXTURE:
 			return " [Mistura c/ %s]" % _name_of(c.bond_partner_id)
 		BondRules.COMPOUND:
