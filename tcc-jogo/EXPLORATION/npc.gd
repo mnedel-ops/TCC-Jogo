@@ -14,6 +14,15 @@ var dialogue_defeated: String = ""
 var is_trainer: bool = false
 var _balloon: DialogueBalloon
 
+## Shopkeeper: opens the Buy / Sell / Leave box instead of the balloon.
+var is_shopkeeper: bool = false
+const SHOP_FALLBACK_GREETING := "Bem-vindo! O que deseja?"
+var _shop: ShopDialogueBox
+var _shop_player: Player
+## Leave is picked with the same key as ui_interact. This NPC polls that key in
+## _process, same frame, and would reopen the shop. Frame stamp blocks it.
+var _shop_closed_frame: int = -1
+
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
 @onready var is_combat_zone : bool = false 
@@ -38,7 +47,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if CombatSignal.in_combat:
 		_balloon.close()
+		_close_shop()
 		return
+	if _shop != null:
+		return   # shop box owns the input
 	if Input.is_action_just_pressed("ui_interact") and is_zone and not (figther and is_combat_zone):
 		talk()
 
@@ -50,6 +62,7 @@ func _on_area_exited(area: Area3D) -> void:
 	if is_zone:
 		is_zone = false
 		_balloon.close()
+		_close_shop()
 
 
 ## Balloons live in screen space, so they need a CanvasLayer (this node is 3D).
@@ -71,12 +84,59 @@ func get_dialogue() -> String:
 
 ## 1st press opens the balloon, press while typing = show all text, next press closes.
 func talk() -> void:
+	if is_shopkeeper:
+		open_shop()
+		return
 	if _balloon.is_typing():
 		_balloon.skip_typing()
 	elif _balloon.is_open():
 		_balloon.close()
 	else:
 		_balloon.show_text(get_dialogue())
+
+
+#Func da loja
+func open_shop() -> void:
+	if _shop != null or Engine.get_process_frames() == _shop_closed_frame:
+		return
+	_balloon.close()
+	_lock_player(true)
+	_shop = ShopDialogueBox.new()
+	add_child(_shop)
+	_shop.open(dialogue if dialogue != "" else SHOP_FALLBACK_GREETING)
+	_shop.closed.connect(_close_shop)
+	_shop.option_chosen.connect(_on_shop_option)
+
+
+func _close_shop() -> void:
+	if _shop == null:
+		return
+	_shop.queue_free()
+	_shop = null
+	_shop_closed_frame = Engine.get_process_frames()
+	_lock_player(false)
+
+
+## Hook for the real shop screens. Buy / Sell do nothing yet.
+func _on_shop_option(_option: StringName) -> void:
+	pass
+
+
+## Player stands still while the box is open (same trick CombatHandler uses).
+func _lock_player(locked: bool) -> void:
+	if locked:
+		_shop_player = null
+		for n in get_tree().get_nodes_in_group("player"):
+			if n is Player:
+				_shop_player = n
+				break
+	if _shop_player == null or not is_instance_valid(_shop_player):
+		return
+	if locked:
+		_shop_player.velocity = Vector3.ZERO
+	_shop_player.set_physics_process(not locked)
+	if not locked:
+		_shop_player = null
 
 
 #Func do combate

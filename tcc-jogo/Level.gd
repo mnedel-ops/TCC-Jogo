@@ -28,9 +28,13 @@ func  place_npcs():
 		npc_scene_guy.npc_id = id
 		npc_scene_guy.dialogue = marker.dialogue
 		npc_scene_guy.dialogue_defeated = marker.dialogue_defeated
-		npc_scene_guy.is_trainer = marker.is_fighter
+		npc_scene_guy.is_shopkeeper = marker.is_shopkeeper
+		if marker.is_shopkeeper and marker.is_fighter:
+			push_warning("%s: is_shopkeeper and is_fighter both on. Shopkeeper wins, no fight." % id)
+		var fights := marker.is_fighter and not marker.is_shopkeeper
+		npc_scene_guy.is_trainer = fights
 		# Already beaten (loaded save): still spawns and can talk, never fights again.
-		npc_scene_guy.figther = marker.is_fighter and not GameSession.is_npc_defeated(id)
+		npc_scene_guy.figther = fights and not GameSession.is_npc_defeated(id)
 		if npc_scene_guy.figther:
 			npc_scene_guy.alchemon1 = marker.alchemons_ids[0] if marker.alchemons_ids.size() > 0 else -1
 			npc_scene_guy.alchemon2 = marker.alchemons_ids[1] if marker.alchemons_ids.size() > 1 else -1

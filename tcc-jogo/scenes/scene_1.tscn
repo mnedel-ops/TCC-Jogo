@@ -56,6 +56,13 @@ npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([3, 3])
 dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
 
+[node name="SpawnPoint4" type="Marker3D" parent="NPCHolder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 6)
+script = ExtResource("3_lki8s")
+npc_scene = ExtResource("3_cn2eb")
+is_shopkeeper = true
+dialogue = "Bem-vindo à minha loja! O que vai ser hoje?"
+
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")
 
