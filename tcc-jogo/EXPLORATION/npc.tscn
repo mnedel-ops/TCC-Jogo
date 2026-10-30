@@ -40,23 +40,8 @@ collision_layer = 8
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_ideak")
 
-[node name="Root" type="Control" parent="." unique_id=1152905465]
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="Dialogo" type="Label" parent="Root" unique_id=1803018782]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
-text = "Estamos conversando..."
-
 [node name="CombatCollision" type="Area3D" parent="." unique_id=649249875]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CombatCollision" unique_id=456885469]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.013305664, 1, 1.1700058)
 shape = SubResource("BoxShape3D_nkfb8")
-
-[connection signal="area_entered" from="DialogueCollision" to="." method="_on_dialogue_collision_area_entered"]
-[connection signal="area_exited" from="DialogueCollision" to="." method="_on_dialogue_collision_area_exited"]

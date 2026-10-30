@@ -26,6 +26,9 @@ func  place_npcs():
 		
 		var id := npc_id_for(marker)
 		npc_scene_guy.npc_id = id
+		npc_scene_guy.dialogue = marker.dialogue
+		npc_scene_guy.dialogue_defeated = marker.dialogue_defeated
+		npc_scene_guy.is_trainer = marker.is_fighter
 		# Already beaten (loaded save): still spawns and can talk, never fights again.
 		npc_scene_guy.figther = marker.is_fighter and not GameSession.is_npc_defeated(id)
 		if npc_scene_guy.figther:

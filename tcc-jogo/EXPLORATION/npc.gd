@@ -3,7 +3,16 @@ class_name NPC
 
 @onready var dialoguearea : Area3D = $DialogueCollision
 @onready var is_zone : bool = false 
-@onready var dialogueBox : Label = $Root/Dialogo
+
+const BALLOON_SCENE: PackedScene = preload("res://INTERFACES/dialogue_balloon.tscn")
+## Set by Level from the NPCSpawnPoint marker.
+## dialogue = the only line of a normal NPC, or the line BEFORE the fight of a trainer.
+var dialogue: String = ""
+## Trainer only: line said after the player beat it.
+var dialogue_defeated: String = ""
+## Marker said is_fighter. Stays true after the defeat (figther goes false).
+var is_trainer: bool = false
+var _balloon: DialogueBalloon
 
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
@@ -19,7 +28,7 @@ var npc_id: String = ""
 func _ready() -> void:
 	dialoguearea.area_entered.connect(_on_area_entered)
 	dialoguearea.area_exited.connect(_on_area_exited)
-	dialogueBox.visible = false
+	_create_balloon()
 	
 	if figther:
 		combat_collision.area_entered.connect(_on_combat_area_entered)
@@ -27,7 +36,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed("ui_interact") and is_zone and is_combat_zone != true:
+	if CombatSignal.in_combat:
+		_balloon.close()
+		return
+	if Input.is_action_just_pressed("ui_interact") and is_zone and not (figther and is_combat_zone):
 		talk()
 
 #Func do dialogo
@@ -37,12 +49,35 @@ func _on_area_entered(area: Area3D) -> void:
 func _on_area_exited(area: Area3D) -> void:
 	if is_zone:
 		is_zone = false
-		dialogueBox.visible =false
+		_balloon.close()
 
-func talk():
-	print("Estamos conversando...")
-	dialogueBox.visible = true
-	
+
+## Balloons live in screen space, so they need a CanvasLayer (this node is 3D).
+func _create_balloon() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 5
+	add_child(layer)
+	_balloon = BALLOON_SCENE.instantiate()
+	layer.add_child(_balloon)
+	_balloon.bind(self)
+
+
+## Normal NPC: always `dialogue`. Trainer: `dialogue` until beaten, then `dialogue_defeated`.
+func get_dialogue() -> String:
+	if is_trainer and not figther and dialogue_defeated != "":
+		return dialogue_defeated
+	return dialogue if dialogue != "" else "..."
+
+
+## 1st press opens the balloon, press while typing = show all text, next press closes.
+func talk() -> void:
+	if _balloon.is_typing():
+		_balloon.skip_typing()
+	elif _balloon.is_open():
+		_balloon.close()
+	else:
+		_balloon.show_text(get_dialogue())
+
 
 #Func do combate
 func mark_defeated() -> void:

@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://INTERFACES/dialogue_balloon.gd" id="1_dlg"]
+
+[node name="DialogueBalloon" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_dlg")

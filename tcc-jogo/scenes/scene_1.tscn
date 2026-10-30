@@ -39,18 +39,22 @@ npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([1, 2])
 level = 2
 is_fighter = true
+dialogue = "Ei, você! Meus Alchemons estão com vontade de brigar. Prepare-se!"
+dialogue_defeated = "Você é forte mesmo... Meus Alchemons precisam treinar mais."
 
 [node name="SpawnPoint2" type="Marker3D" parent="NPCHolder" unique_id=524408964]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.525158, 0, -3.5990982)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([1, 1])
+dialogue = "Dizem que cada Alchemon tem uma personalidade própria. Cuide bem dos seus!"
 
 [node name="SpawnPoint3" type="Marker3D" parent="NPCHolder" unique_id=380600726]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.53906, 0, 9.237663)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([3, 3])
+dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")
