@@ -24,6 +24,7 @@ var storage: CapturedStorage = load("res://DATABASE/Alchemons/captured_storage.t
 var bond: PlayerBondData = load("res://DATABASE/Alchemons/player_bond.tres")
 var player: PlayerData = load("res://DATABASE/Player/player.tres")
 var inventory: InventoryData = load("res://DATABASE/Inventory/inventory.tres")
+var database: AlchemonDatabase = load("res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres")
 
 ## NPC ids (see Level.npc_id_for) the player already beat. Saved in the JSON.
 ## Dictionary used as a set: {id: true}. Never replace it, SaveGame fills it in place.
@@ -113,6 +114,18 @@ func _capture_position() -> Dictionary:
 		return {}
 	var sm := get_tree().get_first_node_in_group("scene_manager")
 	return sm.get_save_position() if sm != null and sm.has_method("get_save_position") else {}
+
+
+## Alchemon Center: every creature the player carries (party, max 2) back to full
+## HP and energy. Also revives fainted ones. Storage (PC) is not touched.
+func heal_party() -> void:
+	for inst in party.party:
+		if inst == null:
+			continue
+		var sheet := database.get_by_id(inst.species_id)
+		inst.current_hp = inst.max_hp_for(sheet) if sheet != null else AlchemonInstance.UNSET
+		inst.current_energy = AlchemonInstance.UNSET
+	_autosave()
 
 
 func is_npc_defeated(id: String) -> bool:

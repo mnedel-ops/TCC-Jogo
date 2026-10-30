@@ -63,6 +63,14 @@ npc_scene = ExtResource("3_cn2eb")
 is_shopkeeper = true
 dialogue = "Bem-vindo à minha loja! O que vai ser hoje?"
 
+[node name="SpawnPoint5" type="Marker3D" parent="NPCHolder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 6)
+script = ExtResource("3_lki8s")
+npc_scene = ExtResource("3_cn2eb")
+is_healer = true
+dialogue = "Bem-vindo ao Centro Alchemon! Quer curar seus Alchemons?"
+dialogue_healed = "Pronto! Seus Alchemons estão completamente curados. Volte sempre!"
+
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")
 

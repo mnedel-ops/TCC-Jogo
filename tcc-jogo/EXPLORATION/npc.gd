@@ -18,10 +18,19 @@ var _balloon: DialogueBalloon
 var is_shopkeeper: bool = false
 const SHOP_FALLBACK_GREETING := "Bem-vindo! O que deseja?"
 var _shop: ShopDialogueBox
-var _shop_player: Player
+
+## Alchemon Center: asks "heal?", waits a bit, heals the party.
+var is_healer: bool = false
+var dialogue_healed: String = ""
+const HEAL_PROMPT_FALLBACK := "Quer curar seus Alchemons?"
+const HEAL_DONE_FALLBACK := "Pronto! Seus Alchemons estão curados."
+const HEAL_WORKING_TEXT := "Curando..."
+const HEAL_WAIT_SECONDS := 2.5
+var _healing_busy := false   # question / wait running, balloon owns the input
+var _locked_player: Player
 ## Leave is picked with the same key as ui_interact. This NPC polls that key in
 ## _process, same frame, and would reopen the shop. Frame stamp blocks it.
-var _shop_closed_frame: int = -1
+var _ui_closed_frame: int = -1
 
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
@@ -49,8 +58,8 @@ func _process(delta: float) -> void:
 		_balloon.close()
 		_close_shop()
 		return
-	if _shop != null:
-		return   # shop box owns the input
+	if _shop != null or _healing_busy:
+		return   # shop box / heal balloon owns the input
 	if Input.is_action_just_pressed("ui_interact") and is_zone and not (figther and is_combat_zone):
 		talk()
 
@@ -87,6 +96,9 @@ func talk() -> void:
 	if is_shopkeeper:
 		open_shop()
 		return
+	if is_healer:
+		open_healer()
+		return
 	if _balloon.is_typing():
 		_balloon.skip_typing()
 	elif _balloon.is_open():
@@ -95,9 +107,34 @@ func talk() -> void:
 		_balloon.show_text(get_dialogue())
 
 
+#Func do Centro Alchemon
+## Coroutine. Press 1: question. Yes: wait, heal, done text. Press again: close.
+func open_healer() -> void:
+	if _healing_busy or Engine.get_process_frames() == _ui_closed_frame:
+		return
+	if _balloon.is_open():   # leftover "healed" line: this press just closes it
+		_balloon.close()
+		return
+	_healing_busy = true
+	_lock_player(true)
+	_balloon.ask(dialogue if dialogue != "" else HEAL_PROMPT_FALLBACK, ["Sim", "Não"])
+	var pick: int = await _balloon.choice_made
+	if pick == 0:
+		_balloon.show_text(HEAL_WORKING_TEXT)
+		await get_tree().create_timer(HEAL_WAIT_SECONDS).timeout
+		if not CombatSignal.in_combat:
+			GameSession.heal_party()
+			_balloon.show_text(dialogue_healed if dialogue_healed != "" else HEAL_DONE_FALLBACK)
+	else:
+		_balloon.close()   # No, Cancel, or closed by someone else
+	_healing_busy = false
+	_ui_closed_frame = Engine.get_process_frames()
+	_lock_player(false)
+
+
 #Func da loja
 func open_shop() -> void:
-	if _shop != null or Engine.get_process_frames() == _shop_closed_frame:
+	if _shop != null or Engine.get_process_frames() == _ui_closed_frame:
 		return
 	_balloon.close()
 	_lock_player(true)
@@ -113,7 +150,7 @@ func _close_shop() -> void:
 		return
 	_shop.queue_free()
 	_shop = null
-	_shop_closed_frame = Engine.get_process_frames()
+	_ui_closed_frame = Engine.get_process_frames()
 	_lock_player(false)
 
 
@@ -125,18 +162,18 @@ func _on_shop_option(_option: StringName) -> void:
 ## Player stands still while the box is open (same trick CombatHandler uses).
 func _lock_player(locked: bool) -> void:
 	if locked:
-		_shop_player = null
+		_locked_player = null
 		for n in get_tree().get_nodes_in_group("player"):
 			if n is Player:
-				_shop_player = n
+				_locked_player = n
 				break
-	if _shop_player == null or not is_instance_valid(_shop_player):
+	if _locked_player == null or not is_instance_valid(_locked_player):
 		return
 	if locked:
-		_shop_player.velocity = Vector3.ZERO
-	_shop_player.set_physics_process(not locked)
+		_locked_player.velocity = Vector3.ZERO
+	_locked_player.set_physics_process(not locked)
 	if not locked:
-		_shop_player = null
+		_locked_player = null
 
 
 #Func do combate
