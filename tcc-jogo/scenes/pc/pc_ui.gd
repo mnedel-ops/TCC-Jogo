@@ -35,6 +35,8 @@ var _db: AlchemonDatabase
 var _level := Level.LIST
 var _current_option := ""
 var _ready_to_input := false
+const COMPONENT_CREATED_TEXT := "Seu Composto foi criado!"
+var _popup: Control   # "Composto criado" box. While open it eats ALL input; any key closes it.
 
 var _menu: ItemList
 var _pages: Dictionary = {}
@@ -349,6 +351,15 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.echo:
 		return
+	if _popup != null:
+		# Modal: nothing reaches the menus. Any key / click / pad button closes.
+		get_viewport().set_input_as_handled()
+		var pressed: bool = (event is InputEventKey and event.pressed) \
+				or (event is InputEventMouseButton and event.pressed) \
+				or (event is InputEventJoypadButton and event.pressed)
+		if pressed:
+			_close_popup()
+		return
 	if event.is_action_pressed(select_action):
 		get_viewport().set_input_as_handled()
 		match _level:
@@ -565,6 +576,59 @@ func _make_component() -> void:
 	_alch_picked.clear()
 	party_changed.emit()
 	bond_changed.emit()
+	_show_popup(COMPONENT_CREATED_TEXT)
+
+
+## Centered confirmation box. Any input closes it (see _input).
+func _show_popup(text: String) -> void:
+	_close_popup()
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_STOP   # clicks must not hit the menus below
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(center)
+	var panel := PanelContainer.new()
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.97, 0.97, 0.94)
+	box.border_color = Color(0.1, 0.1, 0.12)
+	box.set_border_width_all(3)
+	box.set_corner_radius_all(12)
+	box.content_margin_left = 36
+	box.content_margin_right = 36
+	box.content_margin_top = 24
+	box.content_margin_bottom = 20
+	panel.add_theme_stylebox_override("panel", box)
+	center.add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	panel.add_child(v)
+	var l := Label.new()
+	l.text = text
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 24)
+	l.add_theme_color_override("font_color", Color(0.08, 0.08, 0.1))
+	v.add_child(l)
+	var hint := Label.new()
+	hint.text = "(pressione qualquer tecla)"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45))
+	v.add_child(hint)
+	add_child(root)
+	_popup = root
+
+
+func _close_popup() -> void:
+	if _popup != null:
+		_popup.queue_free()
+		_popup = null
 
 
 func _stored_select() -> void:

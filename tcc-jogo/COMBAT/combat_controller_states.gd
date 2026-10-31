@@ -21,11 +21,12 @@ var _selection_order: Array[int] = []
 var _current_player_index := 0
 
 ## Horizontal command bar (top left). Old text UI is pushed below it.
-const COMMANDS_AREA_HEIGHT := 130.0
+const COMMANDS_AREA_HEIGHT := 200.0
 ## Set by CombatSceneManager BEFORE add_child (player's bag + item names).
 var inventory: InventoryData
 var item_database: ItemDatabase
 var commands: BattleCommands
+var log_box: CombatLogBox   # turn log, right of the command bar
 var _command_actor_id := -1
 var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
 ## Player profile (coins). Set by CombatSceneManager BEFORE add_child.
@@ -70,6 +71,10 @@ func _ready() -> void:
 	commands.flee_confirmed.connect(_on_flee_pressed)
 	commands.target_hovered.connect(_on_target_hovered)
 
+	log_box = CombatLogBox.new()
+	log_box.commands = commands
+	add_child(log_box)
+
 	_start_action_selection()
 
 
@@ -84,6 +89,11 @@ func _log_initiative_order() -> void:
 	for id in state.turn_order_ids:
 		text += "%s (%d)  " % [_name_of(id), state.get_combatant(id).initiative]
 	ui.log_message("Ordem de iniciativa: " + text)
+
+
+## Enemy side of a wild encounter (not a trainer's creature), bonded or not.
+func _wild_tag(c: CombatantState) -> String:
+	return " [Selvagem]" if (not c.is_player and not is_trainer_battle) else ""
 
 
 func _bond_tag(c: CombatantState) -> String:
@@ -110,7 +120,7 @@ func _build_entry(id: int) -> Dictionary:
 	return {
 		"id": id,
 		"slot": c.slot,
-		"name": _name_of(id) + _bond_tag(c),
+		"name": _name_of(id) + _wild_tag(c) + _bond_tag(c),
 		"hp": c.hp, "max_hp": c.max_hp,
 		"energy": c.valence_electrons, "max_energy": c.max_valence_electrons,
 		"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP,
@@ -181,6 +191,8 @@ func _prompt_action_for_current() -> void:
 	_command_actor_id = actor_id
 	ui.clear_options()
 	ui.set_turn_text("Acao de %s:" % _name_of(actor_id))
+	log_box.reset_anchor()
+	log_box.show_prompt("Turno de %s..." % _name_of(actor_id))
 	commands.open_for(
 		_name_of(actor_id),
 		_build_attack_entries(actor_id),
@@ -299,6 +311,7 @@ func _resolve_round() -> void:
 		return
 	ui.clear_options()
 	commands.hide_menu()
+	log_box.begin_round()
 
 	for actor_id in state.turn_order_ids:
 		if state.combat_over:
@@ -316,7 +329,7 @@ func _resolve_round() -> void:
 		# two actors may queue the same item while the bag has only one
 		var uses_bag_item := command.kind == "item" or command.kind == "capture"
 		if uses_bag_item and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
-			ui.log_message("Sem esse item na mochila! Acao cancelada.")
+			_say("Sem esse item na mochila! Acao cancelada.")
 			await get_tree().create_timer(0.5).timeout
 			continue
 		var result := CombatRules.resolve_action(state, command, database, item_database)
@@ -349,17 +362,19 @@ func _resolve_flee() -> void:
 	ui.clear_options()
 	commands.hide_menu()
 	ui.set_turn_text("Equipe tenta fugir...")
+	log_box.begin_round()
+	_say("A equipe tenta fugir...")
 
 	var flee_result := CombatRules.resolve_flee()
 	CombatResultApplier.apply(state, flee_result, database)
 	if flee_result.outcome == CombatResult.Outcome.FLEE_SUCCESS:
-		ui.log_message("Fugimos! Escapamos do combate.")
+		_say("Fugimos! Escapamos do combate.")
 		_sync_party_state()
 		CombatSignal.combat_ended.emit()
 		queue_free()
 		return
 	
-	ui.log_message("Tentativa de fuga falhou!")
+	_say("Tentativa de fuga falhou!")
 
 	for enemy_id in state.get_active_ids(state.enemy_ids):
 		if state.combat_over:
@@ -410,6 +425,7 @@ func _show_combat_end() -> void:
 		player_data.add_money(rewards.money)
 	_sync_party_state()   # also autosaves, so coins + creatures are saved together
 	ui.show_combat_end(state.player_won)
+	log_box.add_line("Vitoria!" if state.player_won else "Derrota!")
 
 	# Wait for any input, THEN hand control back to exploration.
 	var screen := BattleRewardsScreen.new()
@@ -421,10 +437,16 @@ func _show_combat_end() -> void:
 	queue_free()
 
 
+## One line of the turn log: old text UI (full history) + the new log box.
+func _say(text: String) -> void:
+	ui.log_message(text)
+	log_box.add_line(text)
+
+
 func _log_event(event: CombatEvent) -> void:
 	match event.kind:
 		CombatEvent.Kind.ATTACK_MISS:
-			ui.log_message("%s usa %s em %s... e erra!" % [_name_of(event.actor_id), event.attack_name, _name_of(event.target_id)])
+			_say("%s usa %s em %s... e erra!" % [_name_of(event.actor_id), event.attack_name, _name_of(event.target_id)])
 		CombatEvent.Kind.ATTACK_HIT:
 			var crit_text := " CRITICO!" if event.critical else ""
 			var eff_text := ""
@@ -432,16 +454,16 @@ func _log_event(event: CombatEvent) -> void:
 				eff_text = " Super efetivo!"
 			elif event.effectiveness < AlchemonType.NEUTRAL:
 				eff_text = " Nao muito efetivo..."
-			ui.log_message("%s usa %s em %s! %d de dano.%s%s" % [_name_of(event.actor_id), event.attack_name, _name_of(event.target_id), event.damage, crit_text, eff_text])
+			_say("%s usa %s em %s! %d de dano.%s%s" % [_name_of(event.actor_id), event.attack_name, _name_of(event.target_id), event.damage, crit_text, eff_text])
 		CombatEvent.Kind.ITEM_USED:
 			var effect_text := "Recupera %d HP." % event.amount if event.amount > 0 else "Nada acontece."
-			ui.log_message("%s usa um item em %s! %s" % [_name_of(event.actor_id), _name_of(event.target_id), effect_text])
+			_say("%s usa um item em %s! %s" % [_name_of(event.actor_id), _name_of(event.target_id), effect_text])
 		CombatEvent.Kind.CAPTURE_SUCCESS:
-			ui.log_message("%s captura %s! Retirado do combate." % [_name_of(event.actor_id), _name_of(event.target_id)])
+			_say("%s captura %s! Retirado do combate." % [_name_of(event.actor_id), _name_of(event.target_id)])
 		CombatEvent.Kind.CAPTURE_FAIL:
-			ui.log_message("Tentativa de capturar %s falhou!" % _name_of(event.target_id))
+			_say("Tentativa de capturar %s falhou!" % _name_of(event.target_id))
 		CombatEvent.Kind.INVALID_TARGET, CombatEvent.Kind.ALREADY_DEAD, CombatEvent.Kind.INVALID_ACTION:
-			ui.log_message("Acao cancelada (%s)." % event.reason)
+			_say("Acao cancelada (%s)." % event.reason)
 
 func _sync_party_state() -> void:
 	_sync_captures()

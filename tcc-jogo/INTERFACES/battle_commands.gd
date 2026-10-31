@@ -102,6 +102,12 @@ func lock() -> void:
 	_refresh_cursor()
 
 
+## Screen rect of the command bar (icons + "Ordem: X"). Valid while hidden too.
+## The combat log box sits to the right of it.
+func bar_rect() -> Rect2:
+	return _bar.get_global_rect()
+
+
 func hide_menu() -> void:
 	_close_menu()
 	_mode = Mode.LOCKED
