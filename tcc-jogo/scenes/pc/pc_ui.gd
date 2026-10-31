@@ -50,8 +50,13 @@ var _alch_picked: Array[AlchemonInstance] = []
 var _alch_info: Label
 
 # Stored
-var _st_list: ItemList
-var _st_rows: Array = []     # {"src": "party"/"stored"/"back", "inst": AlchemonInstance}
+const ST_TITLE_PARTY := "Seu time"
+const ST_TITLE_STORED := "Armazenados"
+var _st_party_list: ItemList    # left column
+var _st_stored_list: ItemList   # right column
+var _st_party_rows: Array = []   # {"src": "party"/"back", "inst": AlchemonInstance}
+var _st_stored_rows: Array = []  # {"src": "stored", "inst": AlchemonInstance}
+var _st_focus: ItemList          # column that has the cursor
 var _st_info: Label
 var _st_stats: Label
 var _alch_stats: Label
@@ -199,7 +204,26 @@ func _update_stats(list: ItemList, rows: Array, label: Label, inst_key := "inst"
 
 
 func _on_st_selected(_i: int) -> void:
-	_update_stats(_st_list, _st_rows, _st_stats)
+	_update_st_stats()
+
+
+func _st_rows_of(list: ItemList) -> Array:
+	return _st_party_rows if list == _st_party_list else _st_stored_rows
+
+
+func _update_st_stats() -> void:
+	if _st_focus != null:
+		_update_stats(_st_focus, _st_rows_of(_st_focus), _st_stats)
+
+
+## Cursor jumps to the other column (left/right). Ignored if it has no rows.
+func _st_switch_column(to_stored: bool) -> void:
+	var target := _st_stored_list if to_stored else _st_party_list
+	if target == _st_focus or target.item_count == 0:
+		return
+	if target.get_selected_items().is_empty():
+		target.select(0)
+	target.grab_focus()   # focus_entered sets _st_focus + stats
 
 
 func _on_alch_selected(_i: int) -> void:
@@ -304,25 +328,42 @@ func _build_alchemy_page() -> Control:
 
 func _build_stored_page() -> Control:
 	var page := VBoxContainer.new()
-	var h := Label.new()
-	h.text = "Stored - select to move between Party and Stored"
-	page.add_child(h)
-	_st_list = ItemList.new()
-	_st_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_st_list.item_activated.connect(func(_i): _stored_select())
-	_st_list.item_selected.connect(_on_st_selected)
 	_st_stats = _make_stats_label()
 	var srow := HBoxContainer.new()
 	srow.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	srow.add_theme_constant_override("separation", 12)
 	page.add_child(srow)
-	srow.add_child(_st_list)
-	_st_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	_st_party_list = _make_st_column(srow, ST_TITLE_PARTY)
+	_st_stored_list = _make_st_column(srow, ST_TITLE_STORED)
+	_st_focus = _st_party_list
 	srow.add_child(_stats_panel(_st_stats))
+
 	_st_info = Label.new()
 	_st_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_st_info)
 	return page
+
+
+## One column = title label on top + list. Returns the list.
+func _make_st_column(parent: Control, title: String) -> ItemList:
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(col)
+	var t := Label.new()
+	t.text = title
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(t)
+	var list := ItemList.new()
+	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	list.item_activated.connect(func(_i): _stored_select())
+	list.item_selected.connect(_on_st_selected)
+	list.focus_entered.connect(func():
+		_st_focus = list
+		_update_st_stats())
+	col.add_child(list)
+	return list
 
 
 func _build_exit_page() -> Control:
@@ -360,6 +401,15 @@ func _input(event: InputEvent) -> void:
 		if pressed:
 			_close_popup()
 		return
+	if _level == Level.OPTION and _current_option == "Stored":
+		if event.is_action_pressed("menu_left"):
+			get_viewport().set_input_as_handled()
+			_st_switch_column(false)
+			return
+		if event.is_action_pressed("menu_right"):
+			get_viewport().set_input_as_handled()
+			_st_switch_column(true)
+			return
 	if event.is_action_pressed(select_action):
 		get_viewport().set_input_as_handled()
 		match _level:
@@ -397,10 +447,13 @@ func _open_option() -> void:
 		"Alchemy":
 			_alch_list.grab_focus()
 		"Stored":
-			_st_list.grab_focus()
+			_st_focus = _st_party_list
+			_st_party_list.grab_focus()
 		"Exit":
 			_exit_no.grab_focus() # safe default: No
 	_hint.text = "Up/Down: move   [%s]: select   [%s]: back" % [select_action, back_action]
+	if _current_option == "Stored":
+		_hint.text = "Up/Down: move   Left/Right: change column   [%s]: move Alchemon   [%s]: back" % [select_action, back_action]
 
 
 func _go_list() -> void:
@@ -483,21 +536,29 @@ func _refresh_alchemy() -> void:
 
 
 func _refresh_stored() -> void:
-	var keep := _st_list.get_selected_items()
-	_st_list.clear()
-	_st_rows.clear()
+	var keep_p := _st_party_list.get_selected_items()
+	var keep_s := _st_stored_list.get_selected_items()
+	_st_party_list.clear()
+	_st_stored_list.clear()
+	_st_party_rows.clear()
+	_st_stored_rows.clear()
 	for inst in _party():
-		_st_rows.append({"src": "party", "inst": inst})
-		_st_list.add_item("[Party]  " + _label_of(inst))
+		_st_party_rows.append({"src": "party", "inst": inst})
+		_st_party_list.add_item(_label_of(inst))
+	_st_party_rows.append({"src": "back", "inst": null})
+	_st_party_list.add_item("<< Back")
 	for inst in _stored():
-		_st_rows.append({"src": "stored", "inst": inst})
-		_st_list.add_item("[Stored] " + _label_of(inst))
-	_st_rows.append({"src": "back", "inst": null})
-	_st_list.add_item("<< Back")
+		_st_stored_rows.append({"src": "stored", "inst": inst})
+		_st_stored_list.add_item(_label_of(inst))
 	_st_info.text = "Party: %d/%d   Stored: %d" % [_party().size(), max_party_size, _stored().size()]
-	if _st_list.item_count > 0:
-		_st_list.select(mini(keep[0] if not keep.is_empty() else 0, _st_list.item_count - 1))
-	_update_stats(_st_list, _st_rows, _st_stats)
+	_st_party_list.select(mini(keep_p[0] if not keep_p.is_empty() else 0, _st_party_list.item_count - 1))
+	if _st_stored_list.item_count > 0:
+		_st_stored_list.select(mini(keep_s[0] if not keep_s.is_empty() else 0, _st_stored_list.item_count - 1))
+	# Right column emptied while the cursor was there: go back left.
+	if _st_focus == _st_stored_list and _st_stored_list.item_count == 0 and _level == Level.OPTION \
+			and _current_option == "Stored":
+		_st_party_list.grab_focus()
+	_update_st_stats()
 
 
 # ---------- actions ----------
@@ -632,10 +693,10 @@ func _close_popup() -> void:
 
 
 func _stored_select() -> void:
-	var sel := _st_list.get_selected_items()
+	var sel := _st_focus.get_selected_items()
 	if sel.is_empty():
 		return
-	var row: Dictionary = _st_rows[sel[0]]
+	var row: Dictionary = _st_rows_of(_st_focus)[sel[0]]
 	if row.src == "back":
 		_go_list()
 		return
