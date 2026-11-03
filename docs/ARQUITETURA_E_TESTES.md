@@ -408,6 +408,104 @@ plugin, apontando para o projeto `tcc-jogo/`. O arquivo
 `addons/gdUnit4/GdUnitRunner.cfg` mantém o inventário dos testes descobertos
 e seus caminhos `res://test/*.gd`.
 
+## 6.1 Catálogo completo dos testes desenvolvidos
+
+Os testes abaixo são testes automatizados escritos em GDScript com
+**GdUnit4**. O tipo indica o nível principal de verificação: **unitário**
+testa uma regra ou classe isoladamente; **integração** verifica a colaboração
+entre combate, criaturas e recompensas; **persistência** verifica JSON,
+arquivos e `GameSession`; **interface** verifica textos e entradas da tela;
+**robustez** verifica dados inválidos, limites e recuperação de erro.
+
+### Suíte `test_alchemonGrowth.gd` — 4 testes
+
+| Teste | Tipo | Descrição completa e critério de aprovação |
+|---|---|---|
+| `test_compute_stat_formula` | Unitário | Verifica a fórmula de atributo para níveis 1, 10 e 50. Aprova se os valores calculados forem 5, 7 e 15 para os parâmetros definidos. |
+| `test_level_up_increases_stats` | Unitário | Simula nove evoluções, do nível 1 ao 10. Aprova se nível, ataque, defesa e velocidade mecânica forem recalculados para os valores esperados. |
+| `test_level_up_keeps_spent_energy` | Unitário | Parte de uma criatura com energia parcialmente gasta e aplica evoluções. Aprova se somente o aumento do limite for incorporado, sem restaurar a energia ao máximo. |
+| `test_state_at` | Unitário de regra | Testa a classificação termodinâmica da criatura em temperatura abaixo do ponto de fusão, entre fusão e ebulição e acima da ebulição. Aprova se retornar sólido, líquido e gasoso. |
+
+### Suíte `test_capture_formula.gd` — 13 testes
+
+| Teste | Tipo | Descrição completa e critério de aprovação |
+|---|---|---|
+| `test_full_hp_small_creature` | Unitário de fórmula | Calcula a captura de uma criatura pequena com HP cheio. Aprova se o valor for 85. |
+| `test_low_hp_raises_value` | Unitário de fórmula | Calcula a captura com HP reduzido a 1. Aprova se o valor subir para 249. |
+| `test_value_never_below_one` | Robustez / limite | Usa multiplicador mínimo e verifica o piso da fórmula. Aprova se o resultado nunca for menor que 1. |
+| `test_value_capped_at_255` | Robustez / limite | Usa multiplicador excessivo e HP mínimo. Aprova se o valor for limitado a 255. |
+| `test_eight_bit_reduction_changes_result` | Unitário de fórmula | Verifica a redução por deslocamentos de bits quando `3 * HP máximo` ultrapassa 255. Aprova se o resultado for 200. |
+| `test_reduction_is_two_floor_divisions_by_two` | Unitário de fórmula | Confirma que a redução utiliza duas divisões inteiras sucessivas por dois. Aprova se o resultado for 171. |
+| `test_no_reduction_at_exactly_255` | Unitário de limite | Testa o ponto exato 255. Aprova se a redução não ocorrer quando o valor for exatamente 255 e o resultado for 235. |
+| `test_bad_input_does_not_crash` | Robustez | Usa HP máximo zero e HP atual acima do máximo. Aprova se a função não quebrar e normalizar o resultado para a faixa válida. |
+| `test_roll_rule` | Unitário de regra | Verifica que a rolagem é sucesso quando `roll < a` e falha quando `roll == a`; também confirma que 255 sempre vence. |
+| `test_tool_category` | Unitário de regra | Compara ferramenta do mesmo tipo e de tipo diferente. Aprova se os multiplicadores forem 255 e 127, respectivamente. |
+| `test_resolver_full_hp_right_tool_is_about_one_third` | Integração probabilística | Executa 600 resoluções reais de captura com HP cheio e ferramenta compatível. Aprova se a quantidade de sucessos ficar entre 150 e 250, aproximadamente um terço. |
+| `test_resolver_low_hp_is_almost_certain` | Integração probabilística | Executa 300 resoluções com HP mínimo e ferramenta compatível. Aprova se houver mais de 285 sucessos. |
+| `test_resolver_wrong_tool_is_worse_than_right_tool` | Integração probabilística | Compara 600 tentativas com ferramenta compatível e incompatível. Aprova se a ferramenta errada resultar em menos capturas. |
+
+### Suíte `test_battle_rewards.gd` — 11 testes
+
+| Teste | Tipo | Descrição completa e critério de aprovação |
+|---|---|---|
+| `test_new_player_starts_with_500_coins` | Unitário / configuração | Cria `PlayerData` e carrega o recurso inicial. Aprova se ambos começarem com 500 moedas. |
+| `test_add_money_never_goes_negative` | Unitário / limite | Adiciona moedas e depois subtrai um valor maior que o saldo. Aprova se o saldo crescer corretamente e nunca ficar negativo. |
+| `test_money_only_for_beating_a_trainer` | Unitário de regra | Avalia vitória e derrota contra treinador e encontro selvagem. Aprova se apenas a vitória contra treinador conceder 100 moedas. |
+| `test_xp_gained_without_level_up` | Integração de progressão | Concede 60 XP a uma criatura nível 5. Aprova se a recompensa registrar 60 XP e o nível permanecer 5. |
+| `test_xp_gained_across_a_level_up` | Integração de progressão | Parte de 80 XP e concede mais 50. Aprova se a criatura passar ao nível 6 e a recompensa registrar 50 XP ganhos. |
+| `test_entry_uses_nickname` | Unitário de apresentação | Define o apelido `Fofo` e constrói a recompensa. Aprova se o nome exibido for o apelido, não o nome da espécie. |
+| `test_text_shows_exp_levelup_and_coins` | Interface / apresentação | Monta uma recompensa com XP, level up e moedas. Aprova se a tela gerar as três mensagens correspondentes. |
+| `test_text_without_xp_or_money` | Interface / caso vazio | Monta uma recompensa sem XP nem moedas. Aprova se a tela gerar somente `No EXP gained.`. |
+| `test_screen_ignores_input_until_delay_then_dismisses_on_any_key` | Interface / entrada | Envia tecla antes do atraso, evento de soltura e depois tecla válida. Aprova se o primeiro input for ignorado, a soltura não fechar a tela e apenas um dismiss ocorrer após o atraso. |
+| `test_gamepad_also_dismisses_mouse_does_not` | Interface / entrada | Envia clique do mouse e botão de controle após o atraso. Aprova se o mouse não fechar a tela e o controle fechar uma única vez. |
+| `test_rules_layer_no_longer_ends_combat_for_exploration` | Integração de fluxo | Aplica uma captura e observa o sinal global. Aprova se `combat_ended` não for emitido pela camada de regras antes da tela de recompensas. |
+
+### Suíte `test_creature_persistence.gd` — 37 testes
+
+| Teste | Tipo | Descrição completa e critério de aprovação |
+|---|---|---|
+| `test_uid_is_unique_and_set` | Unitário de identidade | Cria duas criaturas. Aprova se ambas receberem UID não vazio e diferente. |
+| `test_ensure_uid_keeps_existing` | Unitário de identidade | Chama `ensure_uid()` em uma criatura já identificada. Aprova se o UID original não mudar. |
+| `test_dict_roundtrip_through_real_json` | Persistência / serialização | Serializa uma criatura com apelido, XP, HP, energia, ataques e personalidade, passa por JSON e reconstrói. Aprova se todos os campos forem preservados. |
+| `test_from_dict_sanitizes_bad_data` | Robustez / entrada inválida | Carrega nível, XP, IV, HP, personalidade e ataques inválidos. Aprova se os valores forem normalizados e os ataques limitados a quatro. |
+| `test_from_dict_without_species_is_rejected` | Robustez / validação | Tenta carregar um dicionário sem espécie. Aprova se a entrada for rejeitada com `null`. |
+| `test_stats_are_derived_not_stored` | Unitário de modelo | Inspeciona a criatura persistente. Aprova se defesa e HP máximo não existirem como campos armazenados, evitando vazamento de bônus temporário. |
+| `test_neutral_stats_match_formulas` | Unitário de atributos | Compara os atributos neutros calculados pela instância com as fórmulas oficiais. Aprova se ataque e HP máximo coincidirem. |
+| `test_personality_changes_only_its_two_stats` | Unitário de atributos | Compara personalidade neutra e `bold`. Aprova se ataque aumentar, defesa diminuir e velocidade e HP máximo permanecerem iguais. |
+| `test_hp_unset_means_full_and_zero_means_fainted` | Unitário de estado | Verifica HP não inicializado, HP zero e HP acima do máximo. Aprova se `UNSET` significar cheio, zero significar derrotado e o valor alto for limitado. |
+| `test_combatant_is_linked_to_its_creature` | Integração combate/dados | Constrói um `CombatState` a partir da equipe. Aprova se o combatente carregar UID, nível e IV da criatura de origem. |
+| `test_battle_hp_is_written_back` | Integração de sincronização | Altera o HP no estado de combate e chama `CreatureSync`. Aprova se o HP persistente receber o valor da batalha. |
+| `test_xp_and_level_are_written_back` | Integração de progressão | Concede 250 XP no estado de combate e sincroniza. Aprova se a criatura evoluir do nível 5 para 7 e conservar 50 XP restantes. |
+| `test_bond_bonus_does_not_leak_into_creature` | Regressão / integração | Aplica bônus de vínculo, sincroniza e compara com o máximo real. Aprova se o bônus temporário não virar atributo persistente. |
+| `test_results_match_by_uid_not_by_position` | Regressão / integração | Insere uma criatura inválida antes de uma criatura válida e sincroniza o HP. Aprova se o resultado for aplicado pelo UID correto, não pela posição da lista. |
+| `test_fainted_policy_today_revives_at_battle_start` | Integração de regra | Inicia batalha com criatura cujo HP é zero. Aprova, conforme a política atual, se ela entrar com HP cheio. |
+| `test_capture_keeps_the_individual_that_was_fought` | Integração de captura | Captura o inimigo e compara UID, IV, personalidade e HP da instância armazenada com a instância combatida. |
+| `test_capture_never_stores_a_fainted_creature` | Integração / limite | Captura um inimigo com 1 HP. Aprova se o objeto armazenado permanecer com pelo menos 1 HP. |
+| `test_save_roundtrip_via_disk` | Persistência / integração | Salva equipe, armazenamento, apelido, HP, moedas e vínculo em arquivo e recarrega. Aprova se todos os dados forem reconstruídos. |
+| `test_bond_is_saved_by_uid_so_reordering_is_safe` | Persistência / regressão | Reordena a equipe no arquivo salvo. Aprova se o vínculo continuar apontando para as mesmas criaturas por UID. |
+| `test_unknown_future_version_is_refused_and_changes_nothing` | Robustez / compatibilidade | Tenta aplicar um formato de salvamento futuro. Aprova se o erro for retornado e os dados atuais não forem alterados. |
+| `test_malformed_save_changes_nothing` | Robustez / atomicidade | Tenta aplicar um salvamento com equipe em tipo inválido. Aprova se o erro ocorrer sem modificar a equipe em memória. |
+| `test_duplicate_uids_get_repaired_on_load` | Robustez / identidade | Carrega duas criaturas com o mesmo UID. Aprova se a segunda receber uma nova identidade. |
+| `test_corrupt_main_file_recovers_from_backup` | Persistência / recuperação | Cria backup, corrompe o arquivo principal e lê novamente. Aprova se o conteúdo válido do `.bak` for recuperado. |
+| `test_missing_file_reads_as_empty` | Persistência / ausência | Lê um caminho inexistente. Aprova se o retorno for um dicionário vazio, sem exceção. |
+| `test_full_loop_fight_capture_save_reload` | Integração ponta a ponta | Executa construção da batalha, captura, transferência ao armazenamento, sincronização, salvamento e recarga. Aprova se a criatura capturada e o progresso da equipe sobreviverem ao ciclo completo. |
+| `test_session_gives_starters_uids_and_saves_and_loads` | Integração `GameSession` | Inicializa a sessão com recursos iniciais, salva uma evolução e recarrega. Aprova se starters receberem UIDs e o nível salvo voltar corretamente. |
+| `test_defeated_npcs_roundtrip_via_disk` | Persistência de progresso | Salva NPCs derrotados e recarrega sobre uma lista com dado obsoleto. Aprova se a lista for substituída pelos IDs salvos, sem manter o obsoleto. |
+| `test_old_save_without_defeated_key_loads_empty` | Compatibilidade / migração | Remove a chave de NPCs derrotados de um salvamento antigo. Aprova se o carregamento resultar em conjunto vazio. |
+| `test_session_new_game_resets_progress` | Integração de ciclo de jogo | Altera dinheiro, equipe e NPC derrotado e chama `new_game()`. Aprova se os starters voltarem, o dinheiro for restaurado e o NPC deixar de estar derrotado. |
+| `test_session_defeated_survives_save_load` | Persistência de progresso | Marca NPC, salva, limpa a memória e recarrega. Aprova se o NPC continuar marcado como derrotado. |
+| `test_inventory_roundtrip_via_disk` | Persistência de inventário | Salva itens repetidos, recarrega sobre uma mochila diferente e consulta quantidade. Aprova se a lista e a contagem forem restauradas. |
+| `test_old_save_without_inventory_keeps_bag` | Compatibilidade / inventário | Carrega salvamento antigo sem inventário. Aprova se a mochila atual for preservada. |
+| `test_session_inventory_saved_and_new_game_resets` | Integração de inventário | Adiciona item, salva, limpa, recarrega e inicia novo jogo. Aprova se o item voltar após load e a mochila inicial voltar após reset. |
+| `test_no_file_until_player_saves_and_save_replaces` | Persistência / autosave | Altera dados com autosave desligado, confirma ausência de arquivo, salva duas vezes e lê o conteúdo final. Aprova se somente o comando de salvar criar/substituir o arquivo. |
+| `test_position_roundtrip_and_resume_once` | Persistência / continuidade | Salva fase, posição e rotação, recarrega e consome a posição de retomada duas vezes. Aprova se a primeira chamada retornar a posição e a segunda retornar vazio. |
+| `test_new_game_forgets_position` | Integração de novo jogo | Define uma posição salva e inicia novo jogo. Aprova se a posição for apagada e não houver teleporte de retomada. |
+| `test_bad_or_missing_position_loads_as_empty` | Robustez / validação | Aplica posições nulas, incompletas e com tipos inválidos, além de arquivo sem posição. Aprova se todas forem convertidas em posição vazia. |
+
+**Total:** 65 testes automatizados: 4 de crescimento/atributos, 13 de
+captura, 11 de recompensas/interface e 37 de persistência, integração e
+continuidade da sessão.
+
 ## 7. Matriz de QA por requisito
 
 Os códigos abaixo organizam os requisitos funcionais para verificar
