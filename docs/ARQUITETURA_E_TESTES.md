@@ -92,9 +92,155 @@ dos adversários, dos recursos de dados e do vínculo alquímico ativo. Assim,
 os objetos persistentes (`AlchemonInstance`) não são usados como estado
 mutável de cada rodada.
 
-## 2. Máquina de estados do jogador e do combate
+## 2. Mecânicas principais implementadas
 
-### 2.1 Estado do jogador durante a exploração
+### 2.1 Exploração, encontros e interação
+
+O jogador é controlado por `EXPLORATION/Player/player.gd` e seus
+componentes. `MovementComponent` converte as ações `move_up`,
+`move_down`, `move_left` e `move_right` em velocidade, aplica gravidade e
+executa `move_and_slide()`. `InteractionComponent` identifica o objeto na
+área de interação; quando o jogador pressiona `ui_interact`, o
+`InventoryComponent` coleta o item correspondente.
+
+Os encontros selvagens são implementados por `WildernessEncounter`. Enquanto
+o jogador está dentro da área, o jogo pode rolar um encontro em intervalos
+configuráveis. A mecânica possui duas decisões independentes: primeiro a
+chance de iniciar uma luta; depois a escolha aleatória de uma espécie da
+lista da área. Encontros não ocorrem durante outro combate e respeitam um
+tempo de recarga após o retorno à exploração.
+
+NPCs lutadores usam `NPC.gd`. Ao entrar na área de combate, o NPC envia
+`CombatSignal.combat_start`, informa as espécies adversárias e marca a luta
+como batalha de treinador. Depois de uma vitória, `battle_finished` chama
+`mark_defeated()`, desativa o NPC e registra seu identificador estável no
+`GameSession`, impedindo a repetição após o salvamento.
+
+### 2.2 Sistema de captura e armazenamento
+
+Cada criatura do jogador é um `AlchemonInstance`, identificado por um UID
+permanente. O objeto guarda espécie, nome, nível, experiência, valor
+individual, personalidade, HP atual, energia e ataques. A equipe ativa fica
+em `PlayerPartyData.party`; as criaturas fora da equipe ficam em
+`CapturedStorage.instances`, o armazenamento acessado pela interface do PC.
+Mover uma criatura entre equipe e armazenamento conserva o mesmo objeto e,
+portanto, não perde nível, XP, IV, personalidade ou HP.
+
+O fluxo de captura é:
+
+1. A interface envia um `ActionCommand` do tipo `capture`.
+2. `CombatRules._resolve_capture()` valida alvo e item, compara o tipo da
+   ferramenta com o tipo da criatura e calcula o valor `a` com
+   `AlchemonFormulas.compute_capture_value(max_hp, hp, x)`.
+3. Uma rolagem de `0` a `254` é bem-sucedida quando é menor que `a`; o
+   valor é limitado entre `1` e `255`. Assim, reduzir o HP aumenta a chance,
+   e `a = 255` garante a captura.
+4. `CombatResultApplier._apply_capture()` recupera o indivíduo exato
+   combatido de `CombatState.enemy_instances`, grava nele o HP da batalha e
+   coloca a instância em `captured_instances`. A criatura capturada é
+   marcada como derrotada no campo, mas permanece com pelo menos 1 HP no
+   armazenamento.
+5. O controlador transfere `captured_instances` para
+   `CapturedStorage.add_instance()`. O armazenamento é sincronizado pelo
+   `GameSession` e persistido no JSON do salvamento.
+
+Trainer battles bloqueiam captura; a captura só é permitida contra
+adversários de encontros selvagens. A gravação usa `SaveGame.serialize()` e
+`AlchemonInstance.to_dict()`, enquanto o carregamento reconstrói e valida as
+instâncias com `from_dict()`, elimina entradas inválidas e corrige UIDs
+duplicados.
+
+### 2.3 Sistema de combate e atributos
+
+`CombatSceneManager` cria a cena de combate, posiciona os participantes e
+injeta equipe, inventário, banco de espécies, armazenamento e vínculo
+alquímico. `CombatControllerStates` conduz a batalha, coleta comandos do
+jogador e enfileira comandos da IA. A resolução é separada da mutação:
+`CombatRules` calcula um `CombatResult`, e
+`CombatResultApplier` é o único componente que altera `CombatState`.
+
+Os comandos implementados são:
+
+- **ataque**: valida o alvo, ataque e espécie; calcula dano considerando
+  nível, ataque, defesa e efetividade elemental; aplica chance de erro,
+  crítico de 1,5x e custo de energia;
+- **item**: aplica cura ao aliado, limitada ao HP máximo;
+- **captura**: executa a fórmula descrita acima;
+- **fuga**: usa uma chance de sucesso de `5/6`;
+- **Slap**: ataque substituto sem custo quando a criatura não possui
+  elétrons de valência disponíveis.
+
+A iniciativa é calculada a partir da velocidade mecânica, IV e nível.
+Todos os participantes ativos precisam ter um comando antes de a rodada
+avançar para `RESOLVING_ACTIONS`; criaturas mortas ou cátions de compostos
+não participam da seleção de ações nem podem ser alvos.
+
+Os atributos derivados não são armazenados diretamente. No início do combate,
+`CombatStateFactory` chama `AlchemonInstance.compute_stats()`, que calcula:
+
+- **HP máximo** pela fórmula de HP base, IV e nível;
+- **ataque**, **defesa**, **velocidade mecânica** e **energia de ação**
+  pelas fórmulas base, IV e nível;
+- modificadores de personalidade nos atributos correspondentes;
+- **temperatura de referência** e estado físico a partir da ficha da espécie.
+
+O combate também mantém uma temperatura global da arena. Golpes que acertam
+podem aquecê-la; cada criatura viva compara a nova temperatura com seu ponto
+de referência e pode mudar de sólido para líquido ou gasoso, recebendo o
+dano definido para a mudança. Vínculos alquímicos são aplicados ao estado
+transitório da batalha e seus bônus não são gravados como atributos
+permanentes.
+
+### 2.4 Progressão e condições de vitória/derrota
+
+Quando um ataque derrota um inimigo ou uma captura é concluída,
+`CombatResultApplier._grant_xp()` concede ao autor a recompensa de XP
+definida na ficha da espécie derrotada. `AlchemonGrowth.grant_experience()`
+acumula a experiência e, a cada `100` pontos, chama `level_up()`. O excesso
+de XP permanece para o próximo nível e vários níveis podem ser obtidos em
+uma única recompensa.
+
+No level up, o código recalcula ataque, defesa e velocidade; aumenta o limite
+de energia e amplia o HP máximo. Se a criatura estiver viva, o aumento do HP
+máximo também é adicionado ao HP atual. O `BattleRewards` compara nível e XP
+antes/depois e prepara os dados exibidos na tela de recompensas.
+
+Após cada resultado, `CombatRules.check_combat_end()` verifica os dois
+grupos. Se não houver criaturas vivas no grupo do jogador, o estado passa a
+`DEFEAT`; se não houver criaturas vivas no grupo inimigo, passa a `VICTORY`.
+O estado é marcado como encerrado, os slots ocupados são liberados e o
+controlador apresenta as recompensas antes de emitir `combat_ended`.
+
+Em vitória contra treinador, `BattleRewards.money_for()` concede atualmente
+100 moedas; vitórias contra encontros selvagens não concedem moedas. O NPC
+derrotado é marcado como concluído e a exploração é restaurada. A derrota
+também encerra a batalha e retorna à exploração conforme o fluxo do
+`CombatSceneManager`, mas não concede moedas.
+
+Ao final, `CreatureSync.apply_battle()` grava de volta apenas nível, XP, HP e
+energia configurada. O pareamento é feito pelo UID da criatura, nunca pela
+posição na lista. O comportamento atual revive criaturas com 0 HP no início
+do próximo combate e recarrega a energia a cada batalha, conforme as
+constantes de `CreatureSync`; esses pontos estão explicitamente isolados para
+futura alteração quando houver uma estação de cura.
+
+### 2.5 Salvamento e continuidade da progressão
+
+`GameSession` mantém as referências compartilhadas à equipe, armazenamento,
+inventário, dados do jogador e vínculos. `save_game()` serializa tudo para
+`user://saves/slot_1.json`, incluindo criaturas, moedas, NPCs derrotados,
+inventário e posição do jogador. `SaveGame.write_file()` grava de forma
+atômica e mantém um arquivo `.bak`; em caso de corrupção, `read_file()`
+tenta recuperar o backup.
+
+`load_game()` restaura os dados e entrega a posição salva ao
+`SceneManager`, que reabre a fase correta e reposiciona o jogador. Dessa
+forma, captura, evolução, moedas, NPCs derrotados e localização do jogador
+fazem parte do mesmo estado persistente.
+
+## 3. Máquina de estados do jogador e do combate
+
+### 3.1 Estado do jogador durante a exploração
 
 O jogador não possui uma enumeração explícita de estados; sua composição
 define dois fluxos operacionais:
@@ -115,7 +261,7 @@ stateDiagram-v2
     Retornando --> Exploracao: personagens em casa e câmera reativada
 ```
 
-### 2.2 Máquina de estados da batalha
+### 3.2 Máquina de estados da batalha
 
 `BattlePhaseMachine` define as transições válidas. A classe
 `BattlePhaseRules` expõe os mesmos contratos para o controlador e para as
@@ -142,7 +288,7 @@ ações da inteligência artificial são enfileiradas. Em
 volta para `END_OF_ROUND` ou termina em `COMBAT_OVER`; a tela de recompensas
 é exibida antes da liberação definitiva do jogador.
 
-## 3. Diagrama de classes e dependências
+## 4. Diagrama de classes e dependências
 
 O diagrama abaixo apresenta as relações centrais, sem representar todos os
 recursos artísticos e nós puramente visuais.
@@ -210,7 +356,7 @@ classDiagram
     SaveGame --> AlchemonInstance
 ```
 
-## 4. Desacoplamento e independência de engine
+## 5. Desacoplamento e independência de engine
 
 O desacoplamento foi aplicado separando **dados e regras** da
 **orquestração de cenas**:
@@ -232,7 +378,7 @@ entrada continuam sendo responsabilidades da engine —, mas mantém o núcleo
 de regras independente da árvore visual. Como resultado, fórmulas e fluxos
 podem ser exercitados em testes sem reproduzir uma partida completa.
 
-## 5. Testes internos
+## 6. Testes internos
 
 O projeto usa o plugin **GdUnit4**, habilitado em `project.godot`. As suítes
 atuais em `test/` cobrem:
@@ -261,4 +407,3 @@ runner do GdUnit4 no editor ou pela ferramenta de linha de comando do
 plugin, apontando para o projeto `tcc-jogo/`. O arquivo
 `addons/gdUnit4/GdUnitRunner.cfg` mantém o inventário dos testes descobertos
 e seus caminhos `res://test/*.gd`.
-
