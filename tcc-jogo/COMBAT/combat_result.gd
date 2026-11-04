@@ -1,18 +1,6 @@
 class_name CombatResult
 extends RefCounted
 
-## Contrato unico de resolucao de combate. Retornado por CombatRules,
-## consumido por CombatResultApplier (mutacao) e CombatEvent (UI).
-##
-## Garantias:
-## - Imutavel: todos os campos setados em _init, nunca alterados depois.
-##   Sempre construir via os metodos estaticos de fabrica abaixo.
-## - Completo: dados suficientes pra UI renderizar o resultado sem tocar
-##   em CombatState.
-## - Validado: acoes invalidas retornam INVALID_TARGET / ALREADY_DEAD /
-##   INVALID_ACTION em vez de crashar ou mutar estado.
-## - Sem estado: guarda so IDs (int) e valores primitivos, nunca
-##   referencias pra CombatantState ou outro objeto mutavel.
 
 enum Outcome {
 	ATTACK_HIT,
@@ -35,8 +23,8 @@ var damage: int
 var amount: int
 var critical: bool
 var reason: String
-var temperature_delta: int  # ΔT (K) causado pelo golpe - so != 0 em ATTACK_HIT
-var effectiveness: float    # multiplicador de tipo (GDD 6) - so relevante em ATTACK_HIT; 1.0 (neutro) em todo o resto
+var temperature_delta: int
+var effectiveness: float
 var energy_cost: int
 
 
@@ -104,11 +92,3 @@ static func already_dead(p_actor_id: int, p_target_id: int, p_reason: String = "
 
 static func invalid_action(p_actor_id: int, p_target_id: int, p_reason: String = "invalid_action") -> CombatResult:
 	return CombatResult.new(Outcome.INVALID_ACTION, p_actor_id, p_target_id, "", 0, 0, false, p_reason)
-
-
-## True quando o resultado representa uma acao que de fato aconteceu -
-## nao foi rejeitada por validacao (target morto/invalido/acao invalida).
-func is_actionable() -> bool:
-	return outcome != Outcome.INVALID_TARGET \
-		and outcome != Outcome.ALREADY_DEAD \
-		and outcome != Outcome.INVALID_ACTION

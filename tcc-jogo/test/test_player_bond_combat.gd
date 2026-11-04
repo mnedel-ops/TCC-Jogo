@@ -1,6 +1,4 @@
 extends GdUnitTestSuite
-## The player's Component only exists in combat if it was MADE at the PC
-## (PlayerBondData active). Enemies still auto-bond.
 
 const DB_PATH := "res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres"
 
@@ -11,8 +9,6 @@ func before_test() -> void:
 	db = load(DB_PATH)
 
 
-## Two player species that DO form a bond together (so "no bond" is not just
-## "pair can't bond").
 func _bondable_party(only_kind: String = "") -> Array[AlchemonInstance]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
@@ -59,7 +55,7 @@ func test_made_bond_is_applied_to_player() -> void:
 func test_stale_bond_is_skipped() -> void:
 	var party := _bondable_party()
 	var bond := PlayerBondData.new()
-	bond.set_bond(BondRules.NONE + "_wrong", [0, 1])   # kind that no pair can have
+	bond.set_bond(BondRules.NONE + "_wrong", [0, 1])
 	var enemies: Array[int] = [db.alchemons[0].id]
 	var st := CombatStateFactory.build(db, party, enemies, 3, bond)
 	assert_array(_kinds(st, st.player_ids)).contains_exactly([BondRules.NONE, BondRules.NONE])
@@ -77,3 +73,15 @@ func test_compound_inactive_members_are_not_selectable_or_targetable() -> void:
 	for id in st.player_ids:
 		var c := st.get_combatant(id)
 		assert_bool(active.has(id)).is_equal(not (c.is_bond_cation or c.is_bond_inactive))
+
+
+func test_ko_member_means_no_component_and_no_index_shift() -> void:
+	var party := _bondable_party()
+	var sheets: Array[AlchemonSheet] = [db.get_by_id(party[0].species_id), db.get_by_id(party[1].species_id)]
+	var bond := PlayerBondData.new()
+	bond.set_bond(AlchemyStation.determine_bond_kind(sheets), [0, 1])
+	party[0].current_hp = 0
+	var enemies: Array[int] = [db.alchemons[0].id]
+	var st := CombatStateFactory.build(db, party, enemies, 3, bond)
+	assert_int(st.player_ids.size()).is_equal(1)
+	assert_str(st.get_combatant(st.player_ids[0]).bond_kind).is_equal(BondRules.NONE)

@@ -1,40 +1,22 @@
 class_name AlchemonInstance
 extends Resource
 
-## ONE individual creature, forever. This is the persistent model: it is what
-## gets saved, moved between party/storage and handed to combat. It is NOT the
-## battle state (CombatantState) - that is built from this, then written back
-## through CreatureSync.
-##
-## Stored = things that are the creature's own history/identity:
-##   uid, species, nickname, level, xp, IV, personality, current HP/energy, attacks.
-## NOT stored = anything derived (max HP, attack, defense...). Those come from
-##   compute_stats(sheet). Storing them let temporary bond bonuses leak into
-##   the creature permanently.
 
-const UNSET := -1   ## current_hp / current_energy: never set yet = treat as full.
+const UNSET := -1
 const MAX_ATTACKS := 4
 
-## Permanent identity. Never changes, never reused. Empty only on hand-authored
-## .tres starters - ensure_uid() fills it on first load.
 @export var uid: String = ""
 @export var species_id: int = -1
-## Nickname. Empty = show the species name.
 @export var creature_name: String = ""
 
 @export var level: int = 1
 @export var experience: int = 0
 @export var individual_value: int = 1
-## See AlchemonPersonality. Rolled once by CreatureFactory.
 @export var personality: String = AlchemonPersonality.NEUTRAL
 
-## UNSET = full HP. 0 = fainted.
 @export var current_hp: int = UNSET
-## UNSET = full. Only used when CreatureSync.PERSIST_ENERGY is on.
 @export var current_energy: int = UNSET
 
-## Learned attack ids (AttackData.indexAttack), max 4. Empty = species default
-## moveset (AlchemonSheet.attacks). NOTE: combat does not read this yet.
 @export var attack_ids: Array[int] = []
 
 
@@ -43,7 +25,6 @@ func ensure_uid() -> void:
 		uid = CreatureFactory.new_uid()
 
 
-## Compat for old callers (AlchemonBuilder): bind species + make HP valid.
 func init_from_template(template: AlchemonSheet) -> void:
 	species_id = template.id
 	if current_hp == UNSET:
@@ -54,8 +35,6 @@ func max_hp_for(sheet: AlchemonSheet) -> int:
 	return AlchemonFormulas.compute_max_hp(sheet.max_hp, individual_value, level)
 
 
-## Final stats at the current level, personality included. Single source of
-## truth for combat AND for every UI screen.
 func compute_stats(sheet: AlchemonSheet) -> Dictionary:
 	return {
 		"max_hp": max_hp_for(sheet),
@@ -72,7 +51,6 @@ func _stat(base: int, key: String) -> int:
 	return v if m == 1.0 else maxi(1, int(round(v * m)))
 
 
-## Real current HP given the real max (UNSET -> full, never above max).
 func hp_or_full(max_hp: int) -> int:
 	return max_hp if current_hp == UNSET else clampi(current_hp, 0, max_hp)
 
@@ -86,26 +64,6 @@ func display_name(sheet: AlchemonSheet) -> String:
 		return creature_name
 	return sheet.creature_name if sheet != null else "???"
 
-
-## Attacks this creature can use. Learned list first; falls back to the species
-## moveset so creatures with no list (old data) behave exactly as before.
-func resolve_attacks(sheet: AlchemonSheet) -> Array[AttackData]:
-	var out: Array[AttackData] = []
-	for id in attack_ids:
-		for a in sheet.attacks:
-			if a != null and a.indexAttack == id:
-				out.append(a)
-				break
-	if out.is_empty():
-		for a in sheet.attacks:
-			out.append(a)
-	return out.slice(0, MAX_ATTACKS)
-
-
-# ------------------------------------------------------------ serialization
-# Plain Dictionary on purpose (JSON-safe). Do NOT save with ResourceSaver:
-# a .tres/.res in user:// can carry scripts, so loading a shared/tampered save
-# could run code.
 
 func to_dict() -> Dictionary:
 	return {
@@ -122,8 +80,6 @@ func to_dict() -> Dictionary:
 	}
 
 
-## Tolerant on purpose: missing keys -> defaults, wrong types -> sanitized.
-## Returns null only when there is no usable species.
 static func from_dict(d: Dictionary) -> AlchemonInstance:
 	if not d.has("species_id"):
 		push_warning("AlchemonInstance.from_dict: no species_id, entry skipped.")

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BadgeData" format=3]
+
+[ext_resource type="Script" path="res://DATABASE/Player/BadgeData.gd" id="1_bd"]
+
+[resource]
+script = ExtResource("1_bd")
+badge_name = "Insígnia do Metal"
+description = "Entregue pelo líder do ginásio de Metal."
+earned = false

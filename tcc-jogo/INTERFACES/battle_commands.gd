@@ -1,28 +1,16 @@
 class_name BattleCommands
 extends Control
 
-## Horizontal command bar (top left): Attack | Item | Flee | "who you are ordering".
-## Cursor icon expands to show its name. Activating it opens a vertical dropdown
-## under that icon. Attack / Item rows open a SECOND dropdown (targets) to the right,
-## starting at the chosen row. Pure UI: gets plain Dictionaries, emits signals,
-## knows no combat rules.
-##
-## Keys: left/right = icon, down/interact = open, up/down = row, interact = pick,
-## left / ui_cancel / up on first row = back one level.
-## Mouse: hover icon, click icon, hover + click rows.
 
 signal attack_confirmed(attack_index: int, target_id: int)
 signal item_confirmed(item_index: int, target_id: int)
 signal flee_confirmed
-## Combatant under the target cursor. -1 = none (list closed / picked).
 signal target_hovered(target_id: int)
 
 signal capture_confirmed(item_index: int, target_id: int)
 
-## Shown when the player tries to capture in a trainer battle.
 const CAPTURE_BLOCKED_TEXT := "You can't capture another trainer's Alchemon!"
 
-## true = trainer battle. Capture items open no target list, show a notice instead.
 var capture_blocked := false
 
 enum Cmd { ATTACK, ITEM, FLEE }
@@ -31,7 +19,6 @@ enum Mode { LOCKED, ICONS, DROPDOWN, TARGET }
 const ICON_SHEET := "res://INTERFACES/assets/comandos.png"
 const CMD_NAMES: Array[String] = ["Ataque", "Item", "Fugir"]
 
-## Where each icon sits inside comandos.png (229x169). Tweak if the crop is off.
 @export var attack_icon_region := Rect2(6, 6, 98, 84)
 @export var item_icon_region := Rect2(78, 66, 80, 90)
 @export var flee_icon_region := Rect2(136, 18, 90, 86)
@@ -39,7 +26,6 @@ const CMD_NAMES: Array[String] = ["Ataque", "Item", "Fugir"]
 @export var screen_margin := Vector2(16, 16)
 @export var name_expand_time := 0.12
 
-## One vertical list (panel + selectable rows + what each row does).
 class DropList:
 	var panel: PanelContainer
 	var rows: Array[PanelContainer] = []
@@ -47,24 +33,24 @@ class DropList:
 	var cursor := 0
 
 var _mode: Mode = Mode.LOCKED
-var _cursor: int = Cmd.ATTACK     # highlighted icon
-var _open_cmd: int = -1           # icon whose dropdown is open
+var _cursor: int = Cmd.ATTACK
+var _open_cmd: int = -1
 
 var _actor_name := ""
-var _attacks: Array = []          # [{name, damage, type}]
-var _items: Array = []            # [{index, name, effect}]
-var _enemy_targets: Array = []    # [{id, name, hp, max_hp, type}]  (attack targets)
-var _ally_targets: Array = []     # same shape                       (item targets)
+var _attacks: Array = []
+var _items: Array = []
+var _enemy_targets: Array = []
+var _ally_targets: Array = []
 
-var _pending_kind := ""           # "attack" | "item" while the target list is open
+var _pending_kind := ""
 var _pending_index := -1
 
 var _bar: PanelContainer
 var _slots: Array[PanelContainer] = []
 var _name_labels: Array[Label] = []
 var _actor_label: Label
-var _menu: DropList               # level 0: attacks / items / flee confirm
-var _targets: DropList            # level 1: targets, right of _menu
+var _menu: DropList
+var _targets: DropList
 
 
 func _ready() -> void:
@@ -74,9 +60,6 @@ func _ready() -> void:
 	hide_menu()
 
 
-# ---------------------------------------------------------------- public API
-
-## Show the bar for one actor. Same actor again keeps the cursor.
 func open_for(actor_name: String, attacks: Array, items: Array,
 		enemy_targets: Array, ally_targets: Array) -> void:
 	if actor_name != _actor_name:
@@ -94,7 +77,6 @@ func open_for(actor_name: String, attacks: Array, items: Array,
 	_refresh_cursor()
 
 
-## Keep bar visible but dimmed and deaf to input.
 func lock() -> void:
 	_close_menu()
 	_mode = Mode.LOCKED
@@ -102,8 +84,6 @@ func lock() -> void:
 	_refresh_cursor()
 
 
-## Screen rect of the command bar (icons + "Ordem: X"). Valid while hidden too.
-## The combat log box sits to the right of it.
 func bar_rect() -> Rect2:
 	return _bar.get_global_rect()
 
@@ -113,8 +93,6 @@ func hide_menu() -> void:
 	_mode = Mode.LOCKED
 	visible = false
 
-
-# ------------------------------------------------------------------ building
 
 func _build_bar() -> void:
 	_bar = PanelContainer.new()
@@ -153,7 +131,7 @@ func _build_bar() -> void:
 
 		var lbl := Label.new()
 		lbl.text = CMD_NAMES[i]
-		lbl.clip_text = true                       # width 0 = collapsed
+		lbl.clip_text = true
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(lbl)
@@ -169,7 +147,7 @@ func _build_bar() -> void:
 	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(gap)
 
-	_actor_label = Label.new()                     # end of the bar: who is ordering
+	_actor_label = Label.new()
 	_actor_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_actor_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
 	hbox.add_child(_actor_label)
@@ -187,8 +165,6 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	s.content_margin_bottom = 6
 	return s
 
-
-# -------------------------------------------------------------------- cursor
 
 func _refresh_cursor() -> void:
 	for i in _slots.size():
@@ -212,8 +188,6 @@ func _move_cursor(delta: int) -> void:
 	_cursor = wrapi(_cursor + delta, 0, _slots.size())
 	_refresh_cursor()
 
-
-# ------------------------------------------------------- level 0: main dropdown
 
 func _open_menu(cmd: int) -> void:
 	_close_menu()
@@ -246,7 +220,7 @@ func _open_menu(cmd: int) -> void:
 				{"cells": ["Sim"], "callback": _pick_flee},
 				{"cells": ["Nao"], "callback": _cancel_menu},
 			], [160], 0)
-			_menu.cursor = 1                        # default on "Nao": double-tap can't flee
+			_menu.cursor = 1
 			_refresh_rows(_menu)
 	_mode = Mode.DROPDOWN
 	_refresh_cursor()
@@ -277,12 +251,9 @@ func _pick_flee() -> void:
 	flee_confirmed.emit()
 
 
-# ------------------------------------------------------------------- notice
-
 var _notice: PanelContainer
 var _notice_tween: Tween
 
-## Small pop-up at top center of the screen. Fades out by itself.
 func _show_notice(text: String) -> void:
 	if _notice != null and is_instance_valid(_notice):
 		_notice.queue_free()
@@ -290,7 +261,7 @@ func _show_notice(text: String) -> void:
 		_notice_tween.kill()
 
 	_notice = PanelContainer.new()
-	_notice.top_level = true                     # position in screen coords, ignores bar
+	_notice.top_level = true
 	_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notice.z_index = 100
 	_notice.add_theme_stylebox_override("panel", _box(Color(0.35, 0.05, 0.05, 0.95), Color(1, 0.4, 0.4), 8))
@@ -300,7 +271,7 @@ func _show_notice(text: String) -> void:
 	_notice.add_child(lbl)
 	add_child(_notice)
 
-	await get_tree().process_frame               # wait for size
+	await get_tree().process_frame
 	if _notice == null or not is_instance_valid(_notice):
 		return
 	_notice.position = Vector2((get_viewport_rect().size.x - _notice.size.x) * 0.5, 24.0)
@@ -311,9 +282,6 @@ func _show_notice(text: String) -> void:
 	_notice_tween.tween_callback(_notice.queue_free)
 
 
-# ------------------------------------------------------ level 1: target dropdown
-
-## Opens to the right of the main dropdown, top aligned with the chosen row.
 func _open_targets(kind: String, index: int) -> void:
 	_close_targets()
 	_pending_kind = kind
@@ -353,7 +321,7 @@ func _activate_target() -> void:
 func _confirm_target(target_id: int) -> void:
 	var kind := _pending_kind
 	var index := _pending_index
-	lock()                                          # closes lists + clears highlight
+	lock()
 	match kind:
 		"attack":
 			attack_confirmed.emit(index, target_id)
@@ -363,7 +331,7 @@ func _confirm_target(target_id: int) -> void:
 			item_confirmed.emit(index, target_id)
 
 
-var _target_ids: Array[int] = []                    # id of each selectable target row
+var _target_ids: Array[int] = []
 
 func _emit_target_hover() -> void:
 	if _targets == null or _targets.cursor >= _target_ids.size():
@@ -372,13 +340,10 @@ func _emit_target_hover() -> void:
 	target_hovered.emit(_target_ids[_targets.cursor])
 
 
-# ------------------------------------------------------------ list building
-
-## level 0 = main dropdown, 1 = target dropdown.
 func _build_list(title: String, header: Array, rows: Array, widths: Array, level: int) -> DropList:
 	var list := DropList.new()
 	list.panel = PanelContainer.new()
-	list.panel.modulate.a = 0.0                     # shown by _process once positioned
+	list.panel.modulate.a = 0.0
 	list.panel.add_theme_stylebox_override("panel", _box(Color(0.07, 0.07, 0.11, 0.94), Color(0.5, 0.5, 0.6), 8))
 	add_child(list.panel)
 
@@ -393,7 +358,7 @@ func _build_list(title: String, header: Array, rows: Array, widths: Array, level
 
 	if not header.is_empty():
 		var h := _make_row(header, widths)
-		h.modulate = Color(1, 1, 1, 0.55)           # dim header, not selectable
+		h.modulate = Color(1, 1, 1, 0.55)
 		v.add_child(h)
 
 	if level == 1:
@@ -449,8 +414,6 @@ func _move_row(list: DropList, delta: int) -> void:
 	_refresh_rows(list)
 
 
-## Main dropdown: left edge of its icon, under the bar.
-## Target dropdown: right of the main one, top = chosen row's top.
 func _process(_delta: float) -> void:
 	if _menu != null and is_instance_valid(_menu.panel) and _open_cmd >= 0:
 		var slot := _slots[_open_cmd]
@@ -467,8 +430,6 @@ func _process(_delta: float) -> void:
 				chosen.global_position.y - global_position.y)
 			_targets.panel.modulate.a = 1.0
 
-
-# --------------------------------------------------------------------- input
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible or _mode == Mode.LOCKED:
@@ -489,7 +450,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_move_row(_menu, 1)
 			elif event.is_action_pressed("menu_up"):
 				if _menu.cursor == 0:
-					_cancel_menu()                  # up past first row = back to icons
+					_cancel_menu()
 				else:
 					_move_row(_menu, -1)
 			elif event.is_action_pressed("menu_left"):
@@ -510,7 +471,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				_emit_target_hover()
 			elif event.is_action_pressed("menu_up"):
 				if _targets.cursor == 0:
-					_close_targets()                # back to the attack/item list
+					_close_targets()
 				else:
 					_move_row(_targets, -1)
 					_emit_target_hover()
@@ -535,7 +496,7 @@ func _on_slot_gui_input(event: InputEvent, i: int) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if _open_cmd == i:
-			_cancel_menu()                          # click again = close
+			_cancel_menu()
 		else:
 			_open_menu(i)
 
@@ -554,7 +515,7 @@ func _on_row_gui_input(event: InputEvent, level: int, row_index: int) -> void:
 	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
 		return
 	if level == 0 and (_mode == Mode.DROPDOWN or _mode == Mode.TARGET):
-		_menu.cursor = row_index                    # also lets you switch row while targets are open
+		_menu.cursor = row_index
 		_refresh_rows(_menu)
 		_activate_menu()
 	elif level == 1 and _mode == Mode.TARGET:

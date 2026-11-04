@@ -1,21 +1,12 @@
 class_name PCUI
 extends CanvasLayer
-## PC interface, 2 levels:
-##  1) Option list: Alchemy / Stored / Exit  (up/down to move)
-##  2) Option menu: opens with "menu_interact". "ui_cancel" goes back.
-## Every select inside menus also uses "menu_interact".
-##
-## Alchemy = make the Component (bond) the player carries into every fight.
-## Stored  = swap party <-> storage (instances keep level/XP/IV/HP).
 
 signal exit_requested
 signal bond_changed
-## Party order changed. PC forwards to CombatSignal.party_changed.
 signal party_changed
 
 @export var select_action: StringName = &"menu_interact"
 @export var back_action: StringName = &"ui_cancel"
-## Battlefield only has 2 player slots.
 @export var max_party_size := 2
 
 enum Level { LIST, OPTION }
@@ -36,40 +27,35 @@ var _level := Level.LIST
 var _current_option := ""
 var _ready_to_input := false
 const COMPONENT_CREATED_TEXT := "Seu Composto foi criado!"
-var _popup: Control   # "Composto criado" box. While open it eats ALL input; any key closes it.
+var _popup: Control
 
 var _menu: ItemList
 var _pages: Dictionary = {}
 var _hint: Label
 
-# Alchemy
 var _alch_header: Label
 var _alch_list: ItemList
-var _alch_rows: Array = []   # {"kind": "mon"/"make"/"break"/"back", "inst": AlchemonInstance, "tag": String}
+var _alch_rows: Array = []
 var _alch_picked: Array[AlchemonInstance] = []
 var _alch_info: Label
 
-# Stored
 const ST_TITLE_PARTY := "Seu time"
 const ST_TITLE_STORED := "Armazenados"
-var _st_party_list: ItemList    # left column
-var _st_stored_list: ItemList   # right column
-var _st_party_rows: Array = []   # {"src": "party"/"back", "inst": AlchemonInstance}
-var _st_stored_rows: Array = []  # {"src": "stored", "inst": AlchemonInstance}
-var _st_focus: ItemList          # column that has the cursor
+var _st_party_list: ItemList
+var _st_stored_list: ItemList
+var _st_party_rows: Array = []
+var _st_stored_rows: Array = []
+var _st_focus: ItemList
 var _st_info: Label
 var _st_stats: Label
 var _alch_stats: Label
 
-# Exit
 var _exit_yes: Button
 var _exit_no: Button
 
-# Idle
 var _idle_label: Label
 
 
-## Called by PCStation right after add_child.
 func setup(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, database: AlchemonDatabase) -> void:
 	_party_data = party
 	_storage = storage
@@ -88,12 +74,9 @@ func _ready() -> void:
 	_build_ui()
 	_menu.select(0)
 	_go_list()
-	# Ignore input for 1 frame: the key that opened the PC must not select.
 	await get_tree().process_frame
 	_ready_to_input = true
 
-
-# ---------- data helpers ----------
 
 func _party() -> Array:
 	return _party_data.party if _party_data != null else []
@@ -103,8 +86,6 @@ func _stored() -> Array:
 	return _storage.instances if _storage != null else []
 
 
-## Empty slots in the .tres arrays (a deleted or broken sub-resource) show as
-## null. Remove them so the lists never touch a Nil instance.
 func _purge_nulls() -> void:
 	if _party_data != null and _party_data.party.has(null):
 		push_warning("PCUI: null entry in PlayerPartyData.party removed. Check PlayerCurrentAlchemon.tres.")
@@ -153,7 +134,6 @@ func _bond_text() -> String:
 	return "Current Component: %s (%s)" % [_kind_label(_bond.kind), " + ".join(names)]
 
 
-## Stat sheet for one instance. Same numbers combat uses: AlchemonInstance.compute_stats().
 func _stats_text(inst: AlchemonInstance) -> String:
 	if inst == null:
 		return ""
@@ -216,21 +196,18 @@ func _update_st_stats() -> void:
 		_update_stats(_st_focus, _st_rows_of(_st_focus), _st_stats)
 
 
-## Cursor jumps to the other column (left/right). Ignored if it has no rows.
 func _st_switch_column(to_stored: bool) -> void:
 	var target := _st_stored_list if to_stored else _st_party_list
 	if target == _st_focus or target.item_count == 0:
 		return
 	if target.get_selected_items().is_empty():
 		target.select(0)
-	target.grab_focus()   # focus_entered sets _st_focus + stats
+	target.grab_focus()
 
 
 func _on_alch_selected(_i: int) -> void:
 	_update_stats(_alch_list, _alch_rows, _alch_stats)
 
-
-# ---------- build ----------
 
 func _build_ui() -> void:
 	var dim := ColorRect.new()
@@ -258,7 +235,6 @@ func _build_ui() -> void:
 	root.add_theme_constant_override("separation", 16)
 	outer.add_child(root)
 
-	# Menu 1: option list
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(200, 0)
 	root.add_child(left)
@@ -274,7 +250,6 @@ func _build_ui() -> void:
 	_menu.item_activated.connect(func(_i): _open_option())
 	left.add_child(_menu)
 
-	# Menu 2: option pages
 	var right := Control.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -345,7 +320,6 @@ func _build_stored_page() -> Control:
 	return page
 
 
-## One column = title label on top + list. Returns the list.
 func _make_st_column(parent: Control, title: String) -> ItemList:
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -385,15 +359,12 @@ func _build_exit_page() -> Control:
 	return page
 
 
-# ---------- levels ----------
-
 func _input(event: InputEvent) -> void:
 	if not _ready_to_input:
 		return
 	if event is InputEventKey and event.echo:
 		return
 	if _popup != null:
-		# Modal: nothing reaches the menus. Any key / click / pad button closes.
 		get_viewport().set_input_as_handled()
 		var pressed: bool = (event is InputEventKey and event.pressed) \
 				or (event is InputEventMouseButton and event.pressed) \
@@ -424,7 +395,6 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_menu_selected(index: int) -> void:
-	# Highlight only. Never opens anything.
 	if _level != Level.LIST:
 		return
 	_idle_label.text = DESCRIPTIONS[OPTIONS[index]]
@@ -450,7 +420,7 @@ func _open_option() -> void:
 			_st_focus = _st_party_list
 			_st_party_list.grab_focus()
 		"Exit":
-			_exit_no.grab_focus() # safe default: No
+			_exit_no.grab_focus()
 	_hint.text = "Up/Down: move   [%s]: select   [%s]: back" % [select_action, back_action]
 	if _current_option == "Stored":
 		_hint.text = "Up/Down: move   Left/Right: change column   [%s]: move Alchemon   [%s]: back" % [select_action, back_action]
@@ -485,8 +455,6 @@ func _option_select() -> void:
 				f.pressed.emit()
 
 
-# ---------- refresh ----------
-
 func _refresh_all() -> void:
 	if _alch_list == null:
 		return
@@ -505,7 +473,6 @@ func _refresh_alchemy() -> void:
 	_alch_header.text = _bond_text()
 
 	if _has_active_bond():
-		# A Component is active: the only thing allowed is breaking it.
 		_alch_picked.clear()
 		_alch_rows.append({"kind": "break"})
 		if _alch_info.text == "":
@@ -554,14 +521,11 @@ func _refresh_stored() -> void:
 	_st_party_list.select(mini(keep_p[0] if not keep_p.is_empty() else 0, _st_party_list.item_count - 1))
 	if _st_stored_list.item_count > 0:
 		_st_stored_list.select(mini(keep_s[0] if not keep_s.is_empty() else 0, _st_stored_list.item_count - 1))
-	# Right column emptied while the cursor was there: go back left.
 	if _st_focus == _st_stored_list and _st_stored_list.item_count == 0 and _level == Level.OPTION \
 			and _current_option == "Stored":
 		_st_party_list.grab_focus()
 	_update_st_stats()
 
-
-# ---------- actions ----------
 
 func _alchemy_select() -> void:
 	var sel := _alch_list.get_selected_items()
@@ -590,8 +554,6 @@ func _alchemy_select() -> void:
 	_refresh_all()
 
 
-## Validates the chosen pair with AlchemyStation. Valid -> the pair becomes the
-## party (the other Alchemons go to storage) and the bond is saved.
 func _make_component() -> void:
 	if _has_active_bond():
 		_alch_info.text = "Break the current Component first."
@@ -615,13 +577,11 @@ func _make_component() -> void:
 		_alch_info.text = "Impossible bond. These two cannot form a Component."
 		return
 
-	# Keep party order stable: chosen ones in the order they appear now.
 	var chosen: Array[AlchemonInstance] = []
 	for r in _alch_rows:
 		if r.kind == "mon" and _alch_picked.has(r.inst):
 			chosen.append(r.inst)
 
-	# Old party members not chosen -> storage. Chosen from storage leave it.
 	for inst in _party_data.party.duplicate():
 		if not chosen.has(inst):
 			_storage.add_instance(inst)
@@ -640,12 +600,11 @@ func _make_component() -> void:
 	_show_popup(COMPONENT_CREATED_TEXT)
 
 
-## Centered confirmation box. Any input closes it (see _input).
 func _show_popup(text: String) -> void:
 	_close_popup()
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_STOP   # clicks must not hit the menus below
+	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -714,7 +673,6 @@ func _stored_select() -> void:
 		_storage.remove_instance(row.inst)
 		_party_data.party.append(row.inst)
 
-	# Party changed -> old Component is no longer valid.
 	var broke := _bond != null and _bond.is_active()
 	if broke:
 		_bond.clear()

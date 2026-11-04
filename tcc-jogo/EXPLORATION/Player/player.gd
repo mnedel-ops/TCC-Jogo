@@ -1,7 +1,6 @@
 extends CharacterBody3D
 class_name Player
 
-#Componentes
 @onready var movement: MovementComponent = $MovementComponent
 @onready var interaction: InteractionComponent = $InteractionComponent
 @onready var inventory: InventoryComponent = $InventoryComponent

@@ -1,17 +1,6 @@
 class_name AlchemonsPage
 extends MenuPage
 
-## Alchemons page (the player's team): header + portraits row + tabs.
-##  Header : player name (left), "Equipe: <team name>" (right).
-##  Portraits: one card per party member (3D preview, name, level).
-##             The card being read is highlighted in gold.
-##  Tabs   : Stats / Ataques / Info for the highlighted alchemon.
-## Pure UI, read only. Data: PlayerPartyData + AlchemonDatabase + PlayerData.
-##
-## Keys: menu_left / menu_right = previous / next alchemon
-##         (menu_left on the first one = back to the menu list),
-##       menu_up / menu_down (or ui_page_up / ui_page_down) = previous / next tab.
-## Mouse: click a portrait = select it.
 
 signal alchemon_selected(index: int)
 
@@ -27,7 +16,7 @@ const DEFAULT_PLAYER := "res://DATABASE/Player/player.tres"
 @export var database: AlchemonDatabase
 @export var player: PlayerData
 
-var _entries: Array[Dictionary] = []     # {inst: AlchemonInstance, sheet: AlchemonSheet}
+var _entries: Array[Dictionary] = []
 var _cards: Array[PanelContainer] = []
 var _previews: Array[AlchemonPreview] = []
 var _name_labels: Array[Label] = []
@@ -45,7 +34,7 @@ var _attacks_grid: GridContainer
 var _info_grid: GridContainer
 
 
-func _ready() -> void:      # no super: no placeholder
+func _ready() -> void:
 	if party == null:
 		party = load(DEFAULT_PARTY)
 	if database == null:
@@ -55,8 +44,6 @@ func _ready() -> void:      # no super: no placeholder
 	_build()
 	_populate()
 
-
-# --------------------------------------------------------------- MenuPage API
 
 func on_open() -> void:
 	_populate()
@@ -79,8 +66,6 @@ func handle_input(event: InputEvent) -> bool:
 	return true
 
 
-# ------------------------------------------------------------------ building
-
 func _build() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -92,7 +77,6 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 12)
 	margin.add_child(root)
 
-	# header: player name + team
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 8)
 	root.add_child(header)
@@ -109,7 +93,6 @@ func _build() -> void:
 	header.add_child(_team_label)
 	root.add_child(HSeparator.new())
 
-	# portraits row
 	var top := Control.new()
 	top.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	top.size_flags_stretch_ratio = 1.2
@@ -129,7 +112,6 @@ func _build() -> void:
 	_empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(_empty_label)
 
-	# tabs
 	_tabs_panel = PanelContainer.new()
 	_tabs_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tabs_panel.size_flags_stretch_ratio = 1.0
@@ -137,7 +119,7 @@ func _build() -> void:
 	root.add_child(_tabs_panel)
 
 	_tabs = TabContainer.new()
-	_tabs.get_tab_bar().focus_mode = Control.FOCUS_NONE   # keys go to handle_input, not the tab bar
+	_tabs.get_tab_bar().focus_mode = Control.FOCUS_NONE
 	_tabs.add_theme_color_override("font_hovered_color", GOLD)
 	_tabs.add_theme_color_override("font_selected_color", GOLD)
 	_tabs_panel.add_child(_tabs)
@@ -173,8 +155,6 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	s.content_margin_bottom = 6
 	return s
 
-
-# ---------------------------------------------------------------------- data
 
 func _populate() -> void:
 	var previous := _selected
@@ -224,7 +204,7 @@ func _make_card(i: int, entry: Dictionary) -> PanelContainer:
 
 	var preview := AlchemonPreview.new()
 	v.add_child(preview)
-	preview.set_sheet(sheet)   # applied when the preview enters the tree
+	preview.set_sheet(sheet)
 
 	var nm := Label.new()
 	nm.text = _display_name(inst, sheet)
@@ -252,8 +232,6 @@ func _make_card(i: int, entry: Dictionary) -> PanelContainer:
 func _display_name(inst: AlchemonInstance, sheet: AlchemonSheet) -> String:
 	return inst.creature_name if inst.creature_name != "" else sheet.creature_name
 
-
-# ------------------------------------------------------------------- cursor
 
 func _refresh_cards() -> void:
 	for i in _cards.size():
@@ -303,8 +281,6 @@ func _on_card_gui_input(event: InputEvent, i: int) -> void:
 		_select(i)
 
 
-# -------------------------------------------------------------------- detail
-
 func _show_detail() -> void:
 	if _selected < 0 or _selected >= _entries.size():
 		return
@@ -336,7 +312,6 @@ func _add_pair(grid: GridContainer, key_text: String, value_text: String) -> voi
 
 func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 	_clear(_stats_grid)
-	# Same numbers combat uses (AlchemonInstance.compute_stats, personality included)
 	var stats := inst.compute_stats(s)
 	var max_hp: int = stats.max_hp
 	var hp := inst.hp_or_full(max_hp)

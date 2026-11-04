@@ -1,35 +1,31 @@
 class_name CombatantState
 extends Resource
 
-## Value object - estado MUTAVEL de 1 combatente durante a batalha.
-## Dado estatico (nome, ataques, descricao) NAO mora aqui - fica no
-## AlchemonSheet/AlchemonDatabase, resolvido via species_id quando precisar
-## exibir. Isso evita ter 2 fontes de verdade pro mesmo dado estatico.
 
-signal arena_hotter_than_myself(slot: int) #Emitido quando o Alchemon sofrer alteracao de estado. A temperatura da arena aumentou demais.
+signal arena_hotter_than_myself(slot: int)
 
 
-@export var id: int = -1              # id de INSTANCIA nessa batalha (unico por combatente, nao por especie)
-@export var species_id: int = -1      # chave pra buscar nome/ataques no AlchemonDatabase
-@export var source_uid: String = ""  # AlchemonInstance.uid this combatant was built from (CreatureSync matches by this)
-@export var slot: int = -1            # battlefield slot position (BattlefieldSlot.*)
+@export var id: int = -1
+@export var species_id: int = -1
+@export var source_uid: String = ""
+@export var slot: int = -1
 @export var hp: int = 0
 @export var max_hp: int = 0
 @export var valence_electrons: int = 0
 @export var max_valence_electrons: int = 0
 @export var level: int = 1
 @export var experience: int = 0
-@export var start_level: int = 1        # level/xp when the battle began - rewards are the difference
+@export var start_level: int = 1
 @export var start_experience: int = 0
 @export var individual_value: int = 1
 @export var attack: int = 1
 @export var defense: int = 1
 @export var mechanical_speed: int = 1
 @export var action_energy: int = 1
-@export var bond_kind: String = BondRules.NONE   # NONE | MIXTURE | COMPOUND - see BondRules
+@export var bond_kind: String = BondRules.NONE
 @export var bond_partner_id: int = -1
-@export var is_bond_cation: bool = false         # only meaningful when bond_kind == COMPOUND
-@export var is_bond_inactive: bool = false        # Anion
+@export var is_bond_cation: bool = false
+@export var is_bond_inactive: bool = false
 @export var initiative: int = 0
 @export var is_player: bool = false
 @export var alive: bool = true

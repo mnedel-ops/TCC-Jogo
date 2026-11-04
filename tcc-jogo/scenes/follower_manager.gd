@@ -3,19 +3,16 @@ extends Node
 @onready var player: Player = $"../player"
 @onready var follower_holder: Node3D = $"../FollowerHolder"
 @onready var anchors_root: Node3D = $"../BattleAnchors"
-@onready var player_mesh: Node3D = $"../player/Mesh" # Mesh rotates, Player body does not
+@onready var player_mesh: Node3D = $"../player/Mesh"
 
 @export var rotate_with_player: bool = true
-@export var marker_turn_speed: float = 8.0 # how fast markers orbit when player turns. 0 = snap
+@export var marker_turn_speed: float = 8.0
 var _facing_yaw: float = 0.0
 
 var alchemonfollower: PackedScene = load("res://DATABASE/Alchemons/AlchemonActor.tscn")
 var alchemonfollowerinstance : Node3D
 
-## Creature i uses marker i. Move these markers in the editor = move creatures.
-## Marker position = OFFSET from player (markers ride along with the player).
 const FOLLOW_MARKER_NAMES: Array[String] = ["APosition", "BPosition"]
-## Party order = battle slot order (P1, P2). Same order CombatStateFactory uses.
 const PLAYER_ANCHOR_NAMES: Array[String] = ["P1", "P2"]
 
 var _followers: Array[Node3D] = []
@@ -26,16 +23,15 @@ var _offsets: Array[Vector3] = []
 
 
 func _ready() -> void:
-	_facing_yaw = player_mesh.global_rotation.y # no swing at spawn
+	_facing_yaw = player_mesh.global_rotation.y
 	_collect_markers()
-	_update_markers() # markers in place BEFORE spawn
+	_update_markers()
 	for m in equipe_player.species_ids.size():
 		set_follower(m)
 	CombatSignal.combat_start.connect(_on_combat_start)
 	CombatSignal.combat_ended.connect(_on_combat_ended)
 	CombatSignal.party_changed.connect(refresh_followers)
 	
-
 
 func _process(_delta: float) -> void:
 	_update_facing(_delta)
@@ -48,7 +44,6 @@ func _update_facing(delta: float) -> void:
 	else:
 		_facing_yaw = lerp_angle(_facing_yaw, target_yaw, 1.0 - exp(-marker_turn_speed * delta))
 
-## Read offset each marker was given in the editor.
 func _collect_markers() -> void:
 	for n in FOLLOW_MARKER_NAMES:
 		var marker := get_node_or_null(n) as Marker3D
@@ -59,15 +54,12 @@ func _collect_markers() -> void:
 		_offsets.append(marker.position)
 
 
-## Markers follow player. Offset stays in world axes (no rotation).
 func _update_markers() -> void:
 	var basis_yaw := Basis(Vector3.UP, _facing_yaw) if rotate_with_player else Basis.IDENTITY
 	for i in _markers.size():
 		_markers[i].global_position = player.global_position + basis_yaw * _offsets[i]
 		_markers[i].global_rotation.y = _facing_yaw if rotate_with_player else 0.0
 
-## 3D node of the party creature at this index (null if none). Used by combat
-## to highlight the creature when it is targeted.
 func get_follower(index: int) -> Node3D:
 	return _followers[index] if index >= 0 and index < _followers.size() else null
 
@@ -90,7 +82,6 @@ func set_follower(index: int):
 	_followers.append(alchemonfollowerinstance)
 
 
-## Party changed at the PC: respawn followers to match PlayerPartyData.
 func refresh_followers() -> void:
 	for f in _followers:
 		if is_instance_valid(f):

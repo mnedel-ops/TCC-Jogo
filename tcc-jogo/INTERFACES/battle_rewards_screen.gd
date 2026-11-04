@@ -1,14 +1,9 @@
 class_name BattleRewardsScreen
 extends CanvasLayer
 
-## Shown after the last turn: EXP gained, level-ups, coins. Waits for ANY
-## key / mouse / gamepad button, then emits `dismissed`. Pure presentation:
-## it only displays a BattleRewards. Built in code (no .tscn), like the PC UI.
 
 signal dismissed
 
-## Ignore input right after opening, so the key the player was mashing during
-## the last attack cannot skip the screen by accident.
 const INPUT_DELAY := 0.6
 
 var _accepting := false
@@ -16,7 +11,7 @@ var _done := false
 
 
 func _init() -> void:
-	layer = 50   # above the combat HUD balloons
+	layer = 50
 
 
 func show_rewards(rewards: BattleRewards) -> void:
@@ -82,8 +77,6 @@ func _build(r: BattleRewards) -> void:
 	box.add_child(_prompt)
 
 
-## Text of the screen, one {text, highlight} per line. Static + pure so it is
-## unit-testable without building any nodes.
 static func lines_for(r: BattleRewards) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var any_xp := false
@@ -102,13 +95,13 @@ static func lines_for(r: BattleRewards) -> Array[Dictionary]:
 
 
 func _input(event: InputEvent) -> void:
-	get_viewport().set_input_as_handled()   # nothing underneath may react while this is open
+	get_viewport().set_input_as_handled()
 	if not _accepting or _done:
 		return
 	var pressed := false
 	if event is InputEventKey:
 		pressed = event.pressed and not event.echo
-	elif event is InputEventJoypadButton:   # mouse is ignored in game
+	elif event is InputEventJoypadButton:
 		pressed = event.pressed
 	if pressed:
 		_done = true

@@ -1,9 +1,6 @@
 class_name Combat_UI_states
 extends VBoxContainer
 
-## Gerencia TODA a apresentacao do combate: log, HP, texto de turno, botoes.
-## Nao decide regra nenhuma - so mostra o que o Controller manda. Botoes
-## (incluindo Fugir) sao todos instanciados dinamicamente via show_options.
 
 @onready var log_label: Label = $LogLabel
 @onready var hp_label: Label = $HPLabel
@@ -18,8 +15,6 @@ func log_message(text: String) -> void:
 func set_turn_text(text: String) -> void:
 	turn_label.text = text
 
-# Versao V2, sem depender de AlchemonSheet - recebe so {name, hp, max_hp}.
-# UI recebe entradas prontas para exibicao; so entende Dictionary generico.
 func update_hp_dict(player_entries: Array[Dictionary], enemy_entries: Array[Dictionary]) -> void:
 	var text := ""
 	for e in player_entries:
@@ -35,19 +30,6 @@ func update_temperature(temperature: float):
 var _button_nodes: Array[Button] = []
 var _selected_index := 0
 
-func show_options(options: Array) -> void:
-	clear_options()
-	_button_nodes.clear()
-	_selected_index = 0
-	for option in options:
-		var button := Button.new()
-		button.text = option.text
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.focus_mode = Control.FOCUS_NONE
-		button.pressed.connect(option.callback)
-		action_buttons.add_child(button)
-		_button_nodes.append(button)
-	_update_selection_visual()
 
 func clear_options() -> void:
 	for child in action_buttons.get_children():

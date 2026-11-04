@@ -3,8 +3,8 @@ extends CanvasLayer
 
 const BALLOON_SCENE: PackedScene = preload("res://INTERFACES/baloon_hud.tscn")
 
-var anchors: Dictionary = {}      # BattlefieldSlot -> Node3D
-var _balloons: Dictionary = {}    # combatant id -> CombatBalloon
+var anchors: Dictionary = {}
+var _balloons: Dictionary = {}
 
 func update_all(entries: Array[Dictionary]) -> void:
 	for e in entries:

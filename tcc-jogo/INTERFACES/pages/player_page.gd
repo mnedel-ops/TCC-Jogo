@@ -1,13 +1,6 @@
 class_name PlayerPage
 extends MenuPage
 
-## Player page: one card, two columns.
-##  Left : top = name / money / time played, bottom = badges grid.
-##  Right: player portrait.
-## Data comes from PlayerData. Pure UI, read only.
-##
-## Keys: menu_left (or Esc) = back to the menu list.
-## Mouse: hover a badge = tooltip.
 
 const GOLD := Color(1, 0.85, 0.2)
 const PANEL_BG := Color(0.07, 0.07, 0.11, 0.94)
@@ -28,7 +21,7 @@ var _portrait_holder: Control
 var _last_second := -1
 
 
-func _ready() -> void:      # no super: no placeholder
+func _ready() -> void:
 	if player == null:
 		player = load(DEFAULT_DATA)
 	_build()
@@ -44,8 +37,6 @@ func _process(_delta: float) -> void:
 		_time_label.text = _format_time(sec)
 
 
-# --------------------------------------------------------------- MenuPage API
-
 func on_open() -> void:
 	refresh()
 
@@ -56,8 +47,6 @@ func handle_input(event: InputEvent) -> bool:
 		return true
 	return false
 
-
-# ------------------------------------------------------------------ building
 
 func _build() -> void:
 	var margin := MarginContainer.new()
@@ -77,7 +66,6 @@ func _build() -> void:
 	root.add_child(title_lbl)
 	root.add_child(HSeparator.new())
 
-	# the card
 	var card := PanelContainer.new()
 	card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	card.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
@@ -98,7 +86,6 @@ func _build_left(cols: Control) -> void:
 	left.add_theme_constant_override("separation", 12)
 	cols.add_child(left)
 
-	# line 1: name / money / time
 	var info := VBoxContainer.new()
 	info.add_theme_constant_override("separation", 6)
 	left.add_child(info)
@@ -119,7 +106,6 @@ func _build_left(cols: Control) -> void:
 
 	left.add_child(HSeparator.new())
 
-	# line 2: badges
 	var head := HBoxContainer.new()
 	left.add_child(head)
 	var badges_title := Label.new()
@@ -180,8 +166,6 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	return s
 
 
-# ------------------------------------------------------------------- refresh
-
 func refresh() -> void:
 	if player == null:
 		return
@@ -206,7 +190,6 @@ func _set_portrait() -> void:
 		_portrait_holder.add_child(tex)
 		return
 
-	# no portrait yet: big first letter
 	var lbl := Label.new()
 	lbl.text = player.player_name.left(1)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -264,8 +247,6 @@ func _make_badge_slot(data: BadgeData) -> Control:
 		slot.add_child(l)
 	return slot
 
-
-# ------------------------------------------------------------------- helpers
 
 func _format_time(total_seconds: int) -> String:
 	return "%d:%02d:%02d" % [total_seconds / 3600, (total_seconds / 60) % 60, total_seconds % 60]

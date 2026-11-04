@@ -1,21 +1,10 @@
 class_name SaveGame
 extends RefCounted
 
-## Save-data layer. Pure functions, no scene/autoload dependency (unit-testable).
-##   serialize() : live resources  -> plain Dictionary
-##   apply()     : Dictionary      -> live resources, ALL-OR-NOTHING
-##   write_file()/read_file() : atomic JSON on disk with .bak fallback
-##
-## The .tres files in DATABASE/ are authoring data (species, attacks, starter
-## party). They are never written at runtime. Player progress lives in
-## user://saves/*.json only.
-##
-## Format changes: bump FORMAT_VERSION and add a step in _migrate().
 
 const FORMAT_VERSION := 1
 
 
-## defeated = {npc_id: true}, owned by GameSession. Optional so old callers still work.
 static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Dictionary:
 	var party_list: Array = []
 	for inst in party.party:
@@ -26,7 +15,6 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 		if inst != null:
 			storage_list.append(inst.to_dict())
 
-	# Bond is saved by creature uid, not party position: survives reordering.
 	var bond_uids: Array = []
 	if bond.is_active():
 		for i in bond.member_indices:
@@ -45,7 +33,7 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 		"bond": {"kind": bond.kind, "member_uids": bond_uids},
 		"defeated_npcs": defeated.keys(),
 		"inventory": inventory.items.duplicate() if inventory != null else [],
-		"position": position.duplicate(),   # {level, x, y, z, yaw}; {} = start of the game
+		"position": position.duplicate(),
 		"player": {
 			"name": player.player_name,
 			"team_name": player.team_name,
@@ -56,10 +44,6 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 	}
 
 
-## Validates and parses EVERYTHING first, then commits. A bad file returns an
-## error and leaves the live resources untouched.
-## Mutates the arrays in place so every scene already holding the resource sees it.
-## defeated is cleared + refilled in place. Save without the key = nobody defeated.
 static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Error:
 	data = _migrate(data)
 	var version := int(data.get("format_version", 0))
@@ -76,7 +60,6 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 			if id is String and id != "":
 				new_defeated[id] = true
 
-	# Item indices. JSON numbers come back as float. Save without the key = keep bag as is.
 	var new_items: Array[int] = []
 	var has_items: bool = data.get("inventory") is Array
 	if has_items:
@@ -84,14 +67,12 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 			if n is float or n is int:
 				new_items.append(int(n))
 
-	# Where the player stood. Missing / malformed = {} = the game starts at its first spawn.
 	var new_position := _read_position(data.get("position"))
 
 	var seen := {}
 	var new_party := _load_list(data["party"], seen)
 	var new_storage := _load_list(data["storage"], seen)
 
-	# --- commit ---
 	defeated.clear()
 	defeated.merge(new_defeated)
 	position.clear()
@@ -124,7 +105,6 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 		player.player_name = str(p.get("name", player.player_name))
 		player.team_name = str(p.get("team_name", ""))
 		player.money = maxi(int(p.get("money", 0)), 0)
-		# get_play_time() adds engine uptime, so store the difference.
 		player.play_time_seconds = float(p.get("play_time", 0.0)) - Time.get_ticks_msec() / 1000.0
 		var earned = p.get("badges_earned", [])
 		if earned is Array:
@@ -146,7 +126,7 @@ static func _load_list(raw: Array, seen: Dictionary) -> Array[AlchemonInstance]:
 		if inst == null:
 			continue
 		inst.ensure_uid()
-		while seen.has(inst.uid):   # corrupt/duplicated uid: give the later one a new identity
+		while seen.has(inst.uid):
 			inst.uid = CreatureFactory.new_uid()
 		seen[inst.uid] = true
 		out.append(inst)
@@ -160,12 +140,9 @@ static func _index_of_uid(list: Array[AlchemonInstance], uid: String) -> int:
 	return -1
 
 
-## Old -> new format upgrades go here, one `if version < N` step each.
 static func _migrate(data: Dictionary) -> Dictionary:
 	return data
 
-
-# ---------------------------------------------------------------- disk
 
 static func write_file(path: String, data: Dictionary) -> Error:
 	var err := DirAccess.make_dir_recursive_absolute(path.get_base_dir())
@@ -178,15 +155,14 @@ static func write_file(path: String, data: Dictionary) -> Error:
 	f.store_string(JSON.stringify(data, "\t"))
 	f.close()
 	if FileAccess.file_exists(path):
-		DirAccess.copy_absolute(path, path + ".bak")   # last good save, best effort
+		DirAccess.copy_absolute(path, path + ".bak")
 	err = DirAccess.rename_absolute(tmp, path)
-	if err != OK and FileAccess.file_exists(path):   # some platforms refuse to overwrite
+	if err != OK and FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
 		err = DirAccess.rename_absolute(tmp, path)
 	return err
 
 
-## {} when nothing readable exists. A corrupt main file falls back to .bak.
 static func read_file(path: String) -> Dictionary:
 	for p in [path, path + ".bak"]:
 		if not FileAccess.file_exists(p):

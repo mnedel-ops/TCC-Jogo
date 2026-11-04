@@ -1,30 +1,16 @@
 class_name BondRules
 extends RefCounted
 
-## Efeito MECANICO de um laco em combate (GDD sec 9). A decisao quimica
-## (Mistura vs Composto vs impossivel, Regra do Octeto) ja aconteceu na
-## PC antes da batalha - ver AlchemyStation.determine_bond_kind(). Aqui
-## so aplica o resultado: bonus fixo pra Mistura; transferencia de
-## atributo + Cation invisivel/Anion ativo pra Composto.
-##
-## BondRules NUNCA calcula eletron nem decide se um grupo e quimicamente
-## possivel - recebe o `kind` pronto e o grupo INTEIRO de Alchemons
-## envolvidos, todos ja presentes (a PC garantiu isso antes de liberar o
-## grupo pra batalha - combate nao reavalia quantidade/estequiometria).
 
 const NONE := "none"
 const MIXTURE := "mixture"
 const COMPOUND := "compound"
 
-const MIXTURE_BONUS := 8              # flat, GDD sec 9.1, aplicado em HP e Energia
-const COMPOUND_TRANSFER_RATIO := 0.7  # GDD sec 9.2, % dos atributos de cada doador que o membro ativo absorve
-const COMPOUND_RELEASE_HP_RATIO := 0.3       # pops out with 70% less HP
-const COMPOUND_RELEASE_FALLBACK_ENERGY := 11 # placeholder when active had 0 energy
+const MIXTURE_BONUS := 8
+const COMPOUND_TRANSFER_RATIO := 0.7
+const COMPOUND_RELEASE_HP_RATIO := 0.3
+const COMPOUND_RELEASE_FALLBACK_ENERGY := 11
 
-## Aplica um vinculo de tipo `kind` (ja resolvido pela AlchemyStation) ao
-## grupo de combatentes correspondente. Retorna um Dictionary de
-## resultado (nunca lanca erro) - "cancelled" com "reason" se o grupo em
-## si estiver invalido (morto, ja bondado, tamanho errado pro kind).
 static func apply_bond(kind: String, participants: Array[CombatantState], sheets: Array[AlchemonSheet]) -> Dictionary:
 	if participants.size() != sheets.size() or participants.size() < 2:
 		return {"kind": "cancelled", "reason": "invalid_bond_group"}
@@ -62,12 +48,6 @@ static func _apply_mixture(a: CombatantState, b: CombatantState) -> void:
 	b.bond_partner_id = a.id
 
 
-## Membro ativo (GDD 9.2): o Anion, numa ligacao ionica (metal presente -
-## metal nunca e o ativo); o de maior nivel, numa ligacao covalente (sem
-## metal). Todo mundo que nao e o ativo transfere COMPOUND_TRANSFER_RATIO
-## das suas estatisticas pro ativo e sai da lista de acao
-## (is_bond_inactive) - metais especificamente tambem ganham
-## is_bond_cation (ficam visiveis e invulneraveis em campo, GDD 9.2).
 static func _apply_compound_group(participants: Array[CombatantState], sheets: Array[AlchemonSheet]) -> Dictionary:
 	var has_metal := false
 	for s in sheets:
@@ -108,19 +88,15 @@ static func _pick_active_index(participants: Array[CombatantState], sheets: Arra
 	var best_level := -1
 	for i in participants.size():
 		if has_metal and sheets[i].element_type == AlchemonType.Type.METAL:
-			continue  # cation nunca e o ativo
+			continue
 		if participants[i].level > best_level:
 			best_level = participants[i].level
 			best_index = i
 	return best_index
 
-## Active member of a compound fell: every bonded partner leaves the bond
-## and becomes a normal, targetable combatant.
-## HP = 30% of its max_hp (min 1). Energy = what the fallen one had left;
-## 0 -> COMPOUND_RELEASE_FALLBACK_ENERGY (placeholder).
 static func release_compound_partners(state: CombatState, fallen: CombatantState) -> void:
 	if fallen.bond_kind != COMPOUND or fallen.is_bond_inactive or fallen.is_bond_cation:
-		return   # only the active member triggers a release
+		return
 	var energy := fallen.valence_electrons
 	if energy <= 0:
 		energy = COMPOUND_RELEASE_FALLBACK_ENERGY

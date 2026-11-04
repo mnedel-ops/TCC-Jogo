@@ -1,38 +1,32 @@
-# tcc-jogo/combat_scene_manager.gd
 extends CanvasLayer
 class_name CombatSceneManager
 
 @onready var combat_holder: Control = $"../CombatHolder"
 var combatScene : PackedScene = load("res://COMBAT/combat_refactored.tscn")
 @export var party : PlayerPartyData
-## Player's bag + item names, shown in the Item command. Defaults = same files
-## the exploration inventory uses.
 @export var inventory: InventoryData = preload("res://DATABASE/Inventory/inventory.tres")
 @export var item_database: ItemDatabase = preload("res://DATABASE/Inventory/ItemDatabase.tres")
 
 @onready var anchors_root: Node3D = $"../BattleAnchors"
 @onready var player_node: Node3D = $"../player"
-@onready var player_mesh: Node3D = $"../player/Mesh" # Mesh rotates, Player body does not
+@onready var player_mesh: Node3D = $"../player/Mesh"
 @onready var camera_rig: Node = $"../CameraRig"
 @onready var follower_manager: Node = $"../FollowerManager"
 @onready var follower_holder: Node3D = $"../FollowerHolder"
 @export var captured_storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")
-## Player profile (coins). Same .tres the Player page shows.
 @export var player_data: PlayerData = preload("res://DATABASE/Player/player.tres")
-## Component (bond) made at the PC. Same .tres the PC writes to.
 @export var player_bond: PlayerBondData = preload("res://DATABASE/Alchemons/player_bond.tres")
 
 var actor_scene: PackedScene = load("res://DATABASE/Alchemons/AlchemonActor.tscn")
 var _enemy_actors: Array[Node3D] = []
 
-## Seconds characters take to walk to the corners / back home.
 @export var move_time: float = 0.6
 
 var _enemy: Node3D = null
 var _player_home: Vector3
 var _enemy_home: Vector3
 var _tween: Tween
-var _moved: bool = false # true only if characters really went to corners
+var _moved: bool = false
 
 
 func _ready() -> void:
@@ -46,11 +40,9 @@ func _on_combat_start(index: int, id2: int) -> void:
 	_enemy = CombatSignal.enemy_node
 	CombatSignal.enemy_node = null
 	var enemy_level := CombatSignal.enemy_level
-	CombatSignal.enemy_level = -1   # consume, no stale value next fight
+	CombatSignal.enemy_level = -1
 	var is_trainer := CombatSignal.is_trainer_battle
-	CombatSignal.is_trainer_battle = false   # consume too
-	# Anchors = offsets from the battle center (midpoint player <-> enemy),
-	# so the fight always happens on screen, wherever it started.
+	CombatSignal.is_trainer_battle = false
 	anchors_root.global_position = _get_battle_center()
 
 	var combatScenes = combatScene.instantiate()
@@ -65,7 +57,7 @@ func _on_combat_start(index: int, id2: int) -> void:
 	combatScenes.player_bond = player_bond
 	combatScenes.player_data = player_data
 	
-	combatScenes.anchors = { #Combat positions
+	combatScenes.anchors = {
 		BattlefieldSlot.PLAYER_SLOT_1: anchors_root.get_node("P1"),
 		BattlefieldSlot.PLAYER_SLOT_2: anchors_root.get_node("P2"),
 		BattlefieldSlot.ENEMY_SLOT_1:  anchors_root.get_node("E3"),
@@ -77,7 +69,6 @@ func _on_combat_start(index: int, id2: int) -> void:
 	_send_characters_to_corners()
 
 
-## _enemy is still set here (cleared in _finish_battle, after combat_ended).
 func _on_battle_finished(player_won: bool, was_trainer: bool) -> void:
 	if player_won and was_trainer and _enemy is NPC:
 		(_enemy as NPC).mark_defeated()
@@ -88,8 +79,6 @@ func _on_combat_ended() -> void:
 	_send_characters_home()
 
 
-## BattlefieldSlot -> 3D node. Player slots = the party followers (already in the
-## scene). Enemy slots = models spawned here at E3/E4 and freed when combat ends.
 func _collect_actor_nodes(enemy_species: Array[int]) -> Dictionary:
 	var actors := {}
 	for i in 2:
@@ -121,13 +110,12 @@ func _free_enemy_actors() -> void:
 func _get_battle_center() -> Vector3:
 	var p := player_node.global_position
 	if _enemy == null:
-		return p # no enemy sent: center on player
+		return p
 	var center := p.lerp(_enemy.global_position, 0.5)
-	center.y = p.y # keep ground height of player
+	center.y = p.y
 	return center
 
 
-## Char0 (player, top left) and Char1 (opponent, bottom right), children of BattleAnchors.
 func _send_characters_to_corners() -> void:
 	var char0 := anchors_root.get_node_or_null("Char0") as Node3D
 	var char1 := anchors_root.get_node_or_null("Char1") as Node3D
@@ -135,7 +123,6 @@ func _send_characters_to_corners() -> void:
 		push_warning("CombatSceneManager: Char0/Char1 not found under BattleAnchors.")
 		return
 
-	# Camera must NOT chase player into the corner, or the corner moves too.
 	camera_rig.set_physics_process(false)
 	_moved = true
 
@@ -154,14 +141,13 @@ func _send_characters_to_corners() -> void:
 
 func _send_characters_home() -> void:
 	if not _moved:
-		_finish_battle() # markers missing: nobody moved, nothing to undo
+		_finish_battle()
 		return
 	_kill_tween()
 	_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_tween.tween_property(player_node, "global_position", _player_home, move_time)
 	if _enemy != null:
 		_tween.tween_property(_enemy, "global_position", _enemy_home, move_time)
-	# Re-enable camera + NPC fights only after everyone is home.
 	_tween.chain().tween_callback(_finish_battle)
 
 
@@ -172,7 +158,6 @@ func _finish_battle() -> void:
 	_enemy = null
 
 
-## Same convention as MovementComponent: forward = -Z.
 func _yaw_toward(from: Vector3, to: Vector3) -> float:
 	var d := to - from
 	return atan2(-d.x, -d.z)
@@ -180,7 +165,6 @@ func _yaw_toward(from: Vector3, to: Vector3) -> float:
 
 func _tween_yaw(node: Node3D, target_yaw: float) -> void:
 	var from := node.rotation.y
-	# shortest way around, no 350 degree spin
 	_tween.tween_method(func(t: float): node.rotation.y = lerp_angle(from, target_yaw, t), 0.0, 1.0, move_time)
 
 
@@ -189,7 +173,6 @@ func _kill_tween() -> void:
 		_tween.kill()
 
 
-## -1 = no second mon. Filter, don't pass as species_id.
 func _get_enemy_species_ids(index: int, id2: int) -> Array[int]:
 	var ids: Array[int] = []
 	if index >= 0:

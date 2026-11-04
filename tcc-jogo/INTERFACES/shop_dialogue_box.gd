@@ -1,14 +1,8 @@
 class_name ShopDialogueBox
 extends CanvasLayer
-## Shopkeeper dialogue box: greeting text + 3 options (Buy / Sell / Leave).
-## Keyboard/gamepad only (the game blocks the mouse): menu_up / menu_down move,
-## menu_interact picks, ui_cancel = Leave.
-##
-## For now Buy and Sell only emit `option_chosen` and show a placeholder line.
-## The real shop screens hook on that signal later.
 
-signal option_chosen(option: StringName)   # &"buy" or &"sell"
-signal closed                              # Leave (or cancel) was picked
+signal option_chosen(option: StringName)
+signal closed
 
 @export var up_action: StringName = &"menu_up"
 @export var down_action: StringName = &"menu_down"
@@ -16,7 +10,7 @@ signal closed                              # Leave (or cancel) was picked
 @export var back_action: StringName = &"ui_cancel"
 
 const OPTION_IDS: Array[StringName] = [&"buy", &"sell", &"leave"]
-const OPTION_LABELS: Array[String] = ["Buy", "Sell", "Leave"]
+const OPTION_LABELS: Array[String] = ["Comprar", "Vender", "Sair"]
 const PLACEHOLDER_TEXT := "(Em breve...)"
 
 const BOX_WIDTH := 640.0
@@ -40,12 +34,10 @@ func _ready() -> void:
 	layer = 10
 	_build_ui()
 	_refresh()
-	# Ignore input for 1 frame: the key that opened the box must not select.
 	await get_tree().process_frame
 	_ready_to_input = true
 
 
-## Greeting = what the shopkeeper says above the options. Call right after add_child.
 func open(greeting: String) -> void:
 	_greeting = greeting
 	_cursor = 0
@@ -69,7 +61,7 @@ func _build_ui() -> void:
 	panel.offset_right = BOX_WIDTH * 0.5
 	panel.offset_top = -BOTTOM_MARGIN
 	panel.offset_bottom = -BOTTOM_MARGIN
-	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN   # grows upward from the bottom margin
+	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var box := StyleBoxFlat.new()
 	box.bg_color = BG_COLOR
 	box.border_color = BORDER_COLOR
@@ -125,7 +117,6 @@ func _select() -> void:
 	if id == &"leave":
 		closed.emit()
 		return
-	# Buy / Sell: nothing to show yet.
 	_text_label.text = PLACEHOLDER_TEXT
 	option_chosen.emit(id)
 

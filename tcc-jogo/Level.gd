@@ -36,9 +36,10 @@ func  place_npcs():
 			push_warning("%s: shopkeeper/healer and is_fighter both on. No fight." % id)
 		if marker.is_shopkeeper and marker.is_healer:
 			push_warning("%s: is_shopkeeper and is_healer both on. Shopkeeper wins." % id)
-		var fights := marker.is_fighter and not has_role
+		var fights := (marker.is_fighter or marker.is_gym_trainer) and not has_role
+		npc_scene_guy.is_gym_trainer = fights and marker.is_gym_trainer
+		npc_scene_guy.badge = marker.badge
 		npc_scene_guy.is_trainer = fights
-		# Already beaten (loaded save): still spawns and can talk, never fights again.
 		npc_scene_guy.figther = fights and not GameSession.is_npc_defeated(id)
 		if npc_scene_guy.figther:
 			npc_scene_guy.alchemon1 = marker.alchemons_ids[0] if marker.alchemons_ids.size() > 0 else -1
@@ -49,8 +50,6 @@ func  place_npcs():
 		existo.emit()
 
 
-## "<level scene file name>/<marker name>". Stable across runs as long as the
-## marker keeps its name in the level scene. Rename a marker = that NPC fights again.
 func npc_id_for(marker: NPCSpawnPoint) -> String:
 	var root: Node = owner if owner != null else get_parent()
 	var level_name := root.scene_file_path.get_file().get_basename()

@@ -1,12 +1,8 @@
 extends Node
 
-## Gameplay is keyboard/gamepad only. Eats every mouse event in _input, which runs
-## BEFORE the GUI, so buttons in menus / combat / PC get no click and no hover.
-## Also keeps the cursor captured, because menus set it VISIBLE when they open.
-## Lives in main.tscn only: the title menu (scenes/menu.tscn) still takes the mouse.
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS   # keep working while the tree is paused (menus)
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 

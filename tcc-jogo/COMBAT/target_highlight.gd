@@ -1,8 +1,6 @@
 class_name TargetHighlight
 extends RefCounted
 
-## Highlights every MeshInstance3D under a creature with a translucent overlay.
-## Overlay = no change to the creature's own materials, clearing it restores it.
 
 static var _material: StandardMaterial3D
 

@@ -1,12 +1,6 @@
 class_name GameMenu
 extends CanvasLayer
 
-## Tab (ui_menu) = pause + vertical list on the left (icon + name).
-## Pick one = page opens to the right, filling the rest of the screen.
-##
-## Keys: menu_up / menu_down = row, menu_interact / menu_right = open page,
-## ui_cancel = page -> list -> close. Tab closes from anywhere.
-## Mouse: hover changes colour, click opens.
 
 signal menu_opened
 signal menu_closed
@@ -14,10 +8,6 @@ signal page_opened(entry_name: String)
 
 enum Mode { CLOSED, LIST, PAGE }
 
-## name = label | icon = texture path ("" = letter placeholder)
-## page = scene path, root extends MenuPage ("" = placeholder page)
-## action = "exit" asks to quit instead of opening a page.
-## action = "save" writes the save file (replaces the old one) and shows a toast.
 @export var entries: Array[Dictionary] = [
 	{"name": "Table", "icon": "", "page": "res://INTERFACES/pages/table_page.tscn"},
 	{"name": "Bag", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
@@ -29,13 +19,13 @@ enum Mode { CLOSED, LIST, PAGE }
 @export var icon_size := Vector2(40, 40)
 @export var list_width := 240.0
 @export var screen_margin := 32
-@export var capture_mouse_on_close := true   # same as old menu.gd
+@export var capture_mouse_on_close := true
 
 const GOLD := Color(1, 0.85, 0.2)
 
 var _mode: Mode = Mode.CLOSED
-var _cursor := 0            # highlighted row (-1 = none)
-var _open_index := -1       # row whose page is open
+var _cursor := 0
+var _open_index := -1
 
 var _root: ColorRect
 var _slots: Array[PanelContainer] = []
@@ -54,10 +44,8 @@ func _ready() -> void:
 	_root.visible = false
 
 
-# ------------------------------------------------------------------ building
-
 func _build() -> void:
-	_root = ColorRect.new()                       # dim + blocks clicks to game
+	_root = ColorRect.new()
 	_root.color = Color(0, 0, 0, 0.6)
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_root)
@@ -72,7 +60,6 @@ func _build() -> void:
 	hbox.add_theme_constant_override("separation", 16)
 	margin.add_child(hbox)
 
-	# left: vertical list
 	var list_panel := PanelContainer.new()
 	list_panel.custom_minimum_size.x = list_width
 	list_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -86,7 +73,6 @@ func _build() -> void:
 	for i in entries.size():
 		_add_slot(vbox, i)
 
-	# right: page host, takes all remaining space
 	_page_panel = PanelContainer.new()
 	_page_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_page_panel.add_theme_stylebox_override("panel", _box(Color(0.07, 0.07, 0.11, 0.94), Color(0.5, 0.5, 0.6), 8))
@@ -151,7 +137,6 @@ func _make_icon(e: Dictionary) -> Control:
 		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return tex
-	# no icon yet: box with first letter
 	var box := PanelContainer.new()
 	box.custom_minimum_size = icon_size
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -178,11 +163,9 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	return s
 
 
-# --------------------------------------------------------------- open / close
-
 func toggle_menu() -> void:
 	if _mode == Mode.CLOSED:
-		if CombatSignal.in_combat:   # combat has its own UI, never pause it
+		if CombatSignal.in_combat:
 			return
 		open_menu()
 	else:
@@ -210,8 +193,6 @@ func close_menu() -> void:
 	menu_closed.emit()
 
 
-# --------------------------------------------------------------------- pages
-
 func _open_entry(i: int) -> void:
 	var e: Dictionary = entries[i]
 	if e.get("action", "") == "exit":
@@ -234,8 +215,6 @@ func _open_entry(i: int) -> void:
 	page_opened.emit(e.get("name", ""))
 
 
-## Same file every time: GameSession.save_game() replaces the old one
-## (the previous save is kept once as slot_1.json.bak).
 func _save_game() -> void:
 	var ok := GameSession.save_game() == OK
 	_toast.text = "Game saved." if ok else "Could not save the game!"
@@ -243,8 +222,8 @@ func _save_game() -> void:
 	_toast.visible = true
 	_toast_id += 1
 	var id := _toast_id
-	await get_tree().create_timer(1.5, true).timeout   # true = still ticks while paused
-	if id == _toast_id:                                # a newer save restarts the timer
+	await get_tree().create_timer(1.5, true).timeout
+	if id == _toast_id:
 		_toast.visible = false
 
 
@@ -277,8 +256,6 @@ func _back_to_list() -> void:
 	_refresh_rows()
 
 
-# -------------------------------------------------------------------- cursor
-
 func _refresh_rows() -> void:
 	for i in _slots.size():
 		var hot := (i == _cursor)
@@ -299,8 +276,6 @@ func _move_cursor(delta: int) -> void:
 	_cursor = wrapi(_cursor + delta, 0, _slots.size())
 	_refresh_rows()
 
-
-# --------------------------------------------------------------------- input
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_menu"):
@@ -340,7 +315,7 @@ func _on_slot_hover(i: int) -> void:
 
 
 func _on_slot_exit(i: int) -> void:
-	if _mode == Mode.PAGE and _cursor == i:   # list mode keeps cursor, like keyboard
+	if _mode == Mode.PAGE and _cursor == i:
 		_cursor = -1
 		_refresh_rows()
 

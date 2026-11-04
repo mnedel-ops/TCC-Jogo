@@ -1,22 +1,12 @@
 extends Node
 
-## Owns the player's persistent progress at runtime and wires it to the save file.
-## Holds the SAME resource objects every scene already uses (they load the same
-## .tres path, and Godot returns one shared instance), so loading a save here
-## updates the whole game with no changes in the consumers.
-##
-## Dev tip: the first save makes later runs load it, so edits to the starter
-## .tres will seem ignored. Use delete_save() or Project > Open User Data Folder.
 
 signal saved
 signal loaded
 
-## Change BEFORE add_child (tests do) - _ready already loads from it.
 var save_path := "user://saves/slot_1.json"
 
-## false = the title menu (scenes/menu.tscn) decides: New Game / Load Game.
 @export var load_on_start := false
-## false = file is written ONLY by the Save button (GameMenu) or an explicit save_game().
 @export var autosave := false
 
 var party: PlayerPartyData = load("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
@@ -26,17 +16,13 @@ var player: PlayerData = load("res://DATABASE/Player/player.tres")
 var inventory: InventoryData = load("res://DATABASE/Inventory/inventory.tres")
 var database: AlchemonDatabase = load("res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres")
 
-## NPC ids (see Level.npc_id_for) the player already beat. Saved in the JSON.
-## Dictionary used as a set: {id: true}. Never replace it, SaveGame fills it in place.
 var defeated_npcs := {}
 
-## Last saved spot: {level: scene path, x, y, z, yaw}. {} = never saved.
-## Filled from the live scene on every save_game(), restored by load_game().
 var world_position := {}
 
 var _loading := false
-var _resume := false          # true right after load_game(): SceneManager should start at world_position
-var _starter_snapshot := {}   # starter .tres state, taken once, used by new_game()
+var _resume := false
+var _starter_snapshot := {}
 
 
 func _ready() -> void:
@@ -44,9 +30,9 @@ func _ready() -> void:
 	_starter_snapshot = SaveGame.serialize(party, storage, bond, player, {}, inventory)
 	if load_on_start and has_save():
 		load_game()
-	CombatSignal.creatures_synced.connect(_autosave) # battle results already written to the creatures
+	CombatSignal.creatures_synced.connect(_autosave)
 	CombatSignal.party_changed.connect(_autosave)
-	bond.changed.connect(_autosave)                 # PC makes/breaks a Component
+	bond.changed.connect(_autosave)
 	inventory.changed.connect(_on_inventory_changed)
 
 
@@ -57,7 +43,7 @@ func has_save() -> bool:
 func save_game() -> Error:
 	var live := _capture_position()
 	if not live.is_empty():
-		world_position = live   # reassign is fine: only GameSession holds this dictionary
+		world_position = live
 	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player, defeated_npcs, inventory, world_position))
 	if err != OK:
 		push_error("GameSession: save failed (%s)." % error_string(err))
@@ -66,12 +52,11 @@ func save_game() -> Error:
 	return err
 
 
-## notify_scene = tell followers/UI the party changed. Off only in tests.
 func load_game(notify_scene := true) -> Error:
 	var data := SaveGame.read_file(save_path)
 	if data.is_empty():
 		return ERR_FILE_NOT_FOUND
-	_loading = true   # apply() touches the bond -> its `changed` must not autosave
+	_loading = true
 	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory, world_position)
 	_loading = false
 	if err != OK:
@@ -79,13 +64,11 @@ func load_game(notify_scene := true) -> Error:
 		return err
 	_resume = not world_position.is_empty()
 	if notify_scene:
-		CombatSignal.party_changed.emit.call_deferred()   # followers respawn
+		CombatSignal.party_changed.emit.call_deferred()
 	loaded.emit()
 	return OK
 
 
-## Back to starter party / storage / coins / badges / no defeated NPCs.
-## Does NOT touch the save file: the next Save press overwrites it.
 func new_game() -> Error:
 	var data := _starter_snapshot.duplicate(true)
 	data["player"]["play_time"] = 0.0
@@ -102,7 +85,6 @@ func new_game() -> Error:
 	return OK
 
 
-## Once per load: where SceneManager must put the player. {} = normal start.
 func take_resume_position() -> Dictionary:
 	var pos := world_position.duplicate() if _resume else {}
 	_resume = false
@@ -116,8 +98,13 @@ func _capture_position() -> Dictionary:
 	return sm.get_save_position() if sm != null and sm.has_method("get_save_position") else {}
 
 
-## Alchemon Center: every creature the player carries (party, max 2) back to full
-## HP and energy. Also revives fainted ones. Storage (PC) is not touched.
+func can_fight() -> bool:
+	for inst in party.party:
+		if inst != null and not inst.is_fainted():
+			return true
+	return false
+
+
 func heal_party() -> void:
 	for inst in party.party:
 		if inst == null:
@@ -139,13 +126,6 @@ func mark_npc_defeated(id: String) -> void:
 	_autosave()
 
 
-func delete_save() -> void:
-	for p in [save_path, save_path + ".bak", save_path + ".tmp"]:
-		if FileAccess.file_exists(p):
-			DirAccess.remove_absolute(p)
-
-
-## Item picked up / used. In battle skip: creatures_synced saves item + HP together at the end.
 func _on_inventory_changed() -> void:
 	if not CombatSignal.in_combat:
 		_autosave()
@@ -156,7 +136,6 @@ func _autosave() -> void:
 		save_game()
 
 
-## Hand-authored starters in the .tres have no uid yet.
 func _give_uids() -> void:
 	var seen := {}
 	for list in [party.party, storage.instances]:
@@ -167,4 +146,3 @@ func _give_uids() -> void:
 			while seen.has(inst.uid):
 				inst.uid = CreatureFactory.new_uid()
 			seen[inst.uid] = true
-

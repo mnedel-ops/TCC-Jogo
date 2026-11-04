@@ -1,8 +1,5 @@
 extends Control
 
-## Combat state machine controller. Orchestrates battle phases.
-## Rules are in CombatRules. UI is in Combat_UI_states.
-## Balloons (HP/Energy following 3D alchemons) are in Hud: CombatBalloons.
 
 @onready var ui: Combat_UI_states = $VBoxContainer
 @onready var hud: CombatBalloons = $Hud
@@ -12,31 +9,22 @@ extends Control
 @export var enemy_species_ids: Array[int] = []
 @export var enemy_level: int = -1
 
-## BattlefieldSlot -> Node3D. Set by CombatSceneManager BEFORE add_child,
-## because _ready() hands it to the balloons.
 var anchors: Dictionary = {}
 
 var state: CombatState
 var _selection_order: Array[int] = []
 var _current_player_index := 0
 
-## Horizontal command bar (top left). Old text UI is pushed below it.
 const COMMANDS_AREA_HEIGHT := 200.0
-## Set by CombatSceneManager BEFORE add_child (player's bag + item names).
 var inventory: InventoryData
 var item_database: ItemDatabase
 var commands: BattleCommands
-var log_box: CombatLogBox   # turn log, right of the command bar
+var log_box: CombatLogBox
 var _command_actor_id := -1
-var captured_storage: CapturedStorage   # set by CombatSceneManager BEFORE add_child
-## Player profile (coins). Set by CombatSceneManager BEFORE add_child.
+var captured_storage: CapturedStorage
 var player_data: PlayerData
-## true = fighting another trainer's Alchemons. Capture is blocked. Set by CombatSceneManager BEFORE add_child.
 var is_trainer_battle := false
-## Component (bond) the player made at the PC. Set by CombatSceneManager BEFORE add_child.
 var player_bond: PlayerBondData
-## BattlefieldSlot -> Node3D of that creature (mesh to highlight when targeted).
-## Set by CombatSceneManager BEFORE add_child.
 var actor_nodes: Dictionary = {}
 var _highlighted: Node3D = null
 
@@ -58,14 +46,14 @@ func _ready() -> void:
 	_log_initiative_order()
 
 	hud.anchors = anchors
-	_refresh_hp_display() #tanto o Hp como a Temperatura habitam aqui.
+	_refresh_hp_display()
 	ui.log_message("Combate comecou!")
 
 	ui.position.y = COMMANDS_AREA_HEIGHT
-	commands = BattleCommands.new()                          # 1. create
-	add_child(commands)                                      # 2. add to tree
+	commands = BattleCommands.new()
+	add_child(commands)
 	commands.capture_blocked = is_trainer_battle
-	commands.attack_confirmed.connect(_on_command_attack)    # 3. connect
+	commands.attack_confirmed.connect(_on_command_attack)
 	commands.item_confirmed.connect(_on_command_item)
 	commands.capture_confirmed.connect(_on_command_capture)
 	commands.flee_confirmed.connect(_on_flee_pressed)
@@ -76,7 +64,6 @@ func _ready() -> void:
 	add_child(log_box)
 
 	_start_action_selection()
-
 
 
 func _name_of(id: int) -> String:
@@ -91,7 +78,6 @@ func _log_initiative_order() -> void:
 	ui.log_message("Ordem de iniciativa: " + text)
 
 
-## Enemy side of a wild encounter (not a trainer's creature), bonded or not.
 func _wild_tag(c: CombatantState) -> String:
 	return " [Selvagem]" if (not c.is_player and not is_trainer_battle) else ""
 
@@ -113,8 +99,6 @@ func _bond_tag(c: CombatantState) -> String:
 			return ""
 
 
-## One display-ready dict per combatant. UI never touches CombatantState.
-## Energy = valence electrons (what attacks spend), NOT the action_energy stat.
 func _build_entry(id: int) -> Dictionary:
 	var c := state.get_combatant(id)
 	return {
@@ -162,10 +146,6 @@ func _advance_phase(next_phase: String) -> bool:
 	return true
 
 
-## Opens the SELECTING_ACTIONS window. Both living players AND enemy AI
-## choose commands inside this same window - AI commands are queued up
-## front so resolution never depends on player pick order. Round only
-## advances to RESOLVING_ACTIONS once CombatRules.has_all_commands is true.
 func _start_action_selection() -> void:
 	if state.combat_over:
 		return
@@ -197,12 +177,10 @@ func _prompt_action_for_current() -> void:
 		_name_of(actor_id),
 		_build_attack_entries(actor_id),
 		_build_item_entries(),
-		_build_target_entries(state.get_active_ids(state.enemy_ids)),   # attack targets
-		_build_target_entries(state.get_active_ids(state.player_ids)))  # item targets
+		_build_target_entries(state.get_active_ids(state.enemy_ids)),
+		_build_target_entries(state.get_active_ids(state.player_ids)))
 
 
-## Display-ready attacks (max 4). Index = position in template.attacks, which is
-## what ActionCommand.attack_index expects.
 func _build_attack_entries(actor_id: int) -> Array:
 	var template := database.get_by_id(state.get_combatant(actor_id).species_id)
 	var entries: Array = []
@@ -216,7 +194,6 @@ func _build_attack_entries(actor_id: int) -> Array:
 	return entries
 
 
-## Display-ready usable items: name + effect text.
 func _build_item_entries() -> Array:
 	var entries: Array = []
 	if inventory == null or item_database == null:
@@ -232,7 +209,6 @@ func _build_item_entries() -> Array:
 	return entries
 
 
-## Display-ready targets: id, name, hp, max_hp, creature type.
 func _build_target_entries(ids: Array[int]) -> Array:
 	var entries: Array = []
 	for id in ids:
@@ -252,7 +228,7 @@ func _on_command_attack(attack_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "attack", target_id, attack_index)
 
 func _on_command_capture(item_index: int, target_id: int) -> void:
-	if is_trainer_battle:   # backup: BattleCommands already blocks this
+	if is_trainer_battle:
 		ui.log_message(BattleCommands.CAPTURE_BLOCKED_TEXT)
 		_prompt_action_for_current()
 		return
@@ -262,7 +238,6 @@ func _on_command_item(item_index: int, target_id: int) -> void:
 	_confirm_action(_command_actor_id, "item", target_id, -1, item_index)
 
 
-## Highlight the mesh of the creature under the target cursor. -1 = clear.
 func _on_target_hovered(target_id: int) -> void:
 	TargetHighlight.set_on(_highlighted, false)
 	_highlighted = null
@@ -297,8 +272,6 @@ func _queue_enemy_commands() -> void:
 		state.pending_actions.append(ActionCommand.new(enemy_id, "attack", target_id, attack_index))
 
 
-## Round can only leave SELECTING_ACTIONS once every alive actor (players
-## AND AI) has a queued command - see CombatRules.has_all_commands.
 func _try_resolve_round() -> void:
 	if not CombatRules.has_all_commands(state):
 		push_error("Round tentando resolver com comandos faltando.")
@@ -326,7 +299,6 @@ func _resolve_round() -> void:
 			continue
 
 		ui.set_turn_text("Turno: %s" % _name_of(actor_id))
-		# two actors may queue the same item while the bag has only one
 		var uses_bag_item := command.kind == "item" or command.kind == "capture"
 		if uses_bag_item and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
 			_say("Sem esse item na mochila! Acao cancelada.")
@@ -336,7 +308,7 @@ func _resolve_round() -> void:
 		if command.kind == "item" and result.outcome == CombatResult.Outcome.ITEM_USED:
 			inventory.remove_item(command.item_index)
 		if command.kind == "capture" and _capture_was_attempted(result):
-			inventory.remove_item(command.item_index)   # spent on success AND fail
+			inventory.remove_item(command.item_index)
 		CombatResultApplier.apply(state, result, database)
 		_log_event(CombatEvent.from_result(result))
 		_refresh_hp_display()
@@ -398,7 +370,7 @@ func _resolve_flee() -> void:
 		await get_tree().create_timer(0.5).timeout
 
 	if state.combat_over:
-		_show_combat_end() # already emits combat_ended
+		_show_combat_end()
 
 	else:
 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
@@ -409,7 +381,6 @@ func _capture_was_attempted(result: CombatResult) -> bool:
 		or result.outcome == CombatResult.Outcome.CAPTURE_FAIL
 
 
-## Copy this battle's captures into the persistent array. Drains, so no double add.
 func _sync_captures() -> void:
 	if captured_storage != null:
 		for inst in state.captured_instances:
@@ -423,11 +394,10 @@ func _show_combat_end() -> void:
 	var rewards := BattleRewards.build(state, database, player_species_ids, is_trainer_battle)
 	if player_data != null and rewards.money > 0:
 		player_data.add_money(rewards.money)
-	_sync_party_state()   # also autosaves, so coins + creatures are saved together
+	_sync_party_state()
 	ui.show_combat_end(state.player_won)
 	log_box.add_line("Vitoria!" if state.player_won else "Derrota!")
 
-	# Wait for any input, THEN hand control back to exploration.
 	var screen := BattleRewardsScreen.new()
 	add_child(screen)
 	screen.show_rewards(rewards)
@@ -437,7 +407,6 @@ func _show_combat_end() -> void:
 	queue_free()
 
 
-## One line of the turn log: old text UI (full history) + the new log box.
 func _say(text: String) -> void:
 	ui.log_message(text)
 	log_box.add_line(text)

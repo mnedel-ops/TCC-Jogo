@@ -18,10 +18,9 @@ signal menu_button_pressed(button_name: String)
 @export var buttons: VBoxContainer
 
 var is_open := false
-var _button_nodes: Array[Button] = []   # Referencia direta, nao depende de get_children() toda hora.
+var _button_nodes: Array[Button] = []
 var _selected_index := 0
 
-#Exit nodes: depois alterar par um export.
 @onready var exit_without_saving_dialog: ConfirmationDialog = $ExitWithoutSavingDialog
 @onready var exit_confirm_dialog: ConfirmationDialog = $ExitConfirmDialog
 
@@ -29,7 +28,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	_create_buttons()
-	#Caixas de texto para sair do jogo
 	exit_without_saving_dialog.confirmed.connect(_open_exit_confirmation)
 	exit_confirm_dialog.confirmed.connect(_quit_game)
 
@@ -49,7 +47,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_open:
 		return
-#Movimentaco no menu
 	if event.is_action_pressed("menu_down"):
 		_move_selection(1)
 		get_viewport().set_input_as_handled()
@@ -92,8 +89,8 @@ func _create_buttons() -> void:
 		var button := Button.new()
 		button.text = button_name
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.focus_mode = Control.FOCUS_NONE          # Sem navegacao nativa ui_up/ui_down.
-		button.mouse_filter = Control.MOUSE_FILTER_IGNORE  # So teclado.
+		button.focus_mode = Control.FOCUS_NONE
+		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.pressed.connect(_on_button_pressed.bind(button_name))
 		buttons.add_child(button)
 		_button_nodes.append(button)
@@ -122,12 +119,10 @@ func _on_button_pressed(button_name: String) -> void:
 		_open_bag()
 	menu_button_pressed.emit(button_name)
 
-#Abrir a mochila.
 func _open_bag():
 	print(mochila.items)
 	
 
-# Exit confirmation functions
 func _open_exit_without_saving_popup() -> void:
 	exit_without_saving_dialog.popup_centered()
 

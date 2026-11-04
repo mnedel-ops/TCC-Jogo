@@ -1,13 +1,6 @@
 class_name BattlefieldRules
 extends RefCounted
 
-## Static-call compat layer over Battlefield. Battlefield keeps the real
-## slot-occupancy logic (validation, push_error on bad slot/reassign) as
-## instance methods - combat_state.gd, combat_result_applier.gd and
-## test_combat_contract.gd all call those directly and must keep working.
-## This class exists purely so CombatRules / CombatStateFactory can call
-## slot mutations as `BattlefieldRules.x(battlefield, ...)` without a
-## second, divergent copy of the validation logic.
 
 static func assign_combatant(battlefield: Battlefield, combatant_id: int, slot: int) -> void:
 	battlefield.assign_combatant(combatant_id, slot)

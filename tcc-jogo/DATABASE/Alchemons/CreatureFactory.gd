@@ -1,12 +1,7 @@
 class_name CreatureFactory
 extends RefCounted
 
-## The ONLY place that creates a brand-new individual (wild spawn, capture,
-## gift...). Rolls the per-creature data (IV, personality) once and gives it
-## a permanent uid.
 
-## IV range rolled for new creatures. Starters in the .tres keep IV 1.
-## Set IV_MAX = IV_MIN to turn individual variation off.
 const IV_MIN := 1
 const IV_MAX := 31
 

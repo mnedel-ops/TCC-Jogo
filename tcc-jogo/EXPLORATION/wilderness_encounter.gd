@@ -5,35 +5,26 @@ extends Area3D
 @export_range(1, 100) var min_level: int = 2
 @export_range(1, 100) var max_level: int = 4
 
-## Wilderness Encounter: bush area that can start a random fight.
-## Check 1: chance that a fight happens. Check 2: which Alchemon from the list.
-## Shape is per instance: edit `polygon` (and `height`) in the Inspector.
 
-## Area outline. x = world X, y = world -Z (area lies flat on the ground).
 @export var polygon: PackedVector2Array = PackedVector2Array([
 		Vector2(-3, -3), Vector2(3, -3), Vector2(3, 3), Vector2(-3, 3)]):
 	set(value):
 		polygon = value
 		_apply_shape()
 
-## Thickness of the area. Should cover the player's Y.
 @export_range(0.5, 20.0, 0.1) var height: float = 4.0:
 	set(value):
 		height = value
 		_apply_shape()
 
-## Possible enemy species ids. One is picked at random.
 @export var alchemons: Array[int] = []
 
 @export_range(0.0, 1.0, 0.01) var encounter_chance: float = 0.3
-## Seconds between rolls while the player stays inside.
 @export_range(0.1, 10.0, 0.1) var check_interval: float = 1.0
-## Seconds after a fight ends before rolling again.
 @export_range(0.0, 30.0, 0.1) var cooldown: float = 3.0
-## true = only roll while the player is moving (like walking in grass).
 @export var require_movement: bool = true
 
-var _inside: int = 0            # player areas inside (player may have several)
+var _inside: int = 0
 var _timer: float = 0.0
 var _cooldown_left: float = 0.0
 var _mover: CharacterBody3D = null
@@ -73,11 +64,11 @@ func _apply_shape() -> void:
 func _on_area_entered(area: Area3D) -> void:
 	if not area.is_in_group("player"):
 		return
-	_inside += 1   # count even during combat: characters get moved around
+	_inside += 1
 	if _inside == 1:
 		_mover = _find_body(area)
 		if not CombatSignal.in_combat and _cooldown_left <= 0.0:
-			_roll()   # roll on entry too
+			_roll()
 
 
 func _on_area_exited(area: Area3D) -> void:
@@ -98,9 +89,11 @@ func _roll() -> void:
 	if alchemons.is_empty():
 		push_warning("WildernessEncounter '%s': alchemons list empty." % name)
 		return
-	if randf() >= encounter_chance:          # check 1: fight or not
+	if randf() >= encounter_chance:
 		return
-	var species_id: int = alchemons[randi() % alchemons.size()]   # check 2: who
+	if not GameSession.can_fight():
+		return
+	var species_id: int = alchemons[randi() % alchemons.size()]
 	print("Wilderness Encounter: species ", species_id)
 	CombatSignal.enemy_node = null
 	CombatSignal.is_trainer_battle = false

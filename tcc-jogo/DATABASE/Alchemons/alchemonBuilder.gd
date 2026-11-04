@@ -8,7 +8,6 @@ var alchemonLevel :int= 5
 var instance: AlchemonInstance
 var stats: Dictionary
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	alchemon_instance()
 	
@@ -29,7 +28,7 @@ func alchemon_instance():
 	
 	stats = apply_level(sheet,instance)
 	
-func apply_level(sheet:AlchemonSheet, inst:AlchemonInstance) -> Dictionary: #Criar uma instancia da ficha. Que eu estou usando a ficha base, e altero ela
+func apply_level(sheet:AlchemonSheet, inst:AlchemonInstance) -> Dictionary:
 	var iv := inst.individual_value
 	var lv := inst.level
 	return {

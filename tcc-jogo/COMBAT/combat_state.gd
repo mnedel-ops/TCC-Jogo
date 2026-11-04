@@ -1,28 +1,19 @@
 class_name CombatState
 extends Resource
 
-## Contrato de estado - TUDO que existe durante uma batalha vive aqui.
-## Nenhum metodo de regra de jogo (isso mora em CombatRules/BattlePhaseRules/
-## BattlefieldRules). Os unicos metodos aqui sao acessores triviais,
-## equivalentes a Dictionary.get() com tipo - nao decidem nada.
 
-@export var combatants: Dictionary = {}      # int (instance id) -> CombatantState
+@export var combatants: Dictionary = {}
 @export var player_ids: Array[int] = []
 @export var enemy_ids: Array[int] = []
 @export var turn_order_ids: Array[int] = []
 @export var pending_actions: Array[ActionCommand] = []
 
-@export var round_number: int = 0
 @export var phase: String = BattlePhaseRules.ENCOUNTER_START
 @export var combat_over: bool = false
 @export var player_won: bool = false
 
-@export var arena_temperature: float = 273.15 #Em Kelvin
-## Enemy side: combatant id -> the AlchemonInstance it was built from. Lets a
-## capture keep the exact individual (IV, personality...) that was fought.
+@export var arena_temperature: float = 273.15
 var enemy_instances: Dictionary = {}
-## Creatures captured this battle (full individuals). Only the applier writes;
-## the controller drains it into CapturedStorage.
 var captured_instances: Array[AlchemonInstance] = []
 
 var battlefield: Battlefield
@@ -52,13 +43,6 @@ func get_alive_ids(ids: Array[int]) -> Array[int]:
 	return alive_ids
 
 
-## Alive AND not an inactive member of a Compound (Cation or Anion). Both are
-## untargetable and never act: only the Compound's active member does
-## (BondRules._apply_compound_group). When the active member falls, the others
-## are released and count again. This is the
-## list to use for turn order, targeting, and action-selection, never
-## get_alive_ids directly (that one still counts a Cation as "alive" for
-## combat-end checks, which is correct - the pair isn't defeated).
 func get_active_ids(ids: Array[int]) -> Array[int]:
 	var active_ids: Array[int] = []
 	for id in get_alive_ids(ids):
@@ -69,14 +53,11 @@ func get_active_ids(ids: Array[int]) -> Array[int]:
 	return active_ids
 
 
-## Get all alive combatants occupying slots on the given side.
 func get_alive_opposing_combatants(is_player: bool) -> Array[int]:
 	var opposing_ids := BattlefieldRules.get_opposing_combatants(battlefield, is_player)
 	return get_active_ids(opposing_ids)
 
 
-## Get all valid targetable combatants from a given actor's perspective.
-## Only includes combatants alive and on the opposite side.
 func get_valid_targets(actor_id: int) -> Array[int]:
 	var actor := get_combatant(actor_id)
 	if actor == null:

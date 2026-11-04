@@ -1,3 +1,9 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Build output, test reports, editor backups
+*.exe
+*.pck
+reports/
+*~

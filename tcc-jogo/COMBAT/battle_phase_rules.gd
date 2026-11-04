@@ -1,12 +1,6 @@
 class_name BattlePhaseRules
 extends RefCounted
 
-## Static-call compat layer over BattlePhaseMachine, which still holds
-## the one real FSM table (transition rules + terminal check) and the
-## phase constants. CombatRules and the controller drive phase off a
-## plain `state.phase: String` instead of a BattlePhaseMachine instance,
-## so this class re-exposes the same constants/logic as static calls
-## instead of duplicating the transition table a second time.
 
 const ENCOUNTER_START := BattlePhaseMachine.ENCOUNTER_START
 const SELECTING_ACTIONS := BattlePhaseMachine.SELECTING_ACTIONS

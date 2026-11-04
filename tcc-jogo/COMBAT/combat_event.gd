@@ -1,9 +1,6 @@
 class_name CombatEvent
 extends RefCounted
 
-## Evento de UI derivado de um CombatResult. Guarda so IDs, nunca
-## referencias de objeto - log, replay e UI ficam desacoplados do
-## CombatState mutavel. Kind espelha CombatResult.Outcome 1:1.
 
 enum Kind {
 	ATTACK_HIT,
@@ -67,7 +64,6 @@ func _init(
 	effectiveness = p_effectiveness
 
 
-## Fabrica unica pra virar evento de UI a partir de um CombatResult.
 static func from_result(result: CombatResult) -> CombatEvent:
 	return CombatEvent.new(
 		_KIND_FROM_OUTCOME[result.outcome],

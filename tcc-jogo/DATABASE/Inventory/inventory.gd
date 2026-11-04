@@ -1,14 +1,14 @@
 class_name InventoryData
 extends Resource
 
-@export var items: Array[int] = []   # indices na ordem de coleta
+@export var items: Array[int] = []
 
 func add_item(index: int) -> void:
 	items.append(index)
 	emit_changed()
 
 func remove_item(index: int) -> bool:
-	var pos := items.find(index)   # remove 1a ocorrencia (mais antiga)
+	var pos := items.find(index)
 	if pos == -1:
 		return false
 	items.remove_at(pos)
@@ -25,8 +25,6 @@ func get_quantity(index: int) -> int:
 			quantity += 1
 	return quantity
 
-# Agrupa indices repetidos -> lista pra UI. Ordem = primeira vez que apareceu.
-# Cada entrada: {index, nome, quantidade, data (ItemData ou null)}
 func get_stacked_view(database: ItemDatabase) -> Array[Dictionary]:
 	var counts: Dictionary = {}
 	var order: Array[int] = []

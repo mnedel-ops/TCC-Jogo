@@ -1,14 +1,12 @@
 class_name ActionCommand
 extends Resource
 
-## Value object - uma intencao de acao (jogador ou IA), referenciando
-## combatentes por ID, nunca por referencia direta de objeto.
 
 @export var actor_id: int = -1
-@export var kind: String = ""       # "attack" | "item" | "capture" | "flee"
-@export var target_id: int = -1     # -1 quando kind == "flee" (sem alvo)
-@export var attack_index: int = -1  # indice em AlchemonSheet.attacks; -1 quando kind != "attack"
-@export var item_index: int = -1    # ItemData.index; -1 quando kind != "item"
+@export var kind: String = ""
+@export var target_id: int = -1
+@export var attack_index: int = -1
+@export var item_index: int = -1
 
 func _init(
 	p_actor_id: int = -1,

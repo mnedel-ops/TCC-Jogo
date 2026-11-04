@@ -4,32 +4,27 @@ class_name NPC
 @onready var dialoguearea : Area3D = $DialogueCollision
 @onready var is_zone : bool = false 
 
-const BALLOON_SCENE: PackedScene = preload("res://INTERFACES/dialogue_balloon.tscn")
-## Set by Level from the NPCSpawnPoint marker.
-## dialogue = the only line of a normal NPC, or the line BEFORE the fight of a trainer.
 var dialogue: String = ""
-## Trainer only: line said after the player beat it.
 var dialogue_defeated: String = ""
-## Marker said is_fighter. Stays true after the defeat (figther goes false).
 var is_trainer: bool = false
-var _balloon: DialogueBalloon
+var is_gym_trainer: bool = false
+var badge: BadgeData
+var _badge_message := ""
+var _message_token := 0
+var _dialogue_box: DialogueBox
 
-## Shopkeeper: opens the Buy / Sell / Leave box instead of the balloon.
 var is_shopkeeper: bool = false
 const SHOP_FALLBACK_GREETING := "Bem-vindo! O que deseja?"
 var _shop: ShopDialogueBox
 
-## Alchemon Center: asks "heal?", waits a bit, heals the party.
 var is_healer: bool = false
 var dialogue_healed: String = ""
 const HEAL_PROMPT_FALLBACK := "Quer curar seus Alchemons?"
 const HEAL_DONE_FALLBACK := "Pronto! Seus Alchemons estão curados."
 const HEAL_WORKING_TEXT := "Curando..."
 const HEAL_WAIT_SECONDS := 2.5
-var _healing_busy := false   # question / wait running, balloon owns the input
+var _healing_busy := false
 var _locked_player: Player
-## Leave is picked with the same key as ui_interact. This NPC polls that key in
-## _process, same frame, and would reopen the shop. Frame stamp blocks it.
 var _ui_closed_frame: int = -1
 
 @export var figther : bool = false
@@ -39,14 +34,13 @@ var _ui_closed_frame: int = -1
 @export var alchemon1:int =1
 @export var alchemon2: int =1
 var alchemon_level: int = -1
-## Stable id set by Level ("scene_1/SpawnPoint"). Key in the save's defeated list.
 var npc_id: String = ""
 
 
 func _ready() -> void:
 	dialoguearea.area_entered.connect(_on_area_entered)
 	dialoguearea.area_exited.connect(_on_area_exited)
-	_create_balloon()
+	_create_dialogue_box()
 	
 	if figther:
 		combat_collision.area_entered.connect(_on_combat_area_entered)
@@ -55,43 +49,40 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if CombatSignal.in_combat:
-		_balloon.close()
+		_dialogue_box.close()
 		_close_shop()
 		return
+	if _badge_message != "":
+		_show_badge_message()
 	if _shop != null or _healing_busy:
-		return   # shop box / heal balloon owns the input
+		return
 	if Input.is_action_just_pressed("ui_interact") and is_zone and not (figther and is_combat_zone):
 		talk()
 
-#Func do dialogo
 func _on_area_entered(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		is_zone = true
 func _on_area_exited(area: Area3D) -> void:
 	if is_zone:
 		is_zone = false
-		_balloon.close()
+		_dialogue_box.close()
 		_close_shop()
 
 
-## Balloons live in screen space, so they need a CanvasLayer (this node is 3D).
-func _create_balloon() -> void:
+func _create_dialogue_box() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 5
 	add_child(layer)
-	_balloon = BALLOON_SCENE.instantiate()
-	layer.add_child(_balloon)
-	_balloon.bind(self)
+	_dialogue_box = DialogueBox.new()
+	layer.add_child(_dialogue_box)
 
 
-## Normal NPC: always `dialogue`. Trainer: `dialogue` until beaten, then `dialogue_defeated`.
 func get_dialogue() -> String:
 	if is_trainer and not figther and dialogue_defeated != "":
 		return dialogue_defeated
 	return dialogue if dialogue != "" else "..."
 
 
-## 1st press opens the balloon, press while typing = show all text, next press closes.
 func talk() -> void:
 	if is_shopkeeper:
 		open_shop()
@@ -99,44 +90,52 @@ func talk() -> void:
 	if is_healer:
 		open_healer()
 		return
-	if _balloon.is_typing():
-		_balloon.skip_typing()
-	elif _balloon.is_open():
-		_balloon.close()
+	if _dialogue_box.is_typing():
+		_dialogue_box.skip_typing()
+	elif _dialogue_box.is_open():
+		_dialogue_box.close()
 	else:
-		_balloon.show_text(get_dialogue())
+		_dialogue_box.show_text(get_dialogue())
 
 
-#Func do Centro Alchemon
-## Coroutine. Press 1: question. Yes: wait, heal, done text. Press again: close.
+func _show_badge_message() -> void:
+	var text := _badge_message
+	_badge_message = ""
+	_message_token += 1
+	var token := _message_token
+	_dialogue_box.show_text(text)
+	await get_tree().create_timer(4.0).timeout
+	if token == _message_token and _dialogue_box.is_open():
+		_dialogue_box.close()
+
+
 func open_healer() -> void:
 	if _healing_busy or Engine.get_process_frames() == _ui_closed_frame:
 		return
-	if _balloon.is_open():   # leftover "healed" line: this press just closes it
-		_balloon.close()
+	if _dialogue_box.is_open():
+		_dialogue_box.close()
 		return
 	_healing_busy = true
 	_lock_player(true)
-	_balloon.ask(dialogue if dialogue != "" else HEAL_PROMPT_FALLBACK, ["Sim", "Não"])
-	var pick: int = await _balloon.choice_made
+	_dialogue_box.ask(dialogue if dialogue != "" else HEAL_PROMPT_FALLBACK, ["Sim", "Não"])
+	var pick: int = await _dialogue_box.choice_made
 	if pick == 0:
-		_balloon.show_text(HEAL_WORKING_TEXT)
+		_dialogue_box.show_text(HEAL_WORKING_TEXT)
 		await get_tree().create_timer(HEAL_WAIT_SECONDS).timeout
 		if not CombatSignal.in_combat:
 			GameSession.heal_party()
-			_balloon.show_text(dialogue_healed if dialogue_healed != "" else HEAL_DONE_FALLBACK)
+			_dialogue_box.show_text(dialogue_healed if dialogue_healed != "" else HEAL_DONE_FALLBACK)
 	else:
-		_balloon.close()   # No, Cancel, or closed by someone else
+		_dialogue_box.close()
 	_healing_busy = false
 	_ui_closed_frame = Engine.get_process_frames()
 	_lock_player(false)
 
 
-#Func da loja
 func open_shop() -> void:
 	if _shop != null or Engine.get_process_frames() == _ui_closed_frame:
 		return
-	_balloon.close()
+	_dialogue_box.close()
 	_lock_player(true)
 	_shop = ShopDialogueBox.new()
 	add_child(_shop)
@@ -154,12 +153,10 @@ func _close_shop() -> void:
 	_lock_player(false)
 
 
-## Hook for the real shop screens. Buy / Sell do nothing yet.
 func _on_shop_option(_option: StringName) -> void:
 	pass
 
 
-## Player stands still while the box is open (same trick CombatHandler uses).
 func _lock_player(locked: bool) -> void:
 	if locked:
 		_locked_player = null
@@ -176,9 +173,10 @@ func _lock_player(locked: bool) -> void:
 		_locked_player = null
 
 
-#Func do combate
 func mark_defeated() -> void:
 	figther = false
+	if is_gym_trainer and GameSession.player.award_badge(badge):
+		_badge_message = "Você recebeu a %s!" % badge.badge_name
 	GameSession.mark_npc_defeated(npc_id)
 
 
@@ -186,8 +184,10 @@ func _on_combat_area_entered(area: Area3D) -> void:
 	if not figther:
 		return
 	if CombatSignal.in_combat:
-		return # characters being moved around by the battle, ignore
+		return
 	if area.is_in_group("player") and is_combat_zone !=true:
+		if not GameSession.can_fight():
+			return
 		is_combat_zone = true
 		print("Vou te quebrar na porrada")
 		print_debug(alchemon1, alchemon2)
@@ -197,7 +197,7 @@ func _on_combat_area_entered(area: Area3D) -> void:
 		CombatSignal.is_trainer_battle = true
 		CombatSignal.combat_start.emit(alchemon1, alchemon2)
 		
-func _on_combat_area_exited(area: Area3D) -> void: #nao acho que precise deste
+func _on_combat_area_exited(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		is_combat_zone = false
 		print("Cansei de te espancar. Vaza")

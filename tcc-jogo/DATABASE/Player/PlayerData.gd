@@ -1,23 +1,16 @@
 class_name PlayerData
 extends Resource
 
-## Player profile shown on the Player page.
-## Save/load can serialize this resource later.
 
 @export var player_name := "Muleke"
-@export var team_name := ""   # empty = "Equipe do <player_name>"
-## Coins. New game starts with 500.
+@export var team_name := ""
 @export var money := 500
-## Time played in previous sessions (seconds). Save this.
 @export var play_time_seconds := 0.0
 @export var portrait: Texture2D
 @export var badges: Array[BadgeData] = []
-## Slots drawn on the page (empty ones are dimmed). Grows if badges has more.
 @export var badge_slots := 8
 
 
-## Previous sessions + this run. Time.get_ticks_msec() keeps counting while the
-## tree is paused (menu open), so no autoload needed for now.
 func get_play_time() -> float:
 	return play_time_seconds + Time.get_ticks_msec() / 1000.0
 
@@ -29,3 +22,23 @@ func add_money(amount: int) -> void:
 
 func get_team_name() -> String:
 	return team_name if team_name != "" else "Equipe do %s" % player_name
+
+
+func award_badge(badge: BadgeData) -> bool:
+	if badge == null:
+		return false
+	var slot: BadgeData = badge
+	var found := false
+	for b in badges:
+		if b != null and (b == badge or b.badge_name == badge.badge_name):
+			slot = b
+			found = true
+			break
+	if slot.earned:
+		return false
+	if not found:
+		push_warning("PlayerData: badge '%s' is not in player.tres badges. Added now, but it will not be saved." % badge.badge_name)
+		badges.append(slot)
+	slot.earned = true
+	emit_changed()
+	return true

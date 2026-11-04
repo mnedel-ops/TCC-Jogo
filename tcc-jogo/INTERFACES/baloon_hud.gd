@@ -1,13 +1,13 @@
 class_name CombatBalloon
 extends Control
 
-@export var offset := Vector3(0, 1.8, 0)   # above head
+@export var offset := Vector3(0, 1.8, 0)
 var target: Node3D
 var _hidden_by_state := false
 
-const HP_COLOR := Color(0.25, 0.8, 0.3)       # green
-const ENERGY_COLOR := Color(0.25, 0.55, 1.0)  # blue
-const BAR_HEIGHT := 6.0                       # thin bars
+const HP_COLOR := Color(0.25, 0.8, 0.3)
+const ENERGY_COLOR := Color(0.25, 0.55, 1.0)
+const BAR_HEIGHT := 6.0
 const TEXT_SIZE := 12
 
 @onready var panel: PanelContainer = $PanelContainer
@@ -24,7 +24,6 @@ func _ready() -> void:
 	_energy_label = _setup_bar(energy_bar, ENERGY_COLOR)
 
 
-## Thin colored bar + a "HP 2/3" style label right above it. No percentage text.
 func _setup_bar(bar: ProgressBar, color: Color) -> Label:
 	bar.show_percentage = false
 	bar.fill_mode = ProgressBar.FILL_BEGIN_TO_END
@@ -43,7 +42,7 @@ func _setup_bar(bar: ProgressBar, color: Color) -> Label:
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := bar.get_parent()
 	box.add_child(lbl)
-	box.move_child(lbl, bar.get_index())          # label above its bar
+	box.move_child(lbl, bar.get_index())
 	return lbl
 
 
@@ -59,7 +58,7 @@ func update_entry(e: Dictionary) -> void:
 	_energy_label.text = "Energia %d/%d" % [e.energy, e.max_energy]
 	_tween_bar(hp_bar, e.hp)
 	_tween_bar(energy_bar, e.energy)
-	_hidden_by_state = not e.visible   # dead / cation
+	_hidden_by_state = not e.visible
 
 
 func _tween_bar(bar: ProgressBar, value: float) -> void:

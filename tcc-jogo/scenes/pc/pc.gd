@@ -1,7 +1,5 @@
 class_name PCStation
 extends Node3D
-## PC interactable. Player enter Area3D, press "ui_interact" -> open PC UI.
-## Player is frozen while PC is open.
 
 signal opened(player: Node3D)
 signal closed
@@ -10,7 +8,6 @@ signal closed
 @export var player_group: StringName = &"player"
 @export var ui_scene: PackedScene = preload("res://scenes/pc/pc_ui.tscn")
 
-## Real game data. Same .tres files the rest of the game uses.
 @export var party: PlayerPartyData = preload("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
 @export var storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")
 @export var bond: PlayerBondData = preload("res://DATABASE/Alchemons/player_bond.tres")
@@ -22,7 +19,6 @@ signal closed
 var _player: Node3D = null
 var _ui: Node = null
 var _is_open := false
-var _saved_process_mode: Node.ProcessMode = Node.PROCESS_MODE_INHERIT
 var _saved_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
 
@@ -88,10 +84,6 @@ func close_pc() -> void:
 	closed.emit()
 
 
-## Freeze player. Uses player's set_input_locked(bool) if it has one.
-## Else turn off processing + input on player and all children.
-## NOT process_mode DISABLED: that removes the body from physics space,
-## Area3D fires body_exited, PC closes instantly.
 var _saved_flags: Dictionary = {}
 
 func _lock_player(locked: bool) -> void:

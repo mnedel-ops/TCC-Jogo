@@ -1,16 +1,6 @@
 class_name TablePage
 extends MenuPage
 
-## Table page (the game's Pokedex): two columns.
-##  Left : every species, ordered by atomic mass.  Row = "#056  Name".
-##  Right: top = element name + 3D preview, bottom = tabs (Stats / Description / Lore).
-##
-## Hover / keyboard cursor only HIGHLIGHTS a row. The right column changes
-## only when the player INTERACTS (click or menu_interact).
-##
-## Keys: menu_up / menu_down = cursor, menu_interact = select,
-##       menu_right / ui_page_down = next tab, ui_page_up = previous tab,
-##       menu_left (or Esc) = back to the menu list.
 
 signal entry_selected(species_id: int)
 
@@ -20,22 +10,20 @@ const PANEL_BORDER := Color(0.5, 0.5, 0.6)
 const DEFAULT_DATABASE := "res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres"
 
 @export var database: AlchemonDatabase
-@export var spin_speed := 0.8            # preview rotation, rad/s
-@export var preview_size := 1.6          # model is scaled so its biggest side = this
+@export var spin_speed := 0.8
+@export var preview_size := 1.6
 
 var _entries: Array[AlchemonSheet] = []
 var _rows: Array[PanelContainer] = []
 var _num_labels: Array[Label] = []
 var _name_labels: Array[Label] = []
-var _cursor := 0          # highlighted row (hover / keyboard)
-var _selected := -1       # row shown on the right
+var _cursor := 0
+var _selected := -1
 
-# left
 var _count_label: Label
 var _scroll: ScrollContainer
 var _list: VBoxContainer
 var _empty_label: Label
-# right
 var _right: VBoxContainer
 var _name_label: Label
 var _mass_label: Label
@@ -47,7 +35,7 @@ var _desc_label: Label
 var _lore_label: Label
 
 
-func _ready() -> void:      # no super: no placeholder
+func _ready() -> void:
 	if database == null:
 		database = load(DEFAULT_DATABASE)
 	_build()
@@ -58,8 +46,6 @@ func _process(delta: float) -> void:
 	if _pivot != null and is_visible_in_tree():
 		_pivot.rotate_y(delta * spin_speed)
 
-
-# --------------------------------------------------------------- MenuPage API
 
 func on_open() -> void:
 	_populate()
@@ -82,8 +68,6 @@ func handle_input(event: InputEvent) -> bool:
 		return false
 	return true
 
-
-# ------------------------------------------------------------------ building
 
 func _build() -> void:
 	var margin := MarginContainer.new()
@@ -155,7 +139,6 @@ func _build_right(body: Control) -> void:
 	_right.add_theme_constant_override("separation", 12)
 	body.add_child(_right)
 
-	# top: name + 3D preview
 	var top := PanelContainer.new()
 	top.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	top.size_flags_stretch_ratio = 1.2
@@ -179,7 +162,6 @@ func _build_right(body: Control) -> void:
 
 	top_v.add_child(_build_preview())
 
-	# bottom: tabs
 	var bottom := PanelContainer.new()
 	bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	bottom.size_flags_stretch_ratio = 1.0
@@ -187,7 +169,7 @@ func _build_right(body: Control) -> void:
 	_right.add_child(bottom)
 
 	_tabs = TabContainer.new()
-	_tabs.get_tab_bar().focus_mode = Control.FOCUS_NONE   # keys go to handle_input, not the tab bar
+	_tabs.get_tab_bar().focus_mode = Control.FOCUS_NONE
 	_tabs.add_theme_color_override("font_hovered_color", GOLD)
 	_tabs.add_theme_color_override("font_selected_color", GOLD)
 	bottom.add_child(_tabs)
@@ -221,7 +203,6 @@ func _make_text_tab(tab_name: String) -> Label:
 	return lbl
 
 
-## 3D preview in its own world (SubViewport) so it never touches the game scene.
 func _build_preview() -> Control:
 	var container := SubViewportContainer.new()
 	container.stretch = true
@@ -270,8 +251,6 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	s.content_margin_bottom = 6
 	return s
 
-
-# ---------------------------------------------------------------------- data
 
 func _populate() -> void:
 	var previous_id := -1
@@ -347,8 +326,6 @@ func _make_row(i: int, sheet: AlchemonSheet) -> PanelContainer:
 	return row
 
 
-# -------------------------------------------------------------------- cursor
-
 func _refresh_rows() -> void:
 	for i in _rows.size():
 		var hot := (i == _cursor)
@@ -407,8 +384,6 @@ func _on_row_gui_input(event: InputEvent, i: int) -> void:
 		_select(i)
 
 
-# -------------------------------------------------------------------- detail
-
 func _show_detail(sheet: AlchemonSheet) -> void:
 	_name_label.text = sheet.creature_name
 	_mass_label.text = "Massa atomica #%03d" % sheet.atomic_mass
@@ -453,8 +428,6 @@ func _fill_stats(s: AlchemonSheet) -> void:
 		_stats_grid.add_child(val)
 
 
-# ------------------------------------------------------------- 3D preview
-
 func _set_model(sheet: AlchemonSheet) -> void:
 	for c in _model_holder.get_children():
 		_model_holder.remove_child(c)
@@ -475,7 +448,6 @@ func _set_model(sheet: AlchemonSheet) -> void:
 	_fit_model()
 
 
-## Placeholder until a species has a real `model`: a box tinted by element type.
 func _make_placeholder_box(sheet: AlchemonSheet) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.mesh = BoxMesh.new()
@@ -488,7 +460,6 @@ func _make_placeholder_box(sheet: AlchemonSheet) -> MeshInstance3D:
 	return mi
 
 
-## Scale + center the model so any size fits the preview.
 func _fit_model() -> void:
 	var box := AABB()
 	var first := true

@@ -1,21 +1,6 @@
 class_name CombatResultApplier
 extends RefCounted
 
-## Unico lugar que muta CombatState a partir de um CombatResult.
-## CombatRules so calcula (puro); aqui e onde o resultado vira mudanca
-## real de HP, morte e ocupacao de slot. Chamado pelo controller depois
-## de cada CombatRules.resolve_action() / resolve_flee().
-##
-## Garante:
-## - State Consistency: HP e alive setados de forma coerente com o resultado.
-## - Death Handling: libera o slot no battlefield quando alguem morre.
-## - Victory Check: roda CombatRules.check_combat_end() apos toda aplicacao.
-## - Leveling: quem derruba ou captura um alvo ganha a XP daquela especie
-##   (AlchemonSheet.xp_reward), podendo disparar level up (AlchemonGrowth).
-## - Temperatura: todo golpe que acerta aquece a arena compartilhada
-##   (CombatState.temperature) pelo CombatResult.temperature_delta, e em
-##   seguida cada Alchemon vivo compara essa temperatura nova com a sua
-##   propria (AlchemonSheet.temperature) - GDD sec 8.2.
 
 const STATE_CHANGE_DAMAGE :int= 5
 static func apply(state: CombatState, result: CombatResult, database: AlchemonDatabase) -> void:
@@ -35,7 +20,7 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
 			_apply_capture(state, result.target_id, database)
 			_grant_xp(state, database, result.actor_id, result.target_id)
 		_:
-			pass # ATTACK_MISS, CAPTURE_FAIL, FLEE_*, INVALID_*, ALREADY_DEAD: nada pra mutar
+			pass
 
 	CombatRules.check_combat_end(state)
 
@@ -46,8 +31,6 @@ static func _apply_energy_cost(state: CombatState, actor_id: int, cost: int) -> 
 		actor.valence_electrons = maxi(actor.valence_electrons - cost, 0)
 
 
-## Retorna true se este dano especifico matou o alvo (pra so conceder XP
-## uma vez, na hora certa, e nao em todo golpe).
 static func _apply_damage(state: CombatState, target_id: int, damage: int) -> bool:
 	var target := state.get_combatant(target_id)
 	if target == null or not target.alive:
@@ -69,14 +52,13 @@ static func _apply_capture(state: CombatState, target_id: int, database: Alchemo
 	var target := state.get_combatant(target_id)
 	if target == null or not target.alive:
 		return
-	# Keep the exact individual that was fought, with the HP it had.
 	var inst: AlchemonInstance = state.enemy_instances.get(target_id)
 	var template := database.get_by_id(target.species_id)
 	if inst == null:
 		inst = CreatureFactory.create(target.species_id, target.level)
 	if template != null:
 		CreatureSync.write_back(inst, target, template)
-	inst.current_hp = maxi(inst.current_hp, 1)   # captured alive
+	inst.current_hp = maxi(inst.current_hp, 1)
 	state.captured_instances.append(inst)
 	target.hp = 0
 	_kill(state, target)
@@ -87,13 +69,6 @@ static func _kill(state: CombatState, target: CombatantState) -> void:
 	state.battlefield.free_slot(target.slot)
 	BondRules.release_compound_partners(state, target)
 
-## GDD 8.2: apos a arena esquentar, TODO Alchemon vivo em campo (nao so
-## quem atacou/foi atacado - a temperatura e global, sec 8.1) compara sua
-## propria temperatura de referencia com a nova temperatura da arena. Se
-## a arena estiver mais quente, o Alchemon muda de estado fisico (SOLIDO
-## -> LIQUIDO -> GASOSO) e emite arena_hotter_than_self com seu slot. Se
-## ja estiver no estado mais quente modelado (GASOSO), nao ha transicao
-## nem sinal - nada mudou de verdade.
 static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
 	var all_ids: Array[int] = state.player_ids + state.enemy_ids
 	for id in state.get_alive_ids(all_ids):

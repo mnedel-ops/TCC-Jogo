@@ -1,11 +1,13 @@
 [gd_resource type="Resource" script_class="PlayerData" format=3]
 
 [ext_resource type="Script" path="res://DATABASE/Player/PlayerData.gd" id="1_pd"]
+[ext_resource type="Script" path="res://DATABASE/Player/BadgeData.gd" id="2_bd"]
+[ext_resource type="Resource" path="res://DATABASE/Player/badges/insignia_metal.tres" id="3_b1"]
 
 [resource]
 script = ExtResource("1_pd")
 player_name = "Muleke"
 money = 500
 play_time_seconds = 0.0
-badges = Array[Resource]([])
+badges = Array[ExtResource("2_bd")]([ExtResource("3_b1")])
 badge_slots = 8

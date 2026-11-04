@@ -1,12 +1,9 @@
 class_name AlchemonPreview
 extends SubViewportContainer
 
-## Spinning 3D preview of one species, in its own world (SubViewport) so it
-## never touches the game scene. Same setup as the Table page.
-## set_sheet() swaps the model. `spinning` = false freezes it.
 
-@export var spin_speed := 0.8            # rad/s
-@export var preview_size := 1.6          # model is scaled so its biggest side = this
+@export var spin_speed := 0.8
+@export var preview_size := 1.6
 var spinning := true
 
 var _sheet: AlchemonSheet
@@ -46,7 +43,7 @@ func _ready() -> void:
 	vp.add_child(_pivot)
 	_model_holder = Node3D.new()
 	_pivot.add_child(_model_holder)
-	_apply_sheet()   # set_sheet may have been called before we entered the tree
+	_apply_sheet()
 
 
 func _process(delta: float) -> void:
@@ -81,7 +78,6 @@ func _apply_sheet() -> void:
 	_fit_model()
 
 
-## Placeholder until a species has a real `model`: a box tinted by element type.
 func _make_placeholder_box(sheet: AlchemonSheet) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.mesh = BoxMesh.new()
@@ -95,7 +91,6 @@ func _make_placeholder_box(sheet: AlchemonSheet) -> MeshInstance3D:
 	return mi
 
 
-## Scale + center the model so any size fits the preview.
 func _fit_model() -> void:
 	var box := AABB()
 	var first := true

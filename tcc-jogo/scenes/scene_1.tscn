@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="3_cn2eb"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_lki8s"]
 [ext_resource type="PackedScene" uid="uid://dn5kkw48uiw21" path="res://EXPLORATION/wilderness_encounter.tscn" id="6_t6bmd"]
+[ext_resource type="Resource" path="res://DATABASE/Player/badges/insignia_metal.tres" id="9_badge"]
 
 [sub_resource type="Environment" id="Environment_3xosi"]
 
@@ -70,6 +71,17 @@ npc_scene = ExtResource("3_cn2eb")
 is_healer = true
 dialogue = "Bem-vindo ao Centro Alchemon! Quer curar seus Alchemons?"
 dialogue_healed = "Pronto! Seus Alchemons estão completamente curados. Volte sempre!"
+
+[node name="SpawnPoint6" type="Marker3D" parent="NPCHolder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -6)
+script = ExtResource("3_lki8s")
+npc_scene = ExtResource("3_cn2eb")
+alchemons_ids = Array[int]([1, 2])
+level = 8
+is_gym_trainer = true
+badge = ExtResource("9_badge")
+dialogue = "Eu sou o líder do ginásio de Metal! Só leva minha Insígnia quem me vencer!"
+dialogue_defeated = "Você venceu! A Insígnia do Metal é sua. Você merece!"
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=489529275]
 environment = SubResource("Environment_3xosi")

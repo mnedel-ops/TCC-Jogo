@@ -20,8 +20,6 @@ func _sheet() -> AlchemonSheet:
 	return db.alchemons[0]
 
 
-# ---------------------------------------------------------------- player data
-
 func test_new_player_starts_with_500_coins() -> void:
 	assert_int(PlayerData.new().money).is_equal(500)
 	var shipped: PlayerData = load("res://DATABASE/Player/player.tres")
@@ -36,16 +34,12 @@ func test_add_money_never_goes_negative() -> void:
 	assert_int(p.money).is_equal(0)
 
 
-# ---------------------------------------------------------------- money rules
-
 func test_money_only_for_beating_a_trainer() -> void:
 	assert_int(BattleRewards.money_for(true, true)).is_equal(100)
-	assert_int(BattleRewards.money_for(true, false)).is_equal(0)    # wild
-	assert_int(BattleRewards.money_for(false, true)).is_equal(0)    # lost
+	assert_int(BattleRewards.money_for(true, false)).is_equal(0)
+	assert_int(BattleRewards.money_for(false, true)).is_equal(0)
 	assert_int(BattleRewards.money_for(false, false)).is_equal(0)
 
-
-# ---------------------------------------------------------------- xp / level up
 
 func test_xp_gained_without_level_up() -> void:
 	var a := _inst(5)
@@ -62,7 +56,7 @@ func test_xp_gained_across_a_level_up() -> void:
 	a.experience = 80
 	var state := _state([a])
 	var c := state.get_combatant(state.player_ids[0])
-	AlchemonGrowth.grant_experience(c, _sheet(), 50)    # 80 + 50 -> level 6, bar at 30
+	AlchemonGrowth.grant_experience(c, _sheet(), 50)
 	var r := BattleRewards.build(state, db, [a], false)
 	assert_int(r.entries[0].xp_gained).is_equal(50)
 	assert_int(r.entries[0].level_before).is_equal(5)
@@ -76,8 +70,6 @@ func test_entry_uses_nickname() -> void:
 	var r := BattleRewards.build(state, db, [a], false)
 	assert_str(r.entries[0].name).is_equal("Fofo")
 
-
-# ---------------------------------------------------------------- screen text
 
 func test_text_shows_exp_levelup_and_coins() -> void:
 	var r := BattleRewards.new()
@@ -98,8 +90,6 @@ func test_text_without_xp_or_money() -> void:
 	assert_str(lines[0].text).is_equal("No EXP gained.")
 
 
-# ---------------------------------------------------------------- input behaviour
-
 func _key() -> InputEventKey:
 	var e := InputEventKey.new()
 	e.keycode = KEY_SPACE
@@ -113,15 +103,15 @@ func test_screen_ignores_input_until_delay_then_dismisses_on_any_key() -> void:
 	var hits := []
 	screen.dismissed.connect(func(): hits.append(1))
 	screen.show_rewards(BattleRewards.new())
-	screen._input(_key())                       # too early (mashed key)
+	screen._input(_key())
 	assert_int(hits.size()).is_equal(0)
 	await get_tree().create_timer(BattleRewardsScreen.INPUT_DELAY + 0.2).timeout
 	var release := _key()
 	release.pressed = false
-	screen._input(release)                      # key release does not count
+	screen._input(release)
 	assert_int(hits.size()).is_equal(0)
 	screen._input(_key())
-	screen._input(_key())                       # only emits once
+	screen._input(_key())
 	assert_int(hits.size()).is_equal(1)
 
 
@@ -149,11 +139,7 @@ func test_gamepad_also_dismisses_mouse_does_not() -> void:
 		assert_int(hits.size()).is_equal(1)
 
 
-# ---------------------------------------------------------------- flow
-
 func test_rules_layer_no_longer_ends_combat_for_exploration() -> void:
-	# The controller emits combat_ended after the rewards screen. If the rules
-	# layer still emitted it, the player would be released before the screen.
 	var fired := []
 	var cb := func(): fired.append(1)
 	CombatSignal.combat_ended.connect(cb)

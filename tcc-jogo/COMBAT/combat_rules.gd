@@ -1,19 +1,11 @@
 class_name CombatRules
 extends RefCounted
 
-## Resolver only computes an immutable CombatResult. CombatResultApplier is
-## the sole writer of CombatState.
 
 const MISS_CHANCE := 1.0 / 6.0
 const FLEE_CHANCE := 5.0 / 6.0
 
-## X of the capture formula (AlchemonFormulas.compute_capture_value), by
-## Separation Tool category. PLACEHOLDERS - the GDD does not list the values yet.
-## The formula has no species catch rate, so `a` can never exceed X: X must be
-## large. With these, a full-HP target is caught ~1/3 (right type) or ~1/6
-## (wrong type), the same odds as before, and it rises to ~100% near 0 HP.
 const TOOL_MULTIPLIER_MATCH := 255.0
-## Wrong-type tool still works, much less. 0.0 = guaranteed fail.
 const TOOL_MULTIPLIER_WRONG := 127.0
 
 const CRIT_CHANCE := 0.125
@@ -55,7 +47,6 @@ static func compute_damage(base_damage: int, is_critical: bool) -> int:
 	return int(round(float(base_damage) * (CRIT_MULTIPLIER if is_critical else 1.0)))
 
 
-## Returns replacement id without changing submitted command data.
 static func _retarget_if_dead(state: CombatState, command: ActionCommand) -> int:
 	if command.target_id == -1:
 		return -1
@@ -135,14 +126,12 @@ static func _resolve_item(state: CombatState, command: ActionCommand, target_id:
 	var data: ItemData = item_database.get_item(command.item_index) if item_database != null else null
 	if data == null or data.is_capture_method:
 		return CombatResult.invalid_action(actor.id, target.id, "unknown_item")
-	return CombatResult.item_used(actor.id, target.id, data.heal_amount)   # 0 = does nothing
+	return CombatResult.item_used(actor.id, target.id, data.heal_amount)
 
 static func tool_multiplier(method_type: int, target_type: int) -> float:
 	return TOOL_MULTIPLIER_MATCH if method_type == target_type else TOOL_MULTIPLIER_WRONG
 
 
-## Capture succeeds when a 0..254 roll lands under `a` (a = 255 always works).
-## Chance = a / 255 per throw.
 static func capture_roll_succeeds(a: int, roll: int) -> bool:
 	return roll < a
 
@@ -182,8 +171,6 @@ static func _mark_battle_outcome(state: CombatState, player_won: bool) -> void:
 	state.phase = BattlePhaseRules.COMBAT_OVER
 	state.phase = BattlePhaseRules.VICTORY if player_won else BattlePhaseRules.DEFEAT
 	state.battle_phase.force_phase(state.phase)
-	# combat_ended is emitted by the controller AFTER the rewards screen.
-
 
 
 static func pick_random_alive_target_id(state: CombatState, team_ids: Array[int]) -> int:

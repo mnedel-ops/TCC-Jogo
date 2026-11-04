@@ -1,24 +1,20 @@
 extends Node3D
 class_name CameraRig
 
-## Emitido quando player empurra dead zone além do threshold.
-## direction = pra onde câmera precisou ir. distance = quanto excesso.
-## Usa isso pra detectar troca de cenário / passagem de porta.
 signal zone_transition(direction: Vector3, distance: float)
 
-@export var player: Node3D                     # Jogador alvo.
-@export var dead_zone := Vector2(1.0, 1.0)     # Largura/profundidade visual.
-@export var follow_speed := 7.0                # Velocidade de aproximação.
-@export var transition_threshold := 0.05       # Excesso mínimo p/ disparar sinal (evita spam).
-@export var snap_distance := 5.0              # Offset > isso = teleport, snap em vez de lerp.
+@export var player: Node3D
+@export var dead_zone := Vector2(1.0, 1.0)
+@export var follow_speed := 7.0
+@export var transition_threshold := 0.05
+@export var snap_distance := 5.0
 
 var _fixed_y: float
 var _right: Vector3
 var _forward: Vector3
-var _was_in_zone := true                        # Estado anterior p/ detectar transição.
+var _was_in_zone := true
 
 func set_player(new_player: Node3D) -> void:
-	# Troca de alvo em runtime sem bug de recentralização.
 	player = new_player
 	if player and is_inside_tree():
 		_recenter()
@@ -44,15 +40,11 @@ func _recenter() -> void:
 	global_position.z = player.global_position.z
 
 func _physics_process(delta: float) -> void:
-	# physics_process em vez de process: sincroniza c/ movimento físico
-	# do player, evita jitter de frame dessincronizado.
 	if not player:
 		return
 
 	var offset := player.global_position - global_position
 
-	# Offset gigante = teleport/respawn/cutscene. Snap em vez de arrastar
-	# câmera lerp por mapa inteiro.
 	if offset.length() > snap_distance:
 		_recenter()
 		_was_in_zone = true
@@ -75,7 +67,6 @@ func _physics_process(delta: float) -> void:
 
 	target.y = _fixed_y
 
-	# Detecta transição borda->fora (porta, novo cenário).
 	var in_zone :bool= abs(local_x) <= dead_zone.x and abs(local_z) <= dead_zone.y
 	if _was_in_zone and not in_zone:
 		var exit_dir :Vector3= (_right * sign(excess_x) + _forward * sign(excess_z)).normalized()

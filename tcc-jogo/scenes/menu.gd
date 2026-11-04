@@ -1,7 +1,5 @@
 extends Control
 
-## Title screen: New Game / Load Game / Quit.
-## No class_name on purpose: INTERFACES/menu.gd already owns "Menu".
 
 const GAME_SCENE := "res://scenes/main.tscn"
 
@@ -44,7 +42,6 @@ func _start_new_game() -> void:
 
 
 func _on_load_pressed() -> void:
-	# false = main.tscn is not loaded yet, FollowerManager reads the party in _ready.
 	if GameSession.load_game(false) != OK:
 		message.text = "Save file is missing or corrupt."
 		load_button.disabled = not GameSession.has_save()

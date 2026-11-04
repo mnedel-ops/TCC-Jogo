@@ -1,12 +1,6 @@
 class_name PlayerBondData
 extends Resource
 
-## The "Component" the player made at the PC: one bond (Mixture/Compound).
-## Carried into EVERY fight. CombatStateFactory applies it. Player never
-## auto-bonds in combat. NPCs still auto-bond (CombatStateFactory._try_bond).
-##
-## member_indices = positions in PlayerPartyData.party (= battle slot order).
-## PC clears this when the party changes, so indices never go stale.
 
 @export var kind: String = BondRules.NONE
 @export var member_indices: Array[int] = []

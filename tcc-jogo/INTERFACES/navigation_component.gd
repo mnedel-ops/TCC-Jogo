@@ -31,7 +31,6 @@ func reset_selection() -> void:
 	_selected_index = 0
 	_update_selection_visual()
 
-# Retorna true se consumiu o evento (pra quem chama saber se marca handled).
 func handle_input(event: InputEvent) -> bool:
 	if event.is_action_pressed("menu_down"):
 		_move_selection(1)

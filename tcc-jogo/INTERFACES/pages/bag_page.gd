@@ -1,12 +1,6 @@
 class_name BagPage
 extends MenuPage
 
-## Bag page: item list (left) + selected item detail (right).
-## Data comes from InventoryData + ItemDatabase. Refreshes live on
-## InventoryData.changed. Pure UI: item_activated is the hook for "use item".
-##
-## Keys: menu_up / menu_down = row, menu_interact = activate,
-## menu_left = back to menu list.  Mouse: hover = select, click = activate.
 
 signal item_activated(item_index: int)
 
@@ -34,7 +28,7 @@ var _detail_qty: Label
 var _detail_desc: Label
 
 
-func _ready() -> void:      # no super: no placeholder
+func _ready() -> void:
 	if mochila == null:
 		mochila = load("res://DATABASE/Inventory/inventory.tres")
 	if inventory_database == null:
@@ -42,8 +36,6 @@ func _ready() -> void:      # no super: no placeholder
 	_build()
 	refresh()
 
-
-# --------------------------------------------------------------- MenuPage API
 
 func on_open() -> void:
 	if mochila != null and not mochila.changed.is_connected(refresh):
@@ -71,8 +63,6 @@ func handle_input(event: InputEvent) -> bool:
 	return true
 
 
-# ------------------------------------------------------------------ building
-
 func _build() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -84,7 +74,6 @@ func _build() -> void:
 	root.add_theme_constant_override("separation", 12)
 	margin.add_child(root)
 
-	# header
 	var header := HBoxContainer.new()
 	root.add_child(header)
 	var title_lbl := Label.new()
@@ -103,7 +92,6 @@ func _build() -> void:
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(body)
 
-	# left: list
 	var list_panel := PanelContainer.new()
 	list_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_panel.size_flags_stretch_ratio = 1.3
@@ -132,7 +120,6 @@ func _build() -> void:
 	_empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	list_stack.add_child(_empty_label)
 
-	# right: detail
 	var detail_panel := PanelContainer.new()
 	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_panel.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
@@ -178,7 +165,6 @@ func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
 	return s
 
 
-## Texture if item has icone, else box with first letter.
 func _make_icon(data: ItemData, size: Vector2, fallback_name: String) -> Control:
 	if data != null and data.icone != null:
 		var tex := TextureRect.new()
@@ -202,8 +188,6 @@ func _make_icon(data: ItemData, size: Vector2, fallback_name: String) -> Control
 	return box
 
 
-# ------------------------------------------------------------------- refresh
-
 func refresh() -> void:
 	var previous_index := -1
 	if _cursor >= 0 and _cursor < _stacks.size():
@@ -214,7 +198,6 @@ func refresh() -> void:
 	else:
 		_stacks = mochila.get_stacked_view(inventory_database)
 
-	# keep cursor on same item if still there
 	_cursor = clampi(_cursor, 0, maxi(_stacks.size() - 1, 0))
 	for i in _stacks.size():
 		if _stacks[i].index == previous_index:
@@ -271,8 +254,6 @@ func _make_row(i: int, stack: Dictionary) -> PanelContainer:
 	return row
 
 
-# -------------------------------------------------------------------- cursor
-
 func _refresh_cursor() -> void:
 	for i in _rows.size():
 		var on := (i == _cursor)
@@ -284,7 +265,6 @@ func _refresh_cursor() -> void:
 	_show_detail()
 
 
-## Deferred: rows may be rebuilt/freed before this runs. Re-check at call time.
 func _scroll_to_cursor() -> void:
 	if _cursor < 0 or _cursor >= _rows.size():
 		return

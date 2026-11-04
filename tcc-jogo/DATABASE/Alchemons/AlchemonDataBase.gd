@@ -1,9 +1,6 @@
 class_name AlchemonDatabase
 extends Resource
 
-## Lista de todos os AlchemonSheet que existem no jogo (fichas-base, "especie").
-## Quem consome (ex: CombatController) busca por id e instancia uma copia
-## pra usar em combate - o registro aqui nunca e alterado por uma batalha.
 
 @export var alchemons: Array[AlchemonSheet] = []
 

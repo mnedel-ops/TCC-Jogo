@@ -1,8 +1,8 @@
 class_name MovementComponent
 extends Node
 
-@export var body: CharacterBody3D      # arrasta o proprio Player aqui no Inspector
-@export var mesh: MeshInstance3D       # arrasta Mesh aqui
+@export var body: CharacterBody3D
+@export var mesh: MeshInstance3D
 @export var speed: float = 5.0
 
 func process_movement(delta: float) -> void:

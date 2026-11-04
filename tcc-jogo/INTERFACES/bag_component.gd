@@ -13,8 +13,6 @@ func open_bag() -> void:
 	inventoryui.visible=true
 	refresh()
 	
-func _on_menu_pause_menu_closed() -> void:
-	inventoryui.visible = false
 
 func refresh() -> void:
 	if not is_instance_valid(item_list):
