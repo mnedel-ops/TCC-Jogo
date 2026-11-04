@@ -580,3 +580,86 @@ ser realizada com o Godot 4 e o GdUnit4 disponíveis, incluindo os cenários
 manuais marcados **Aprovado com Ressalva**. O resultado dessa execução pode
 ser anexado ao relatório com data, versão do build e evidências de cada
 cenário.
+
+## 9. Testes de performance e validação do build
+
+### 9.1 Ambiente e método de medição
+
+O preset de exportação configurado no projeto é **Windows Desktop**, com
+arquitetura `x86_64`, renderer `gl_compatibility` e PCK externo. As medições
+devem ser feitas no mesmo computador-alvo ou em uma máquina com configuração
+registrada, usando uma build release, resolução fixa e a mesma qualidade
+gráfica.
+
+Para cada cenário, executar o jogo por pelo menos 60 segundos após a
+estabilização inicial, registrar uma amostra por segundo e calcular:
+
+- **FPS médio:** média das amostras de FPS;
+- **FPS mínimo:** menor valor observado ou percentil 1%, se a ferramenta
+  disponibilizar percentis;
+- **tempo de carregamento:** diferença entre o comando de mudança e o
+  primeiro frame interativo da nova cena;
+- **RAM:** memória residente do processo, medida no início, após exploração
+  e durante combate;
+- **VRAM:** memória dedicada utilizada pela GPU, medida pelo monitor do
+  sistema operacional ou pelo profiler da GPU.
+
+Critérios sugeridos para aprovação do protótipo: FPS médio de pelo menos 60
+em exploração e combate, nenhum período sustentado abaixo de 30 FPS, troca
+de cena em até 3 segundos, crescimento de RAM estabilizado após o
+carregamento inicial e ausência de crescimento contínuo de RAM/VRAM durante
+um ciclo repetido de exploração-combate-retorno.
+
+### 9.2 Matriz de testes de performance
+
+| Código | Teste | Procedimento | Métrica / critério de aprovação | Resultado obtido |
+|---|---|---|---|---|
+| PERF01 | FPS na exploração | Iniciar `main.tscn`, percorrer as duas fases por 60 s e registrar FPS uma vez por segundo. | Média >= 60 FPS; mínimo sustentado >= 30 FPS; sem travamentos visíveis. | **Não executado**: Godot/runtime gráfico não disponível neste ambiente. |
+| PERF02 | FPS durante combate | Iniciar encontro selvagem, manter HUD, atores e efeitos ativos por 60 s e registrar FPS. | Média >= 60 FPS; nenhuma queda sustentada abaixo de 30 FPS durante seleção e resolução de ações. | **Não executado**: Godot/runtime gráfico não disponível neste ambiente. |
+| PERF03 | Tempo de carregamento de cena | Medir menu -> exploração, `scene_1` -> `scene_2` e retorno após combate, repetindo cada transição cinco vezes. | Média <= 3 s e nenhuma transição acima de 5 s. | **Não executado**: não foi possível iniciar o jogo neste ambiente. |
+| PERF04 | Estabilidade da RAM | Registrar RAM no menu, após exploração, durante combate e após cinco ciclos de combate. | Aumento inicial permitido; depois, memória deve estabilizar, sem crescimento monotônico a cada ciclo. | **Não executado**: processo do jogo não pôde ser executado. |
+| PERF05 | Estabilidade da VRAM | Repetir PERF04 com monitor de GPU aberto. | Sem crescimento contínuo de VRAM e sem falha de alocação após cinco ciclos. | **Não executado**: GPU/runtime do Windows não disponível neste ambiente. |
+| BUILD01 | Integridade dos artefatos Windows | Conferir preset, executável, PCK e arquitetura com `file`; comparar se os arquivos estão presentes. | Preset Windows Desktop x86_64 configurado e `.exe`/`.pck` presentes. | **Aprovado**: preset configurado e artefatos identificados como PE32+ x86-64. |
+| BUILD02 | Execução nativa do build | Executar `tcc-jogo.exe` no Windows, iniciar nova partida, carregar uma fase, iniciar combate e fechar sem erro. | Jogo inicia e conclui o fluxo principal sem crash, erro fatal ou recurso ausente. | **Aprovado com Ressalva**: o executável existe, mas sua execução nativa não foi confirmada neste Linux. |
+| BUILD03 | Execução do build de combate | Executar `tcc-combat01.exe` no Windows e repetir o fluxo de combate. | Cena de combate abre, aceita comandos, mostra resultado e retorna à exploração sem erro. | **Aprovado com Ressalva**: artefato existe, mas não houve runtime Windows disponível para execução. |
+
+### 9.3 Resultados quantitativos verificáveis no repositório
+
+Foi possível verificar os seguintes artefatos versionados:
+
+| Artefato | Formato identificado | Tamanho |
+|---|---|---:|
+| `tcc-jogo.exe` | PE32+ Windows x86-64 | 100.598.272 bytes |
+| `tcc-jogo.pck` | PCK Godot | 1.341.420 bytes |
+| `tcc-combat01.exe` | PE32+ Windows x86-64 | 100.598.272 bytes |
+| `tcc-combat01.pck` | PCK Godot | 1.058.800 bytes |
+
+Esses dados comprovam a existência de dois conjuntos de artefatos Windows e
+seus respectivos pacotes de recursos. Eles **não** comprovam, isoladamente,
+FPS, tempo de carregamento, uso de RAM/VRAM ou execução sem erros. Para que a
+validação final seja declarada como totalmente aprovada, é necessário
+executar `PERF01` a `PERF05` e `BUILD02`/`BUILD03` em Windows, anexando os
+logs ou capturas do profiler, a configuração da máquina, a versão do build
+e a data da medição.
+
+### 9.4 Modelo de registro para a execução no Windows
+
+```text
+Build:
+Commit:
+Data:
+Sistema operacional:
+CPU:
+GPU:
+RAM:
+Resolução:
+Renderer:
+
+PERF01 - exploração: FPS médio / mínimo / RAM inicial-final
+PERF02 - combate: FPS médio / mínimo / RAM inicial-final
+PERF03 - cenas: menu->jogo / cena1->cena2 / retorno do combate
+PERF04 - RAM: início / exploração / combate / após 5 ciclos
+PERF05 - VRAM: início / exploração / combate / após 5 ciclos
+BUILD02 - tcc-jogo.exe: passou / falhou + log
+BUILD03 - tcc-combat01.exe: passou / falhou + log
+```
