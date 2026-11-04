@@ -71,6 +71,9 @@ static func _kill(state: CombatState, target: CombatantState) -> void:
 
 static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
 	var all_ids: Array[int] = state.player_ids + state.enemy_ids
+	var exceeded: Dictionary = {}
+	var broken_compounds: Array[CombatantState] = []
+
 	for id in state.get_alive_ids(all_ids):
 		var c := state.get_combatant(id)
 		var template := database.get_by_id(c.species_id)
@@ -79,12 +82,20 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 		var new_state := template.state_at(state.arena_temperature)
 		if new_state == c.physical_state:
 			continue
+		var points := template.transformation_points_exceeded(c.physical_state, new_state)
 		c.physical_state = new_state
 		c.arena_hotter_than_myself.emit(c.slot)
-		var is_invulnerable_cation := c.bond_kind == BondRules.COMPOUND and c.is_bond_cation
-		if is_invulnerable_cation:
+		if points <= 0:
 			continue
-		_apply_damage(state, c.id, STATE_CHANGE_DAMAGE)
+		exceeded[id] = points
+		if c.bond_kind == BondRules.COMPOUND:
+			broken_compounds.append(c)
+
+	for c in broken_compounds:
+		BondRules.break_compound(state, c)
+
+	for id in exceeded:
+		_apply_damage(state, id, STATE_CHANGE_DAMAGE * int(exceeded[id]))
 
 
 static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: int, defeated_id: int) -> void:

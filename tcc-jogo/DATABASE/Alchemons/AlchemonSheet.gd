@@ -51,3 +51,16 @@ func state_at(arena_temperature: float) -> String:
 	if arena_temperature <= boiling_point:
 		return LIQUIDO
 	return GASOSO
+
+
+static func state_rank(physical_state: String) -> int:
+	match physical_state:
+		LIQUIDO:
+			return 1
+		GASOSO:
+			return 2
+	return 0
+
+
+func transformation_points_exceeded(from_state: String, to_state: String) -> int:
+	return maxi(state_rank(to_state) - state_rank(from_state), 0)

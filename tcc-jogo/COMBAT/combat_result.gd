@@ -23,7 +23,7 @@ var damage: int
 var amount: int
 var critical: bool
 var reason: String
-var temperature_delta: int
+var temperature_delta: float
 var effectiveness: float
 var energy_cost: int
 
@@ -37,7 +37,7 @@ func _init(
 	p_amount: int = 0,
 	p_critical: bool = false,
 	p_reason: String = "",
-	p_temperature_delta: int = 0,
+	p_temperature_delta: float = 0.0,
 	p_effectiveness: float = 1.0,
 	p_energy_cost: int = 0
 ) -> void:
@@ -54,7 +54,7 @@ func _init(
 	energy_cost = p_energy_cost
 
 
-static func attack_hit(p_actor_id: int, p_target_id: int, p_attack_name: String, p_damage: int, p_critical: bool, p_temperature_delta: int = 0, p_effectiveness: float = 1.0, p_energy_cost: int = 0) -> CombatResult:
+static func attack_hit(p_actor_id: int, p_target_id: int, p_attack_name: String, p_damage: int, p_critical: bool, p_temperature_delta: float = 0.0, p_effectiveness: float = 1.0, p_energy_cost: int = 0) -> CombatResult:
 	return CombatResult.new(Outcome.ATTACK_HIT, p_actor_id, p_target_id, p_attack_name, p_damage, 0, p_critical, "", p_temperature_delta, p_effectiveness, p_energy_cost)
 
 

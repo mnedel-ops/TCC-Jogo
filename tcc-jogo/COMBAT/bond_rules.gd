@@ -113,3 +113,44 @@ static func release_compound_partners(state: CombatState, fallen: CombatantState
 		c.hp = clampi(int(floor(c.max_hp * COMPOUND_RELEASE_HP_RATIO)), 1, c.max_hp)
 		c.max_valence_electrons = maxi(c.max_valence_electrons, energy)
 		c.valence_electrons = energy
+
+
+static func break_compound(state: CombatState, member: CombatantState) -> bool:
+	if member == null or member.bond_kind != COMPOUND:
+		return false
+	var active_id := member.bond_partner_id
+	var active: CombatantState = state.get_combatant(active_id)
+	var group: Array[CombatantState] = []
+	for id in state.combatants:
+		var c: CombatantState = state.combatants[id]
+		if c.bond_kind == COMPOUND and c.bond_partner_id == active_id:
+			group.append(c)
+	if group.is_empty():
+		return false
+
+	if active != null and active.bond_kind == COMPOUND and active.bond_partner_id == active_id:
+		for c in group:
+			if c == active:
+				continue
+			active.max_hp = maxi(active.max_hp - int(floor(c.max_hp * COMPOUND_TRANSFER_RATIO)), 1)
+			active.max_valence_electrons = maxi(active.max_valence_electrons - int(floor(c.max_valence_electrons * COMPOUND_TRANSFER_RATIO)), 0)
+		if active.alive:
+			active.hp = clampi(active.hp, 1, active.max_hp)
+		active.valence_electrons = clampi(active.valence_electrons, 0, active.max_valence_electrons)
+
+	var energy := COMPOUND_RELEASE_FALLBACK_ENERGY
+	if active != null and active.valence_electrons > 0:
+		energy = active.valence_electrons
+
+	for c in group:
+		var was_inactive := c.is_bond_inactive
+		c.bond_kind = NONE
+		c.bond_partner_id = -1
+		c.is_bond_cation = false
+		c.is_bond_inactive = false
+		if c == active or not was_inactive or not c.alive:
+			continue
+		c.hp = clampi(int(floor(c.max_hp * COMPOUND_RELEASE_HP_RATIO)), 1, c.max_hp)
+		c.max_valence_electrons = maxi(c.max_valence_electrons, energy)
+		c.valence_electrons = energy
+	return true

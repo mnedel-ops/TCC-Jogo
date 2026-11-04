@@ -36,7 +36,7 @@ var damage: int
 var amount: int
 var critical: bool
 var reason: String
-var temperature_delta: int
+var temperature_delta: float
 var effectiveness: float
 
 
@@ -49,7 +49,7 @@ func _init(
 	p_amount: int = 0,
 	p_critical: bool = false,
 	p_reason: String = "",
-	p_temperature_delta: int = 0,
+	p_temperature_delta: float = 0.0,
 	p_effectiveness: float = 1.0
 ) -> void:
 	kind = p_kind
