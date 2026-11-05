@@ -21,11 +21,11 @@ Creature capture baseado na Tabela Periódica. Este documento mantém o design o
 | Temperatura e estado físico | \[Parcial\] | Aquecimento e mudança de estado existem; regras de dano nulo e Laço por temperatura não |
 | Misturas e Compostos | \[Parcial\] | Funcionam com 2 elementos; sem Compostos de 3+ e sem ruptura por temperatura |
 | Captura | \[Parcial\] | Fórmula \[OK\]; métodos de separação são placeholders por tipo |
-| XP e níveis | \[Parcial\] | XP fixo por espécie e 100 XP/nível (fórmula do GDD não usada) |
+| XP e níveis | \[OK\] | XP segue a fórmula $N^3$|
 | Obediência por insígnias | \[Pendente\] | Insígnia existe e é concedida; obediência não |
 | Economia (moeda, loja) | \[Parcial\] | Moeda \[OK\]; loja abre mas Comprar/Vender são "Em breve" |
 | PC / Armazenamento | \[Parcial\] | Troca de time e Compostos \[OK\]; sem caixas e sem troca de ataques |
-| Cura / Hospital | \[Parcial\] | NPC curandeiro \[OK\]; sem hospital como cena e sem teleporte na derrota |
+| Cura / Hospital | \[Parcial\] | NPC curandeiro e teleporte na derrota  \[OK\]; sem hospital como cena|
 | Salvamento | \[OK\] | JSON atômico + backup, posição, inventário, NPCs derrotados |
 | Menus e interface | \[Parcial\] | Menu unificado \[OK\]; entradas diferem do GDD |
 | Testes automatizados | \[Extra\] | 74 testes GdUnit4 |
