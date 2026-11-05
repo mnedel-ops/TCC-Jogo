@@ -506,7 +506,7 @@ arquivos e `GameSession`; **interface** verifica textos e entradas da tela;
 captura, 11 de recompensas/interface e 37 de persistência, integração e
 continuidade da sessão.
 
-## 7. Matriz de QA por requisito
+## 7. Testes funcionais manuais
 
 Os códigos abaixo organizam os requisitos funcionais para verificar
 pontualmente se cada recurso planejado está implementado. A matriz combina
