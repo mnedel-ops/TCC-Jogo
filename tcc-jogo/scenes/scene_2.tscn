@@ -6,6 +6,9 @@
 [ext_resource type="Resource" uid="uid://cinfsi6tw4ff1" path="res://DATABASE/Inventory/Itens/AmetalMethod.tres" id="4_yun4j"]
 [ext_resource type="Resource" uid="uid://cvokrnrlvijd3" path="res://DATABASE/Inventory/Itens/MetalMethod.tres" id="5_qo03w"]
 [ext_resource type="PackedScene" path="res://scenes/pc/pc.tscn" id="6_yun4j"]
+[ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="7_is556"]
+[ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="7_qo03w"]
+[ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="9_ul8a6"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_icno0"]
 size = Vector3(20, 0.5, 20)
@@ -78,3 +81,19 @@ item_data = ExtResource("5_qo03w")
 
 [node name="PC" parent="." unique_id=1056453128 instance=ExtResource("6_yun4j")]
 transform = Transform3D(-0.0027575896, 0, 0.9999962, 0, 1, 0, -0.9999962, 0, -0.0027575896, -6.605629, 0, -0.5006399)
+
+[node name="NPCHolder" type="Node" parent="." unique_id=2087062384]
+script = ExtResource("7_is556")
+npc_scene = ExtResource("9_ul8a6")
+
+[node name="SpawnPoint" type="Marker3D" parent="NPCHolder" unique_id=2081023289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8.286577)
+script = ExtResource("7_qo03w")
+npc_scene = ExtResource("9_ul8a6")
+is_healer = true
+
+[node name="SpawnPoint2" type="Marker3D" parent="NPCHolder" unique_id=1660823619]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.8469057, 0, 4.8293104)
+script = ExtResource("7_qo03w")
+npc_scene = ExtResource("9_ul8a6")
+is_shopkeeper = true

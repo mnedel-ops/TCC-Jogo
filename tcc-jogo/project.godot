@@ -20,6 +20,11 @@ config/icon="res://icon.svg"
 CombatSignal="*uid://8d1n0r4yix1l"
 GameSession="*res://autoload/game_session.gd"
 
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")

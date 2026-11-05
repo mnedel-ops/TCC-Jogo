@@ -57,27 +57,13 @@ npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([3, 3])
 dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
 
-[node name="SpawnPoint4" type="Marker3D" parent="NPCHolder"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 6)
-script = ExtResource("3_lki8s")
-npc_scene = ExtResource("3_cn2eb")
-is_shopkeeper = true
-dialogue = "Bem-vindo à minha loja! O que vai ser hoje?"
-
-[node name="SpawnPoint5" type="Marker3D" parent="NPCHolder"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 6)
-script = ExtResource("3_lki8s")
-npc_scene = ExtResource("3_cn2eb")
-is_healer = true
-dialogue = "Bem-vindo ao Centro Alchemon! Quer curar seus Alchemons?"
-dialogue_healed = "Pronto! Seus Alchemons estão completamente curados. Volte sempre!"
-
-[node name="SpawnPoint6" type="Marker3D" parent="NPCHolder"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -6)
+[node name="Gyms" type="Marker3D" parent="NPCHolder" unique_id=1170388741]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.21730757, 1.9073486e-06, 21.711506)
 script = ExtResource("3_lki8s")
 npc_scene = ExtResource("3_cn2eb")
 alchemons_ids = Array[int]([1, 2])
 level = 8
+is_fighter = true
 is_gym_trainer = true
 badge = ExtResource("9_badge")
 dialogue = "Eu sou o líder do ginásio de Metal! Só leva minha Insígnia quem me vencer!"
@@ -129,7 +115,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.487591)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.6044545, 1.9073486e-06, -3.6319332)
 
 [node name="WildernessEncounter" parent="." unique_id=1096219808 instance=ExtResource("6_t6bmd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.059639, 0, -11.552645)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.059639, 2.7815251, -11.552645)
 min_level = 3
-polygon = PackedVector2Array(-15, -15, 15, -15, 15, 15, -15, 15)
+polygon = PackedVector2Array(-10, -10, 15, -15, 15, 15, -15, 15)
 alchemons = Array[int]([2, 3])
