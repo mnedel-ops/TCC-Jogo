@@ -325,7 +325,7 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 	var rows: Array = [
 		["Tipo", AlchemonType.type_name(s.element_type)],
 		["Nivel", str(lvl)],
-		["XP", "%d / %d" % [inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP]],
+		["XP", "%d / %d" % [inst.experience, AlchemonGrowth.xp_to_next(inst.level)]],
 		["HP", "%d / %d" % [hp, max_hp]],
 		["Ataque", str(attack)],
 		["Defesa", str(defense)],

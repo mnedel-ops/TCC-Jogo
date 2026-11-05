@@ -7,3 +7,4 @@ extends Resource
 @export var power: int = 0
 @export var energy_cost: int = 2
 @export var element_type: AlchemonType.Type = AlchemonType.Type.METAL
+@export_range(1, 100) var unlock_level: int = 1

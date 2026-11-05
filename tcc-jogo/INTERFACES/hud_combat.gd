@@ -8,6 +8,8 @@ var _balloons: Dictionary = {}
 
 func update_all(entries: Array[Dictionary]) -> void:
 	for e in entries:
+		if e.slot < 0:
+			continue
 		var b: CombatBalloon = _balloons.get(e.id)
 		if b == null:
 			var anchor: Node3D = anchors.get(e.slot)

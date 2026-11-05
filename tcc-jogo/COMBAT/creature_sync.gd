@@ -10,6 +10,7 @@ const PERSIST_ENERGY := true
 static func write_back(inst: AlchemonInstance, c: CombatantState, template: AlchemonSheet) -> void:
 	inst.level = c.level
 	inst.experience = c.experience
+	inst.attack_ids.assign(c.attack_ids)
 	inst.current_hp = clampi(c.hp, 0, inst.max_hp_for(template))
 	if PERSIST_ENERGY:
 		inst.current_energy = clampi(c.valence_electrons, 0, template.max_valence_electrons)

@@ -27,5 +27,5 @@ func refresh() -> void:
 		var hp := inst.hp_or_full(max_hp)
 		var atk: int = stats.attack
 		var label := Label.new()
-		label.text = "%s  Lv%d  HP %d/%d  XP %d/%d  ATK %d" % [sheet.creature_name, inst.level, hp, max_hp, inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP, atk]
+		label.text = "%s  Lv%d  HP %d/%d  XP %d/%d  ATK %d" % [sheet.creature_name, inst.level, hp, max_hp, inst.experience, AlchemonGrowth.xp_to_next(inst.level), atk]
 		list.add_child(label)

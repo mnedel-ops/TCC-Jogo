@@ -7,4 +7,5 @@ script = ExtResource("1_4xuym")
 indexAttack = 3
 attack_name = "TailStrike"
 power = 10
+unlock_level = 5
 metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

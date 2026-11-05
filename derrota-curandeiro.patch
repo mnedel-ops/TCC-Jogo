@@ -1,0 +1,471 @@
+diff --git a/docs/ARQUITETURA_E_TESTES.md b/docs/ARQUITETURA_E_TESTES.md
+index e091914..4ee4a03 100644
+--- a/docs/ARQUITETURA_E_TESTES.md
++++ b/docs/ARQUITETURA_E_TESTES.md
+@@ -191,6 +191,16 @@ dano definido para a mudança. Vínculos alquímicos são aplicados ao estado
+ transitório da batalha e seus bônus não são gravados como atributos
+ permanentes.
+ 
++Ao perder uma batalha, `CombatSceneManager` (ao terminar a volta dos
++personagens) busca em `GameSession.visited_healers` o curandeiro visitado mais
++próximo na fase atual (`HealerRegistry.nearest`); sem nenhum na fase, usa o
++último visitado em outra. `SceneManager.teleport_to_healer()` troca de fase se
++preciso e coloca o jogador de frente para o NPC, no ponto onde ele conversou da
++última vez. Então `NPC.receive_defeated_player()` abre a interação sozinha com
++a fala `dialogue_lost` (padrão: "Poxa, complicado perder..."), cura o grupo e
++mostra `dialogue_healed`. Um curandeiro só entra no registro depois que o
++jogador interage com ele; o registro é salvo no campo `healers` do save.
++
+ `AlchemyStation` valida os vínculos pelas regras da Química: nenhum átomo passa
+ de 8 elétrons de valência (`octet_target ≤ 8`). Em compostos iônicos (metais +
+ ametais/metaloides), os metais doam todos os elétrons de valência e a soma
+diff --git a/tcc-jogo/DATABASE/Player/healer_registry.gd b/tcc-jogo/DATABASE/Player/healer_registry.gd
+new file mode 100644
+index 0000000..770d01d
+--- /dev/null
++++ b/tcc-jogo/DATABASE/Player/healer_registry.gd
+@@ -0,0 +1,72 @@
++class_name HealerRegistry
++extends RefCounted
++
++# id do NPC -> {level, x, y, z (onde o jogador fica de frente), nx, ny, nz (NPC), seq (ordem da visita)}
++
++
++static func register(reg: Dictionary, id: String, level: String, stand: Vector3, npc_pos: Vector3) -> void:
++	if id == "" or level == "":
++		return
++	reg[id] = {
++		"level": level,
++		"x": stand.x, "y": stand.y, "z": stand.z,
++		"nx": npc_pos.x, "ny": npc_pos.y, "nz": npc_pos.z,
++		"seq": _max_seq(reg) + 1,
++	}
++
++
++# Curandeiro visitado mais próximo na fase atual. Sem nenhum na fase, o último visitado em outra.
++static func nearest(reg: Dictionary, level: String, from: Vector3) -> Dictionary:
++	var best_id := ""
++	var best_dist := INF
++	for id in reg:
++		var e: Dictionary = reg[id]
++		if e["level"] != level:
++			continue
++		var d := Vector2(from.x - e["x"], from.z - e["z"]).length()
++		if d < best_dist:
++			best_dist = d
++			best_id = id
++	if best_id == "":
++		var best_seq := -1
++		for id in reg:
++			if int(reg[id]["seq"]) > best_seq:
++				best_seq = int(reg[id]["seq"])
++				best_id = id
++	if best_id == "":
++		return {}
++	var out: Dictionary = reg[best_id].duplicate()
++	out["id"] = best_id
++	return out
++
++
++static func to_array(reg: Dictionary) -> Array:
++	var out: Array = []
++	for id in reg:
++		var e: Dictionary = reg[id].duplicate()
++		e["id"] = id
++		out.append(e)
++	return out
++
++
++static func from_array(raw) -> Dictionary:
++	var out := {}
++	if not (raw is Array):
++		return out
++	for e in raw:
++		if not (e is Dictionary) or not (e.get("id") is String) or not (e.get("level") is String):
++			continue
++		if e["id"] == "" or e["level"] == "":
++			continue
++		var entry := {"level": e["level"], "seq": int(e.get("seq", 0))}
++		for k in ["x", "y", "z", "nx", "ny", "nz"]:
++			entry[k] = float(e.get(k, 0.0))
++		out[e["id"]] = entry
++	return out
++
++
++static func _max_seq(reg: Dictionary) -> int:
++	var m := 0
++	for id in reg:
++		m = maxi(m, int(reg[id]["seq"]))
++	return m
+diff --git a/tcc-jogo/DATABASE/SaveGame.gd b/tcc-jogo/DATABASE/SaveGame.gd
+index 565d7ed..8c62d58 100644
+--- a/tcc-jogo/DATABASE/SaveGame.gd
++++ b/tcc-jogo/DATABASE/SaveGame.gd
+@@ -5,7 +5,7 @@ extends RefCounted
+ const FORMAT_VERSION := 1
+ 
+ 
+-static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Dictionary:
++static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}, healers: Dictionary = {}) -> Dictionary:
+ 	var party_list: Array = []
+ 	for inst in party.party:
+ 		if inst != null:
+@@ -34,6 +34,7 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
+ 		"defeated_npcs": defeated.keys(),
+ 		"inventory": inventory.items.duplicate() if inventory != null else [],
+ 		"position": position.duplicate(),
++		"healers": HealerRegistry.to_array(healers),
+ 		"player": {
+ 			"name": player.player_name,
+ 			"team_name": player.team_name,
+@@ -44,7 +45,7 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
+ 	}
+ 
+ 
+-static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Error:
++static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}, healers: Dictionary = {}) -> Error:
+ 	data = _migrate(data)
+ 	var version := int(data.get("format_version", 0))
+ 	if version < 1 or version > FORMAT_VERSION:
+@@ -68,6 +69,7 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
+ 				new_items.append(int(n))
+ 
+ 	var new_position := _read_position(data.get("position"))
++	var new_healers := HealerRegistry.from_array(data.get("healers"))
+ 
+ 	var seen := {}
+ 	var new_party := _load_list(data["party"], seen)
+@@ -77,6 +79,8 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
+ 	defeated.merge(new_defeated)
+ 	position.clear()
+ 	position.merge(new_position)
++	healers.clear()
++	healers.merge(new_healers)
+ 	if inventory != null and has_items:
+ 		inventory.items.clear()
+ 		inventory.items.append_array(new_items)
+diff --git a/tcc-jogo/EXPLORATION/npc.gd b/tcc-jogo/EXPLORATION/npc.gd
+index 7847002..b28330f 100644
+--- a/tcc-jogo/EXPLORATION/npc.gd
++++ b/tcc-jogo/EXPLORATION/npc.gd
+@@ -19,8 +19,11 @@ var _shop: ShopDialogueBox
+ 
+ var is_healer: bool = false
+ var dialogue_healed: String = ""
++var dialogue_lost: String = ""
+ const HEAL_PROMPT_FALLBACK := "Quer curar seus Alchemons?"
+ const HEAL_DONE_FALLBACK := "Pronto! Seus Alchemons estão curados."
++const HEAL_LOST_FALLBACK := "Poxa, complicado perder... Deixa que eu cuido dos seus Alchemons."
++const HEAL_STAND_DISTANCE := 1.2
+ const HEAL_WORKING_TEXT := "Curando..."
+ const HEAL_WAIT_SECONDS := 2.5
+ var _healing_busy := false
+@@ -109,16 +112,27 @@ func _show_badge_message() -> void:
+ 		_dialogue_box.close()
+ 
+ 
+-func open_healer() -> void:
+-	if _healing_busy or Engine.get_process_frames() == _ui_closed_frame:
++func open_healer(after_defeat := false) -> void:
++	if _healing_busy:
+ 		return
+-	if _dialogue_box.is_open():
++	if after_defeat:
+ 		_dialogue_box.close()
+-		return
++	else:
++		if Engine.get_process_frames() == _ui_closed_frame:
++			return
++		if _dialogue_box.is_open():
++			_dialogue_box.close()
++			return
++	_register_visit()
+ 	_healing_busy = true
+ 	_lock_player(true)
+-	_dialogue_box.ask(dialogue if dialogue != "" else HEAL_PROMPT_FALLBACK, ["Sim", "Não"])
+-	var pick: int = await _dialogue_box.choice_made
++	var pick := 0
++	if after_defeat:
++		_dialogue_box.show_text(dialogue_lost if dialogue_lost != "" else HEAL_LOST_FALLBACK)
++		await _wait_confirm()
++	else:
++		_dialogue_box.ask(dialogue if dialogue != "" else HEAL_PROMPT_FALLBACK, ["Sim", "Não"])
++		pick = await _dialogue_box.choice_made
+ 	if pick == 0:
+ 		_dialogue_box.show_text(HEAL_WORKING_TEXT)
+ 		await get_tree().create_timer(HEAL_WAIT_SECONDS).timeout
+@@ -132,6 +146,39 @@ func open_healer() -> void:
+ 	_lock_player(false)
+ 
+ 
++func receive_defeated_player() -> void:
++	if is_healer:
++		open_healer(true)
++
++
++func _wait_confirm() -> void:
++	await get_tree().create_timer(0.4).timeout
++	while not CombatSignal.in_combat:
++		await get_tree().process_frame
++		if Input.is_action_just_pressed("ui_interact"):
++			if _dialogue_box.is_typing():
++				_dialogue_box.skip_typing()
++			else:
++				return
++
++
++func _register_visit() -> void:
++	var sm := get_tree().get_first_node_in_group("scene_manager")
++	if npc_id == "" or sm == null or not sm.has_method("current_level_path"):
++		return
++	var player_pos := global_position + global_basis.z * HEAL_STAND_DISTANCE
++	for n in get_tree().get_nodes_in_group("player"):
++		if n is Player:
++			player_pos = n.global_position
++			break
++	var dir := player_pos - global_position
++	dir.y = 0.0
++	dir = dir.normalized() if dir.length() > 0.1 else global_basis.z
++	var stand := global_position + dir * HEAL_STAND_DISTANCE
++	stand.y = player_pos.y
++	GameSession.register_healer(npc_id, sm.current_level_path(), stand, global_position)
++
++
+ func open_shop() -> void:
+ 	if _shop != null or Engine.get_process_frames() == _ui_closed_frame:
+ 		return
+diff --git a/tcc-jogo/Level.gd b/tcc-jogo/Level.gd
+index 3ce99f1..2c996f7 100644
+--- a/tcc-jogo/Level.gd
++++ b/tcc-jogo/Level.gd
+@@ -29,6 +29,7 @@ func  place_npcs():
+ 		npc_scene_guy.dialogue = marker.dialogue
+ 		npc_scene_guy.dialogue_defeated = marker.dialogue_defeated
+ 		npc_scene_guy.dialogue_healed = marker.dialogue_healed
++		npc_scene_guy.dialogue_lost = marker.dialogue_lost
+ 		npc_scene_guy.is_shopkeeper = marker.is_shopkeeper
+ 		npc_scene_guy.is_healer = marker.is_healer
+ 		var has_role := marker.is_shopkeeper or marker.is_healer
+diff --git a/tcc-jogo/autoload/game_session.gd b/tcc-jogo/autoload/game_session.gd
+index 7779487..e58a33d 100644
+--- a/tcc-jogo/autoload/game_session.gd
++++ b/tcc-jogo/autoload/game_session.gd
+@@ -19,6 +19,7 @@ var database: AlchemonDatabase = load("res://DATABASE/Alchemons/AlchemonDataBase
+ var defeated_npcs := {}
+ 
+ var world_position := {}
++var visited_healers := {}
+ 
+ var _loading := false
+ var _resume := false
+@@ -44,7 +45,7 @@ func save_game() -> Error:
+ 	var live := _capture_position()
+ 	if not live.is_empty():
+ 		world_position = live
+-	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player, defeated_npcs, inventory, world_position))
++	var err := SaveGame.write_file(save_path, SaveGame.serialize(party, storage, bond, player, defeated_npcs, inventory, world_position, visited_healers))
+ 	if err != OK:
+ 		push_error("GameSession: save failed (%s)." % error_string(err))
+ 	else:
+@@ -57,7 +58,7 @@ func load_game(notify_scene := true) -> Error:
+ 	if data.is_empty():
+ 		return ERR_FILE_NOT_FOUND
+ 	_loading = true
+-	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory, world_position)
++	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory, world_position, visited_healers)
+ 	_loading = false
+ 	if err != OK:
+ 		push_error("GameSession: load failed (%s). Starting from default data." % error_string(err))
+@@ -74,8 +75,9 @@ func new_game() -> Error:
+ 	data["player"]["play_time"] = 0.0
+ 	data["defeated_npcs"] = []
+ 	data["position"] = {}
++	data["healers"] = []
+ 	_loading = true
+-	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory, world_position)
++	var err := SaveGame.apply(data, party, storage, bond, player, defeated_npcs, inventory, world_position, visited_healers)
+ 	_loading = false
+ 	if err != OK:
+ 		push_error("GameSession: new game failed (%s)." % error_string(err))
+@@ -115,6 +117,15 @@ func heal_party() -> void:
+ 	_autosave()
+ 
+ 
++func register_healer(id: String, level: String, stand: Vector3, npc_pos: Vector3) -> void:
++	HealerRegistry.register(visited_healers, id, level, stand, npc_pos)
++	_autosave()
++
++
++func nearest_healer(level: String, from: Vector3) -> Dictionary:
++	return HealerRegistry.nearest(visited_healers, level, from)
++
++
+ func is_npc_defeated(id: String) -> bool:
+ 	return defeated_npcs.has(id)
+ 
+diff --git a/tcc-jogo/combat_scene_manager.gd b/tcc-jogo/combat_scene_manager.gd
+index 8430456..b67ea20 100644
+--- a/tcc-jogo/combat_scene_manager.gd
++++ b/tcc-jogo/combat_scene_manager.gd
+@@ -27,6 +27,7 @@ var _player_home: Vector3
+ var _enemy_home: Vector3
+ var _tween: Tween
+ var _moved: bool = false
++var _lost_battle: bool = false
+ 
+ 
+ func _ready() -> void:
+@@ -70,6 +71,7 @@ func _on_combat_start(index: int, id2: int) -> void:
+ 
+ 
+ func _on_battle_finished(player_won: bool, was_trainer: bool) -> void:
++	_lost_battle = not player_won
+ 	if player_won and was_trainer and _enemy is NPC:
+ 		(_enemy as NPC).mark_defeated()
+ 
+@@ -156,6 +158,21 @@ func _finish_battle() -> void:
+ 	CombatSignal.in_combat = false
+ 	_moved = false
+ 	_enemy = null
++	if _lost_battle:
++		_lost_battle = false
++		_return_to_healer()
++
++
++func _return_to_healer() -> void:
++	var sm := get_tree().get_first_node_in_group("scene_manager") as SceneManager
++	if sm == null:
++		return
++	var dest := GameSession.nearest_healer(sm.current_level_path(), player_node.global_position)
++	if dest.is_empty():
++		return
++	var healer := sm.teleport_to_healer(dest)
++	if healer != null:
++		healer.receive_defeated_player()
+ 
+ 
+ func _yaw_toward(from: Vector3, to: Vector3) -> float:
+diff --git a/tcc-jogo/scenes/NPCspawn_point.gd b/tcc-jogo/scenes/NPCspawn_point.gd
+index 17a7041..5c5b28d 100644
+--- a/tcc-jogo/scenes/NPCspawn_point.gd
++++ b/tcc-jogo/scenes/NPCspawn_point.gd
+@@ -13,3 +13,4 @@ class_name NPCSpawnPoint
+ @export_multiline var dialogue: String = ""
+ @export_multiline var dialogue_defeated: String = ""
+ @export_multiline var dialogue_healed: String = ""
++@export_multiline var dialogue_lost: String = ""
+diff --git a/tcc-jogo/scenes/scene_1.tscn b/tcc-jogo/scenes/scene_1.tscn
+index 2a426e2..40bb405 100644
+--- a/tcc-jogo/scenes/scene_1.tscn
++++ b/tcc-jogo/scenes/scene_1.tscn
+@@ -71,6 +71,7 @@ npc_scene = ExtResource("3_cn2eb")
+ is_healer = true
+ dialogue = "Bem-vindo ao Centro Alchemon! Quer curar seus Alchemons?"
+ dialogue_healed = "Pronto! Seus Alchemons estão completamente curados. Volte sempre!"
++dialogue_lost = "Poxa, complicado perder... Mas todo Alchemon se recupera. Deixa comigo!"
+ 
+ [node name="SpawnPoint6" type="Marker3D" parent="NPCHolder"]
+ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -6)
+diff --git a/tcc-jogo/scenes/scene_manager.gd b/tcc-jogo/scenes/scene_manager.gd
+index 8ca254a..e1516dc 100644
+--- a/tcc-jogo/scenes/scene_manager.gd
++++ b/tcc-jogo/scenes/scene_manager.gd
+@@ -32,6 +32,36 @@ func change_level(new_level_scene: PackedScene, spawn_point_name: String) -> voi
+ 	_place_player(spawn.global_transform)
+ 
+ 
++func current_level_path() -> String:
++	return _current_level.scene_file_path if _current_level != null else ""
++
++
++func find_npc(id: String) -> NPC:
++	if _current_level == null or id == "":
++		return null
++	for n in get_tree().get_nodes_in_group("npc"):
++		if n is NPC and n.npc_id == id and _current_level.is_ancestor_of(n):
++			return n
++	return null
++
++
++func teleport_to_healer(dest: Dictionary) -> NPC:
++	var path := String(dest.get("level", ""))
++	if path != current_level_path():
++		var scene := load(path) as PackedScene if ResourceLoader.exists(path) else null
++		if scene == null:
++			push_warning("Healer level '%s' not found." % path)
++			return null
++		_swap_level(scene)
++	var stand := Vector3(dest["x"], dest["y"], dest["z"])
++	_place_player(Transform3D(Basis(), stand))
++	var look := Vector3(dest["nx"], dest["ny"], dest["nz"]) - stand
++	var mesh := player.get_node_or_null("Mesh") as Node3D
++	if mesh != null:
++		mesh.global_rotation.y = atan2(-look.x, -look.z)
++	return find_npc(String(dest.get("id", "")))
++
++
+ func _resume_saved_position(pos: Dictionary) -> bool:
+ 	if pos.is_empty():
+ 		return false
+diff --git a/tcc-jogo/test/test_healer_registry.gd b/tcc-jogo/test/test_healer_registry.gd
+new file mode 100644
+index 0000000..33d72f8
+--- /dev/null
++++ b/tcc-jogo/test/test_healer_registry.gd
+@@ -0,0 +1,56 @@
++extends GdUnitTestSuite
++
++const L1 := "res://scenes/scene_1.tscn"
++const L2 := "res://scenes/scene_2.tscn"
++
++
++func test_nearest_prefers_same_level_by_distance() -> void:
++	var reg := {}
++	HealerRegistry.register(reg, "a", L1, Vector3(10, 0, 0), Vector3(11, 0, 0))
++	HealerRegistry.register(reg, "b", L1, Vector3(-3, 0, 2), Vector3(-4, 0, 2))
++	HealerRegistry.register(reg, "c", L2, Vector3(0, 0, 0), Vector3(1, 0, 0))
++	assert_str(HealerRegistry.nearest(reg, L1, Vector3.ZERO)["id"]).is_equal("b")
++	assert_str(HealerRegistry.nearest(reg, L1, Vector3(9, 0, 1))["id"]).is_equal("a")
++
++
++func test_nearest_falls_back_to_latest_visit_on_other_level() -> void:
++	var reg := {}
++	HealerRegistry.register(reg, "a", L1, Vector3.ZERO, Vector3.ONE)
++	HealerRegistry.register(reg, "b", L1, Vector3(5, 0, 5), Vector3.ONE)
++	assert_str(HealerRegistry.nearest(reg, L2, Vector3.ZERO)["id"]).is_equal("b")
++	HealerRegistry.register(reg, "a", L1, Vector3.ZERO, Vector3.ONE)
++	assert_str(HealerRegistry.nearest(reg, L2, Vector3.ZERO)["id"]).is_equal("a")
++
++
++func test_empty_registry_and_invalid_entries() -> void:
++	var reg := {}
++	assert_bool(HealerRegistry.nearest(reg, L1, Vector3.ZERO).is_empty()).is_true()
++	HealerRegistry.register(reg, "", L1, Vector3.ZERO, Vector3.ZERO)
++	HealerRegistry.register(reg, "x", "", Vector3.ZERO, Vector3.ZERO)
++	assert_int(reg.size()).is_equal(0)
++
++
++func test_array_roundtrip_ignores_garbage() -> void:
++	var reg := {}
++	HealerRegistry.register(reg, "a", L1, Vector3(1, 2, 3), Vector3(4, 5, 6))
++	var raw := HealerRegistry.to_array(reg)
++	raw.append("lixo")
++	raw.append({"id": 5})
++	var back := HealerRegistry.from_array(raw)
++	assert_int(back.size()).is_equal(1)
++	assert_float(back["a"]["nz"]).is_equal(6.0)
++	assert_int(HealerRegistry.from_array(null).size()).is_equal(0)
++
++
++func test_save_game_keeps_visited_healers() -> void:
++	var party := PlayerPartyData.new()
++	var storage := CapturedStorage.new()
++	var bond := PlayerBondData.new()
++	var player := PlayerData.new()
++	var reg := {}
++	HealerRegistry.register(reg, "scene_1/SpawnPoint5", L1, Vector3(-6, 0, 7.2), Vector3(-6, 0, 6))
++	var data := SaveGame.serialize(party, storage, bond, player, {}, null, {}, reg)
++	var loaded := {}
++	assert_int(SaveGame.apply(data, party, storage, bond, player, {}, null, {}, loaded)).is_equal(OK)
++	assert_bool(loaded.has("scene_1/SpawnPoint5")).is_true()
++	assert_float(loaded["scene_1/SpawnPoint5"]["z"]).is_equal_approx(7.2, 0.001)

@@ -151,7 +151,7 @@ func test_xp_and_level_are_written_back() -> void:
 	AlchemonGrowth.grant_experience(state.get_combatant(state.player_ids[0]), sheet, 250)
 	CreatureSync.apply_battle([a], state, db)
 	assert_int(a.level).is_equal(7)
-	assert_int(a.experience).is_equal(50)
+	assert_int(a.experience).is_equal(32)
 
 
 func test_bond_bonus_does_not_leak_into_creature() -> void:

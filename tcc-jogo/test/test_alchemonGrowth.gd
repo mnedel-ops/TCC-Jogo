@@ -41,3 +41,17 @@ func test_state_at() -> void:
 	assert_str(s.state_at(273.15)).is_equal(AlchemonSheet.SOLIDO)
 	assert_str(s.state_at(350.0)).is_equal(AlchemonSheet.LIQUIDO)
 	assert_str(s.state_at(500.0)).is_equal(AlchemonSheet.GASOSO)
+
+
+func test_xp_curve_is_cubic() -> void:
+	assert_int(AlchemonGrowth.xp_for_level(5)).is_equal(125)
+	assert_int(AlchemonGrowth.xp_to_next(5)).is_equal(91)
+	assert_int(AlchemonGrowth.xp_between(5, 7)).is_equal(218)
+	assert_int(AlchemonGrowth.xp_between(7, 7)).is_equal(0)
+
+
+func test_grant_experience_uses_cubic_curve() -> void:
+	var c := _make_combatant(5)
+	AlchemonGrowth.grant_experience(c, _make_template(), 91 + 127 + 10)
+	assert_int(c.level).is_equal(7)
+	assert_int(c.experience).is_equal(10)

@@ -89,10 +89,12 @@ static func _resolve_attack(state: CombatState, command: ActionCommand, database
 		return CombatResult.invalid_target(actor.id, target.id)
 	
 	var template := database.get_by_id(actor.species_id)
-	if template == null or command.attack_index < 0 or command.attack_index >= template.attacks.size():
+	if template == null or command.attack_index < 0 or command.attack_index >= actor.attack_ids.size():
 		return CombatResult.invalid_action(actor.id, target.id, "invalid_attack")
 	
-	var attack: AttackData = template.attacks[command.attack_index]
+	var attack: AttackData = AttackLearning.resolve(template, actor.attack_ids[command.attack_index])
+	if attack == null:
+		return CombatResult.invalid_action(actor.id, target.id, "invalid_attack")
 	
 	var is_slap := actor.valence_electrons <= 0
 	var attack_name := SLAP_NAME if is_slap else attack.attack_name
@@ -178,6 +180,5 @@ static func pick_random_alive_target_id(state: CombatState, team_ids: Array[int]
 	return -1 if alive_ids.is_empty() else alive_ids[randi() % alive_ids.size()]
 
 
-static func pick_random_attack_index(database: AlchemonDatabase, species_id: int) -> int:
-	var template := database.get_by_id(species_id)
-	return -1 if template == null or template.attacks.is_empty() else randi() % template.attacks.size()
+static func pick_random_attack_index(actor: CombatantState) -> int:
+	return -1 if actor == null or actor.attack_ids.is_empty() else randi() % actor.attack_ids.size()

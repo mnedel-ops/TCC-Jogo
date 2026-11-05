@@ -87,6 +87,8 @@ static func lines_for(r: BattleRewards) -> Array[Dictionary]:
 		out.append({"text": "%s gained %d EXP" % [e.name, e.xp_gained], "highlight": false})
 		if e.level_after > e.level_before:
 			out.append({"text": "%s leveled up to %d!" % [e.name, e.level_after], "highlight": true})
+		for attack_name in e.get("learned", []):
+			out.append({"text": "%s learned %s!" % [e.name, attack_name], "highlight": true})
 	if not any_xp:
 		out.append({"text": "No EXP gained.", "highlight": false})
 	if r.money > 0:

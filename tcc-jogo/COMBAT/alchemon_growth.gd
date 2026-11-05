@@ -2,7 +2,23 @@ class_name AlchemonGrowth
 extends RefCounted
 
 
-const XP_TO_LEVEL_UP := 100
+# XP acumulada para alcançar o nível n = n³ (Medium Fast).
+# `experience` guarda só o progresso dentro do nível atual,
+# então o custo de n → n+1 é (n+1)³ − n³.
+static func xp_for_level(level: int) -> int:
+	return level * level * level
+
+
+static func xp_to_next(level: int) -> int:
+	return xp_for_level(level + 1) - xp_for_level(level)
+
+
+static func xp_between(from_level: int, to_level: int) -> int:
+	var total := 0
+	for l in range(from_level, to_level):
+		total += xp_to_next(l)
+	return total
+
 
 static func level_up(combatant: CombatantState, template: AlchemonSheet, levels: int = 1) -> void:
 	for i in levels:
@@ -19,6 +35,7 @@ static func level_up(combatant: CombatantState, template: AlchemonSheet, levels:
 		combatant.max_hp += hp_gain
 		if combatant.hp > 0:
 			combatant.hp += hp_gain
+		AttackLearning.on_level_reached(combatant, template, combatant.level)
 		print("LVUP %s Lv%d atk=%d def=%d spd=%d en=%d" % [combatant.id, combatant.level, combatant.attack, combatant.defense, combatant.mechanical_speed, combatant.action_energy])
 
 static func grant_experience(combatant: CombatantState, template: AlchemonSheet, amount: int) -> void:
@@ -26,6 +43,6 @@ static func grant_experience(combatant: CombatantState, template: AlchemonSheet,
 		return
 
 	combatant.experience += amount
-	while combatant.experience >= XP_TO_LEVEL_UP:
-		combatant.experience -= XP_TO_LEVEL_UP
+	while combatant.experience >= xp_to_next(combatant.level):
+		combatant.experience -= xp_to_next(combatant.level)
 		level_up(combatant, template)

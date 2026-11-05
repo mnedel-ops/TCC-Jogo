@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AttackDatabase" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://DATABASE/Attack/AttackDatabase.gd" id="1_db"]
+[ext_resource type="Script" path="res://DATABASE/Attack/AttackData.gd" id="2_ad"]
+[ext_resource type="Resource" path="res://DATABASE/Attack/Scratch.tres" id="3_scratch"]
+[ext_resource type="Resource" path="res://DATABASE/Attack/Tackle.tres" id="4_tackle"]
+[ext_resource type="Resource" path="res://DATABASE/Attack/TailStrike.tres" id="5_tail"]
+[ext_resource type="Resource" path="res://DATABASE/Attack/DebugAtack-ametal.tres" id="6_dbg1"]
+[ext_resource type="Resource" path="res://DATABASE/Attack/DebugAtack-metal.tres" id="7_dbg2"]
+[ext_resource type="Resource" path="res://DATABASE/Attack/DebugAtack-metaloide.tres" id="8_dbg3"]
+
+[resource]
+script = ExtResource("1_db")
+attacks = Array[ExtResource("2_ad")]([ExtResource("3_scratch"), ExtResource("4_tackle"), ExtResource("5_tail"), ExtResource("6_dbg1"), ExtResource("7_dbg2"), ExtResource("8_dbg3")])

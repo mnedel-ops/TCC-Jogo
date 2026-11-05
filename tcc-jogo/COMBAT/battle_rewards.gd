@@ -36,11 +36,21 @@ static func build(state: CombatState, database: AlchemonDatabase, party: Array[A
 			display = inst.display_name(sheet)
 		elif sheet != null:
 			display = sheet.creature_name
-		var gained := (c.level - c.start_level) * AlchemonGrowth.XP_TO_LEVEL_UP + c.experience - c.start_experience
+		var gained := AlchemonGrowth.xp_between(c.start_level, c.level) + c.experience - c.start_experience
 		r.entries.append({
 			"name": display,
 			"xp_gained": maxi(gained, 0),
 			"level_before": c.start_level,
 			"level_after": c.level,
+			"learned": _attack_names(sheet, c.learned_attack_ids),
 		})
 	return r
+
+
+static func _attack_names(sheet: AlchemonSheet, ids: Array[int]) -> Array[String]:
+	var names: Array[String] = []
+	for id in ids:
+		var a := AttackLearning.resolve(sheet, id)
+		if a != null:
+			names.append(a.attack_name)
+	return names

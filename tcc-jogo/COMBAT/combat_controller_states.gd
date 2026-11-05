@@ -107,8 +107,8 @@ func _build_entry(id: int) -> Dictionary:
 		"name": _name_of(id) + _wild_tag(c) + _bond_tag(c),
 		"hp": c.hp, "max_hp": c.max_hp,
 		"energy": c.valence_electrons, "max_energy": c.max_valence_electrons,
-		"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.XP_TO_LEVEL_UP,
-		"visible": c.alive and not c.is_bond_cation,
+		"level": c.level, "xp": c.experience, "xp_max": AlchemonGrowth.xp_to_next(c.level),
+		"visible": c.alive and not c.is_bond_cation and c.slot >= 0,
 	}
 
 
@@ -184,8 +184,11 @@ func _prompt_action_for_current() -> void:
 func _build_attack_entries(actor_id: int) -> Array:
 	var template := database.get_by_id(state.get_combatant(actor_id).species_id)
 	var entries: Array = []
-	for i in mini(template.attacks.size(), 4):
-		var a: AttackData = template.attacks[i]
+	var actor := state.get_combatant(actor_id)
+	for attack_id in actor.attack_ids:
+		var a: AttackData = AttackLearning.resolve(template, attack_id)
+		if a == null:
+			continue
 		entries.append({
 			"name": a.attack_name,
 			"damage": a.power,
@@ -266,7 +269,7 @@ func _queue_enemy_commands() -> void:
 		if target_id == -1:
 			continue
 		var enemy := state.get_combatant(enemy_id)
-		var attack_index := CombatRules.pick_random_attack_index(database, enemy.species_id)
+		var attack_index := CombatRules.pick_random_attack_index(enemy)
 		if attack_index == -1:
 			continue
 		state.pending_actions.append(ActionCommand.new(enemy_id, "attack", target_id, attack_index))
@@ -355,7 +358,7 @@ func _resolve_flee() -> void:
 		if target_id == -1:
 			continue
 		var enemy := state.get_combatant(enemy_id)
-		var attack_index := CombatRules.pick_random_attack_index(database, enemy.species_id)
+		var attack_index := CombatRules.pick_random_attack_index(enemy)
 		if attack_index == -1:
 			continue
 
@@ -403,8 +406,36 @@ func _show_combat_end() -> void:
 	screen.show_rewards(rewards)
 	await screen.dismissed
 	screen.queue_free()
+	await _resolve_pending_attacks()
 	CombatSignal.combat_ended.emit()
 	queue_free()
+
+
+func _resolve_pending_attacks() -> void:
+	var changed := false
+	for id in state.player_ids:
+		var c := state.get_combatant(id)
+		if c == null:
+			continue
+		var sheet := database.get_by_id(c.species_id)
+		for attack_id in c.pending_attack_ids.duplicate():
+			var new_attack := AttackLearning.resolve(sheet, attack_id)
+			if new_attack == null:
+				AttackLearning.resolve_pending(c, attack_id, -1)
+				continue
+			var known: Array[AttackData] = []
+			for known_id in c.attack_ids:
+				known.append(AttackLearning.resolve(sheet, known_id))
+			var prompt := AttackLearnScreen.new()
+			add_child(prompt)
+			prompt.ask(_name_of(id), new_attack, known)
+			var choice: int = await prompt.chosen
+			prompt.queue_free()
+			AttackLearning.resolve_pending(c, attack_id, choice)
+			changed = true
+	if changed:
+		CreatureSync.apply_battle(player_species_ids, state, database)
+		CombatSignal.creatures_synced.emit()
 
 
 func _say(text: String) -> void:

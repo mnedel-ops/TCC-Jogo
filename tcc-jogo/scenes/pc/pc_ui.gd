@@ -13,7 +13,7 @@ enum Level { LIST, OPTION }
 
 const OPTIONS := ["Alchemy", "Stored", "Exit"]
 const DESCRIPTIONS := {
-	"Alchemy": "Make the Component (bond).\nPick 2 Alchemons from party + storage.\nThe Component goes into every fight.\nWith an active Component you can only break it.",
+	"Alchemy": "Make the Component (bond).\nPick 2 to 4 Alchemons from party + storage.\nChemistry rules apply (octet rule, max 8 valence e-).\nThe Component goes into every fight.\nWith an active Component you can only break it.",
 	"Stored": "Stored Alchemons.\nSwap captured Alchemons with your party.",
 	"Exit": "Close the PC.",
 }
@@ -154,7 +154,7 @@ func _stats_text(inst: AlchemonInstance) -> String:
 	return "%s\nLv.%d   (%s)\n\nHP: %d/%d\nXP: %d/%d\nValence e-: %d\n\nAttack: %d\nDefense: %d\nMech. Speed: %d\nAction Energy: %d\nIV: %d" % [
 		n, inst.level, AlchemonType.type_name(sheet.element_type),
 		hp, max_hp,
-		inst.experience, AlchemonGrowth.XP_TO_LEVEL_UP,
+		inst.experience, AlchemonGrowth.xp_to_next(inst.level),
 		sheet.max_valence_electrons,
 		atk, def, spd, en, iv]
 
@@ -281,7 +281,7 @@ func _build_alchemy_page() -> Control:
 	_alch_header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	page.add_child(_alch_header)
 	var h := Label.new()
-	h.text = "Pick 2 Alchemons (party + storage), then Make Component"
+	h.text = "Pick 2-%d Alchemons (party + storage), then Make Component" % AlchemyStation.MAX_BOND_SIZE
 	page.add_child(h)
 	_alch_list = ItemList.new()
 	_alch_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -491,7 +491,7 @@ func _refresh_alchemy() -> void:
 				var mark := "[x]" if _alch_picked.has(r.inst) else "[ ]"
 				_alch_list.add_item("%s [%s] %s" % [mark, r.tag, _label_of(r.inst)])
 			"make":
-				_alch_list.add_item(">> Make Component (%d/2 selected)" % _alch_picked.size())
+				_alch_list.add_item(">> Make Component (%d selected, 2-%d)" % [_alch_picked.size(), AlchemyStation.MAX_BOND_SIZE])
 			"break":
 				_alch_list.add_item("xx Break Component")
 			"back":
@@ -537,8 +537,8 @@ func _alchemy_select() -> void:
 			if _alch_picked.has(row.inst):
 				_alch_picked.erase(row.inst)
 				_alch_info.text = ""
-			elif _alch_picked.size() >= 2:
-				_alch_info.text = "Max 2. Unselect one first."
+			elif _alch_picked.size() >= AlchemyStation.MAX_BOND_SIZE:
+				_alch_info.text = "Max %d. Unselect one first." % AlchemyStation.MAX_BOND_SIZE
 			else:
 				_alch_picked.append(row.inst)
 				_alch_info.text = ""
@@ -546,7 +546,9 @@ func _alchemy_select() -> void:
 			_make_component()
 		"break":
 			_bond.clear()
+			_trim_party()
 			_alch_info.text = "Component broken."
+			party_changed.emit()
 			bond_changed.emit()
 		"back":
 			_go_list()
@@ -558,8 +560,8 @@ func _make_component() -> void:
 	if _has_active_bond():
 		_alch_info.text = "Break the current Component first."
 		return
-	if _alch_picked.size() != 2:
-		_alch_info.text = "Select exactly 2 Alchemons."
+	if _alch_picked.size() < AlchemyStation.MIN_BOND_SIZE or _alch_picked.size() > AlchemyStation.MAX_BOND_SIZE:
+		_alch_info.text = "Select 2 to %d Alchemons." % AlchemyStation.MAX_BOND_SIZE
 		return
 	if _db == null or _bond == null or _party_data == null or _storage == null:
 		_alch_info.text = "PC data missing (party / storage / bond / database)."
@@ -574,7 +576,7 @@ func _make_component() -> void:
 
 	var kind := AlchemyStation.determine_bond_kind(sheets)
 	if kind == BondRules.NONE:
-		_alch_info.text = "Impossible bond. These two cannot form a Component."
+		_alch_info.text = "Impossible bond. " + AlchemyStation.bond_failure_reason(sheets)
 		return
 
 	var chosen: Array[AlchemonInstance] = []
@@ -592,12 +594,23 @@ func _make_component() -> void:
 	for inst in chosen:
 		_party_data.party.append(inst)
 
-	_bond.set_bond(kind, [0, 1])
-	_alch_info.text = "Made: %s (%s + %s)" % [_kind_label(kind), _short_name(chosen[0]), _short_name(chosen[1])]
+	var member_indices: Array[int] = []
+	var member_names: Array[String] = []
+	for i in chosen.size():
+		member_indices.append(i)
+		member_names.append(_short_name(chosen[i]))
+	_bond.set_bond(kind, member_indices)
+	_alch_info.text = "Made: %s (%s)" % [_kind_label(kind), " + ".join(member_names)]
 	_alch_picked.clear()
 	party_changed.emit()
 	bond_changed.emit()
 	_show_popup(COMPONENT_CREATED_TEXT)
+
+
+func _trim_party() -> void:
+	while _party_data.party.size() > max_party_size:
+		var extra: AlchemonInstance = _party_data.party.pop_back()
+		_storage.add_instance(extra)
 
 
 func _show_popup(text: String) -> void:
@@ -676,6 +689,7 @@ func _stored_select() -> void:
 	var broke := _bond != null and _bond.is_active()
 	if broke:
 		_bond.clear()
+		_trim_party()
 		bond_changed.emit()
 	_alch_picked.clear()
 	party_changed.emit()

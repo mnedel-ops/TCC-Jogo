@@ -191,14 +191,36 @@ dano definido para a mudança. Vínculos alquímicos são aplicados ao estado
 transitório da batalha e seus bônus não são gravados como atributos
 permanentes.
 
+`AlchemyStation` valida os vínculos pelas regras da Química: nenhum átomo passa
+de 8 elétrons de valência (`octet_target ≤ 8`). Em compostos iônicos (metais +
+ametais/metaloides), os metais doam todos os elétrons de valência e a soma
+doada deve ser igual à necessária para completar o octeto dos receptores;
+átomos com octeto completo não participam. Em compostos covalentes (só
+não-metais), cada átomo faz `octeto − valência` ligações e a molécula precisa
+ser conectada, com grau par e sem átomo que exija mais ligações que os demais
+juntos. Dois metais formam uma mistura. Um composto aceita de 2 a
+`AlchemyStation.MAX_BOND_SIZE` (4) Alchemons; os membros além dos 2 slots do
+campo ficam sem slot e o ativo sempre ocupa um slot.
+
 ### 2.4 Progressão e condições de vitória/derrota
 
 Quando um ataque derrota um inimigo ou uma captura é concluída,
 `CombatResultApplier._grant_xp()` concede ao autor a recompensa de XP
 definida na ficha da espécie derrotada. `AlchemonGrowth.grant_experience()`
-acumula a experiência e, a cada `100` pontos, chama `level_up()`. O excesso
-de XP permanece para o próximo nível e vários níveis podem ser obtidos em
-uma única recompensa.
+acumula a experiência e chama `level_up()` sempre que o progresso alcança o
+custo do nível atual. A curva é cúbica (Medium Fast): o XP total para atingir
+o nível `n` é `n³`, logo subir de `n` para `n+1` custa `(n+1)³ − n³`
+(`AlchemonGrowth.xp_to_next()`). O excesso permanece para o próximo nível e
+vários níveis podem ser obtidos em uma única recompensa.
+
+Cada `AttackData` possui `unlock_level`, e todos ficam registrados no
+`AttackDatabase` global. A lista `attacks` da ficha da espécie define o que ela
+pode aprender. Ao criar o combatente, `AttackLearning.sanitize_instance()`
+preenche `attack_ids` (máximo de 4) com os ataques já liberados. Em cada
+`level_up()`, `AttackLearning.on_level_reached()` aprende automaticamente o
+ataque liberado se houver vaga. Com 4 ataques, o do jogador fica pendente e,
+ao fim do combate, `AttackLearnScreen` pergunta qual esquecer ou se não
+aprende. Inimigos trocam automaticamente o ataque de menor poder.
 
 No level up, o código recalcula ataque, defesa e velocidade; aumenta o limite
 de energia e amplia o HP máximo. Se a criatura estiver viva, o aumento do HP

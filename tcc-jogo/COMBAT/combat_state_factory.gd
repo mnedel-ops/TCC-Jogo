@@ -8,6 +8,7 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 	var player_slot_index := 0
 	var enemy_slot_index := 0
 	var party_to_combatant := {}
+	var bonded_positions := _bonded_positions(player_bond, player_party.size())
 
 	for party_pos in player_party.size():
 		var instance := player_party[party_pos]
@@ -19,8 +20,10 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 
 		var slot := BattlefieldSlot.PLAYER_SLOT_1 + player_slot_index
 		if player_slot_index >= 2:
-			push_warning("Too many players for battlefield (max 2 slots)")
-			break
+			if not bonded_positions.has(party_pos):
+				push_warning("Too many players for battlefield (max 2 slots)")
+				continue
+			slot = -1
 
 		instance.ensure_uid()
 		if instance.is_fainted() and CreatureSync.REVIVE_FAINTED_ON_BATTLE_START:
@@ -32,9 +35,10 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		state.combatants[c.id] = c
 		state.player_ids.append(c.id)
 		party_to_combatant[party_pos] = c.id
-		BattlefieldRules.assign_combatant(state.battlefield, c.id, slot)
+		if slot >= 0:
+			BattlefieldRules.assign_combatant(state.battlefield, c.id, slot)
+			player_slot_index += 1
 		next_instance_id += 1
-		player_slot_index += 1
 
 	for species_id in enemy_species_ids:
 		var template := database.get_by_id(species_id)
@@ -85,7 +89,33 @@ static func _apply_player_bond(state: CombatState, database: AlchemonDatabase, b
 	if AlchemyStation.determine_bond_kind(sheets) != bond.kind:
 		push_warning("PlayerBondData out of date (kind no longer valid). Bond skipped.")
 		return
-	BondRules.apply_bond(bond.kind, parts, sheets)
+	var result := BondRules.apply_bond(bond.kind, parts, sheets)
+	if result.get("kind", "") == "compound_formed":
+		_ensure_active_has_slot(state, int(result["active_id"]))
+
+
+static func _bonded_positions(bond: PlayerBondData, party_size: int) -> Array[int]:
+	var out: Array[int] = []
+	if bond == null or not bond.is_active():
+		return out
+	for i in bond.member_indices:
+		if i >= 0 and i < party_size:
+			out.append(i)
+	return out
+
+
+static func _ensure_active_has_slot(state: CombatState, active_id: int) -> void:
+	var active := state.get_combatant(active_id)
+	if active == null or active.slot >= 0:
+		return
+	for id in state.player_ids:
+		var c := state.get_combatant(id)
+		if c.slot >= 0 and c.bond_kind == BondRules.COMPOUND and c.bond_partner_id == active_id:
+			state.battlefield.free_slot(c.slot)
+			active.slot = c.slot
+			c.slot = -1
+			state.battlefield.assign_combatant(active.id, active.slot)
+			return
 
 
 static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array) -> void:
@@ -114,6 +144,8 @@ static func _combatant_from(id: int, instance: AlchemonInstance, template: Alche
 	c.mechanical_speed = stats.mechanical_speed
 	c.action_energy = stats.action_energy
 	c.temperature = template.temperature
+	AttackLearning.sanitize_instance(instance, template)
+	c.attack_ids.assign(instance.attack_ids)
 	if CreatureSync.PERSIST_ENERGY and instance.current_energy != AlchemonInstance.UNSET:
 		c.valence_electrons = clampi(instance.current_energy, 0, c.max_valence_electrons)
 	return c

@@ -31,6 +31,9 @@ signal arena_hotter_than_myself(slot: int)
 @export var alive: bool = true
 @export var physical_state: String = AlchemonSheet.SOLIDO 
 @export var temperature: float = 0.00
+@export var attack_ids: Array[int] = []
+@export var pending_attack_ids: Array[int] = []
+@export var learned_attack_ids: Array[int] = []
 
 func _init(
 	p_id: int = -1,
