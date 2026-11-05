@@ -1,0 +1,11 @@
+{
+	"_comentario": "Critérios de aprovação. Ajuste depois de observar os valores reais e justifique no relatório. load_max_ms = null significa 'apenas registrar'.",
+	"fps_target": 60.0,
+	"fps_tolerance_pct": 10.0,
+	"fps_floor": 30.0,
+	"fps_floor_max_seconds": 2,
+	"load_max_ms": null,
+	"load_outlier_ratio": 2.0,
+	"ram_growth_tolerance_pct": 5.0,
+	"orphan_growth_allowed": 0
+}

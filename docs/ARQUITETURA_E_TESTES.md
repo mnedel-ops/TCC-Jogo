@@ -664,7 +664,40 @@ executar `PERF01` a `PERF05` e `BUILD02`/`BUILD03` em Windows, anexando os
 logs ou capturas do profiler, a configuração da máquina, a versão do build
 e a data da medição.
 
-### 9.4 Modelo de registro para a execução no Windows
+### 9.4 Execução automatizada (`tcc-jogo/perf/`)
+
+A bateria é executada por script e gera a tabela sozinha, sem preencher nada à
+mão:
+
+```bash
+# Linux/macOS (editor/Godot no PATH ou variável GODOT)
+GODOT=/caminho/godot RUNS=5 STAGE_SECONDS=60 CYCLES=5 ./tcc-jogo/perf/run_perf.sh
+# Windows (PowerShell)
+$env:GODOT="C:\Godot\Godot_v4.6-stable_win64_console.exe"; .\tcc-jogo\perf\run_perf.ps1
+```
+
+O script faz `RUNS` execuções do modo `load` (um processo novo por execução:
+inicialização, carregamento da exploração, carregamento do combate, troca de
+fase e retorno do combate) e uma execução do modo `sustained` (FPS por
+segundo, 1% inferior, RAM/VRAM/objetos/nós órfãos e `CYCLES` ciclos
+exploração → combate → retorno). Em seguida `perf_report_cli.gd` lê os JSON e
+os logs e grava, em `tcc-jogo/perf_results/<data>/`, `relatorio.md` (tabelas
+prontas, ambiente e veredito por métrica) e `resultados.csv`.
+
+Mapeamento: `PERF01`/`PERF02` = seção 4 do relatório; `PERF03` = seção 3;
+`PERF04`/`PERF05` = seção 5; estabilidade = seção 6.
+
+Os critérios ficam em `tcc-jogo/perf/criteria.json` e são copiados para o
+relatório. Por padrão o carregamento é apenas registrado (`load_max_ms: null`):
+defina um limite só depois de observar os valores no computador-alvo e
+justifique no relatório. Use uma build release exportada para a medição final;
+a execução pelo editor mede também o overhead do modo debug. A execução com
+`HEADLESS=1` mede carregamento e RAM, mas FPS e VRAM aparecem como N/D.
+
+A lógica de estatística e de geração da tabela é coberta por
+`test_perf_stats.gd` e `test_perf_report.gd`.
+
+### 9.5 Modelo de registro para a execução no Windows
 
 ```text
 Build:
