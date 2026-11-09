@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://baor62ub3ol82"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://bhvxfvaaw0ber" path="res://perf/perf_runner.gd" id="1_perf"]
+[ext_resource type="Script" path="res://perf/perf_runner.gd" id="1_perf"]
 
-[node name="PerfRunner" type="Node" unique_id=1155144090]
+[node name="PerfRunner" type="Node"]
 script = ExtResource("1_perf")
