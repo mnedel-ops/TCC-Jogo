@@ -81,6 +81,13 @@ item_data = ExtResource("5_qo03w")
 
 [node name="PC" parent="." unique_id=1056453128 instance=ExtResource("6_yun4j")]
 transform = Transform3D(-0.0027575896, 0, 0.9999962, 0, 1, 0, -0.9999962, 0, -0.0027575896, -6.605629, 0, -0.5006399)
+interact_action = null
+player_group = null
+ui_scene = null
+party = null
+storage = null
+bond = null
+database = null
 
 [node name="NPCHolder" type="Node" parent="." unique_id=2087062384]
 script = ExtResource("7_is556")

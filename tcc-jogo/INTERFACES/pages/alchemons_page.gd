@@ -326,11 +326,11 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 		["Tipo", AlchemonType.type_name(s.element_type)],
 		["Nivel", str(lvl)],
 		["XP", "%d / %d" % [inst.experience, AlchemonGrowth.xp_to_next(inst.level)]],
-		["HP", "%d / %d" % [hp, max_hp]],
-		["Ataque", str(attack)],
-		["Defesa", str(defense)],
-		["Velocidade", str(speed)],
-		["Energia", str(energy)],
+		["Massa atômica", "%d / %d" % [hp, max_hp]],
+		["Eletronegatividade", str(attack)],
+		["Energia de ionização", str(defense)],
+		["Velocidade cinética", str(speed)],
+		["Elétrons de valência", str(energy)],
 	]
 	for r in rows:
 		_add_pair(_stats_grid, r[0], r[1])

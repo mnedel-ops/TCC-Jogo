@@ -182,8 +182,8 @@ func _build_right(body: Control) -> void:
 	_stats_grid.add_theme_constant_override("v_separation", 4)
 	stats_scroll.add_child(_stats_grid)
 
-	_desc_label = _make_text_tab("Description")
-	_lore_label = _make_text_tab("Lore")
+	_desc_label = _make_text_tab("Descricao")
+	_lore_label = _make_text_tab("Sobre")
 
 
 func _make_tab(tab_name: String) -> ScrollContainer:
@@ -405,12 +405,12 @@ func _fill_stats(s: AlchemonSheet) -> void:
 
 	var rows: Array = [
 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
-		["HP", str(s.max_hp)],
-		["Ataque", str(s.base_attack)],
-		["Defesa", str(s.base_defense)],
-		["Velocidade", str(s.base_mechanical_speed)],
-		["Energia", str(s.base_action_energy)],
-		["Eletrons de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
+		["Massa atômica", str(s.max_hp)],
+		["Eletronegatividade", str(s.base_attack)],
+		["Energia de ionização", str(s.base_defense)],
+		["Velocidade cinética", str(s.base_mechanical_speed)],
+		["Elétrons de valência", str(s.base_action_energy)],
+		["Camada de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
 		["Estado fisico", s.physical_state.capitalize()],
 		["Fusao", "%.1f K" % s.temperature],
 		["Ebulicao", "%.1f K" % s.boiling_point],

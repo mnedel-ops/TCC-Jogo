@@ -9,7 +9,7 @@ signal target_hovered(target_id: int)
 
 signal capture_confirmed(item_index: int, target_id: int)
 
-const CAPTURE_BLOCKED_TEXT := "You can't capture another trainer's Alchemon!"
+const CAPTURE_BLOCKED_TEXT := "Voce nao pode capturar o Alchemon de um treinador!"
 
 var capture_blocked := false
 
@@ -298,7 +298,7 @@ func _open_targets(kind: String, index: int) -> void:
 	if rows.is_empty():
 		rows.append({"cells": ["Sem alvos", "", ""], "enabled": false})
 
-	_targets = _build_list("", ["Nome", "HP", "Tipo"], rows, [170, 80, 100], 1)
+	_targets = _build_list("", ["Nome", "Massa Atomica", "Tipo"], rows, [170, 80, 100], 1)
 	_mode = Mode.TARGET
 	_emit_target_hover()
 

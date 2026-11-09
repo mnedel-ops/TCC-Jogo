@@ -9,12 +9,13 @@ signal page_opened(entry_name: String)
 enum Mode { CLOSED, LIST, PAGE }
 
 @export var entries: Array[Dictionary] = [
-	{"name": "Table", "icon": "", "page": "res://INTERFACES/pages/table_page.tscn"},
-	{"name": "Bag", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
+	{"name": "Tabela Periodica", "icon": "", "page": "res://INTERFACES/pages/table_page.tscn"},
+	{"name": "Mochila", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
 	{"name": "Alchemons", "icon": "", "page": "res://INTERFACES/pages/alchemons_page.tscn"},
-	{"name": "Player", "icon": "", "page": "res://INTERFACES/pages/player_page.tscn"},
-	{"name": "Save", "icon": "", "page": "", "action": "save"},
-	{"name": "Exit", "icon": "", "page": "", "action": "exit"},
+	{"name": "Jogador", "icon": "", "page": "res://INTERFACES/pages/player_page.tscn"},
+	{"name": "Configuracoes", "icon": "", "page": "res://INTERFACES/pages/settings_page.tscn"},
+	{"name": "Salvar", "icon": "", "page": "", "action": "save"},
+	{"name": "Sair do Jogo", "icon": "", "page": "", "action": "exit"},
 ]
 @export var icon_size := Vector2(40, 40)
 @export var list_width := 240.0

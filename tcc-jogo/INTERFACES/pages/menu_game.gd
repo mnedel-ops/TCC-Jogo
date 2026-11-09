@@ -7,12 +7,12 @@ signal menu_button_pressed(button_name: String)
 @export var mochila: InventoryData
 
 @export var button_names: PackedStringArray = [
-	"Periodic",
+	"Tabela",
 	"Alchemon",
-	"Bag",
-	"Save",
-	"Settings",
-	"Exit"
+	"Mochila",
+	"Salvar Jogo",
+	"Configuracoes",
+	"Sair do Jogo"
 ]
 
 @export var buttons: VBoxContainer
@@ -31,13 +31,13 @@ func _ready() -> void:
 	exit_without_saving_dialog.confirmed.connect(_open_exit_confirmation)
 	exit_confirm_dialog.confirmed.connect(_quit_game)
 
-	exit_without_saving_dialog.dialog_text = "Do you wish to exit without saving?"
-	exit_without_saving_dialog.ok_button_text = "Yes"
-	exit_without_saving_dialog.cancel_button_text = "No"
+	exit_without_saving_dialog.dialog_text = "Quer sair do jogo sem salvar?"
+	exit_without_saving_dialog.ok_button_text = "Sim"
+	exit_without_saving_dialog.cancel_button_text = "Nao"
 
-	exit_confirm_dialog.dialog_text = "You want to exit the game?"
-	exit_confirm_dialog.ok_button_text = "Exit"
-	exit_confirm_dialog.cancel_button_text = "Cancel"
+	exit_confirm_dialog.dialog_text = "Quer sair do jogo?"
+	exit_confirm_dialog.ok_button_text = "Sair"
+	exit_confirm_dialog.cancel_button_text = "Ficar"
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_menu"):
