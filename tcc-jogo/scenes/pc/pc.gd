@@ -23,11 +23,32 @@ var _saved_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
 
 func _ready() -> void:
+	_fill_missing_exports()
 	if not InputMap.has_action(interact_action):
 		push_warning("PCStation: InputMap missing action '%s'" % interact_action)
 	prompt.visible = false
 	interact_area.body_entered.connect(_on_body_entered)
 	interact_area.body_exited.connect(_on_body_exited)
+
+
+# O editor grava "null" nesses exports quando salva uma cena enquanto um preload
+# está quebrado (ex.: pasta movida). O null sobrescreve o padrão e o PC "abre"
+# sem tela. Aqui qualquer export vazio volta ao padrão.
+func _fill_missing_exports() -> void:
+	if interact_action == &"":
+		interact_action = &"ui_interact"
+	if player_group == &"":
+		player_group = &"player"
+	if ui_scene == null:
+		ui_scene = preload("pc_ui.tscn")
+	if party == null:
+		party = preload("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
+	if storage == null:
+		storage = preload("res://DATABASE/Alchemons/captured_storage.tres")
+	if bond == null:
+		bond = preload("res://DATABASE/Alchemons/player_bond.tres")
+	if database == null:
+		database = preload("res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -54,6 +75,9 @@ func _on_body_exited(body: Node3D) -> void:
 
 func open_pc() -> void:
 	if _is_open or _player == null:
+		return
+	if ui_scene == null:
+		push_error("PCStation: ui_scene vazio, PC não abre.")
 		return
 	_is_open = true
 	prompt.visible = false

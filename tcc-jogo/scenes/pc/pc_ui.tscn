@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://drrn8p7b8o0f2"]
+[gd_scene format=3 uid="uid://drrn8p7b8o0f2"]
 
 [ext_resource type="Script" uid="uid://fwe16idde7h2" path="res://scenes/pc/pc_ui.gd" id="1_ui"]
 
-[node name="PCUI" type="CanvasLayer"]
+[node name="PCUI" type="CanvasLayer" unique_id=1734428663]
 script = ExtResource("1_ui")
