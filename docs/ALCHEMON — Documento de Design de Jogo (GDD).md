@@ -78,15 +78,13 @@ O jogador é um `CharacterBody3D` (`player.gd`) composto por `MovementComponent`
 | Tecla | Ação | Status |
 | --- | --- | --- |
 | W/A/S/D (e setas/direcional) | Caminhar em 8 direções (`move_*`, `Input.get_vector`) | \[OK\] (velocidade fixa 5.0) |
-| Correr | Corrida | \[Pendente\] não há ação de corrida |
 | E (`ui_interact`) | Interagir com item, NPC, PC | \[OK\] |
-| Tab (`ui_menu`) | Abre o menu unificado do jogo | \[Parcial\] no GDD era "inventário"; hoje abre o menu completo |
-| Esc (`ui_cancel`) | Voltar/fechar menu | \[Parcial\] no GDD abria configurações |
+| Tab (`ui_menu`) | Abre o menu unificado do jogo | \[OK\] abre o menu completo |
 | F5 / F9 | Salvar / carregar rápido | \[Pendente\] não há ação mapeada |
 
-Nos menus e popups o código também aceita setas, Enter/Espaço e botões de gamepad; o GDD previa só teclado.
+Nos menus e popups o código também aceita setas, Enter/Espaço e botões de gamepad.
 
-### 3.2 Câmera — \[Parcial\]
+### 3.2 Câmera
 
 `CameraRig` mantém altura fixa e ângulo fixo, sem controle do jogador. Diferente do GDD, ela **segue com zona morta** (`dead_zone`, `follow_speed`, `snap_distance`) em vez de ficar rigidamente atrás do avatar. A rotação do avatar é instantânea (`mesh.rotation.y = atan2(...)`), sem suavização — \[OK\] conforme o GDD.
 
@@ -102,13 +100,7 @@ Colisões do cenário bloqueiam o jogador; não há pulo (apenas gravidade). Cam
 
 ### 3.5 Estruturas do Mapa — \[Parcial\]
 
-Casas, hospitais, lojas e ginásios ainda **não são cenas separadas**: loja, centro de cura e líder de ginásio são NPCs dentro de `scene_1`.
-
-### 3.6 Mapas — \[Pendente\]
-
-Não há mapa-múndi nem mapas de cidade. O item de menu "Table" é a Tabela Periódica/Wiki (ver seção 18).
-
----
+Casas, hospitais, lojas e ginásios ainda **não são cenas separadas**: loja, centro de cura são NPCs dentro do "Laboratorio".
 
 ## 4. Início de Combate
 
