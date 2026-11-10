@@ -23,7 +23,7 @@ size = Vector3(1, 2.984375, 0.2446289)
 size = Vector3(1.505, 3.23, 0.24)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_yeu7u"]
-size = Vector3(1, 2.984375, 0.2446289)
+size = Vector3(1, 2.984375, 1.3295898)
 
 [sub_resource type="BoxMesh" id="BoxMesh_nolo6"]
 size = Vector3(1.505, 3.23, 0.24)
@@ -34,12 +34,12 @@ size = Vector3(1.505, 3.23, 0.24)
 script = ExtResource("1_yeu7u")
 npc_scene = ExtResource("2_nolo6")
 
-[node name="Woman" type="Marker3D" parent="NPCHolder" unique_id=140982742]
+[node name="Dad" type="Marker3D" parent="NPCHolder" unique_id=140982742]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 1.4609404, 0, -5.7623367)
 script = ExtResource("3_jw6la")
 npc_scene = ExtResource("2_nolo6")
 alchemons_ids = Array[int]([3, 3])
-dialogue = "Ametais sao fortes contra "
+dialogue = "A quimica eh incrivel, meu filho! Ela nos cerca em tudo! E nos entendemos ela."
 
 [node name="Environment" type="Node3D" parent="." unique_id=1518134237]
 
@@ -98,18 +98,19 @@ mesh = SubResource("BoxMesh_13p4s")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9667225, -9.536743e-07, 0.037157893)
 
 [node name="SegOut" type="Marker3D" parent="." unique_id=630463994]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.815766, 0, -10.06161)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5403882, 0, -10.06161)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1003927300]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
+collision_layer = 16
 script = ExtResource("4_evbne")
 target_level_path = "uid://de2r1po0hi8d8"
 target_spawn_point = "SegIn"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=2068142557]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5580945, 1.4882813, -0.0923357)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5580945, 1.4882813, -0.03691578)
 shape = SubResource("BoxShape3D_yeu7u")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=414985360]
-transform = Transform3D(-8.270086e-08, 0.70710677, -0.70710677, -9.4128886e-08, 0.70710677, 0.70710677, 1, 1.250375e-07, 8.080853e-09, 1.2327089, 1.2519922, -0.24269676)
+transform = Transform3D(-8.270086e-08, 0.70710677, -0.70710677, -9.4128886e-08, 0.70710677, 0.70710677, 1, 1.250375e-07, 8.080853e-09, 1.2327089, 1.2519922, -0.038784027)
 mesh = SubResource("BoxMesh_nolo6")

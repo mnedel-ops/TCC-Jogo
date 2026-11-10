@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="1_csqnk"]
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="2_beapv"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_ea8wx"]
-[ext_resource type="Resource" path="res://DATABASE/Player/badges/insignia_metal.tres" id="4_w7erb"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="5_beapv"]
 [ext_resource type="PackedScene" uid="uid://dn5kkw48uiw21" path="res://EXPLORATION/wilderness_encounter.tscn" id="6_ea8wx"]
 
@@ -53,7 +52,7 @@ script = ExtResource("1_csqnk")
 npc_scene = ExtResource("2_beapv")
 
 [node name="Badguy" type="Marker3D" parent="NPCHolder" unique_id=1214200659]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.143337, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33.46958, 0, 0)
 script = ExtResource("3_ea8wx")
 npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([1, 2])
@@ -70,23 +69,11 @@ alchemons_ids = Array[int]([1, 1])
 dialogue = "Dizem que cada Alchemon tem uma personalidade própria. Cuide bem dos seus!"
 
 [node name="OldMan" type="Marker3D" parent="NPCHolder" unique_id=2017377792]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.53906, 0, 9.237663)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 25.308487, 0, 0.2997818)
 script = ExtResource("3_ea8wx")
 npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([3, 3])
 dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
-
-[node name="Gyms" type="Marker3D" parent="NPCHolder" unique_id=720948067]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.21730757, 1.9073486e-06, 21.711506)
-script = ExtResource("3_ea8wx")
-npc_scene = ExtResource("2_beapv")
-alchemons_ids = Array[int]([1, 2])
-level = 8
-is_fighter = true
-is_gym_trainer = true
-badge = ExtResource("4_w7erb")
-dialogue = "Eu sou o líder do ginásio de Metal! Só leva minha Insígnia quem me vencer!"
-dialogue_defeated = "Você venceu! A Insígnia do Metal é sua. Você merece!"
 
 [node name="Environment" type="Node3D" parent="." unique_id=865101616]
 
@@ -155,9 +142,6 @@ mesh = SubResource("BoxMesh_w7erb")
 [node name="Predio" type="MeshInstance3D" parent="Laboratorio" unique_id=1381867661]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9595666, -4.745718)
 mesh = SubResource("BoxMesh_beapv")
-
-[node name="PlayerSpawn" type="Marker3D" parent="." unique_id=1283595824]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.993927, 0, -0.059695244)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=304124358]
 environment = SubResource("Environment_beapv")

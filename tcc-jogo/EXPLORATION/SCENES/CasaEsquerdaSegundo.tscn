@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="4_qqdl6"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_r07s6"]
-size = Vector3(1, 2.984375, 0.2446289)
+size = Vector3(0.41455078, 2.984375, 1.0953369)
 
 [sub_resource type="BoxMesh" id="BoxMesh_hw2kh"]
 size = Vector3(1.505, 3.23, 0.24)
@@ -29,12 +29,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0504019, 0, -10.06161)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1774479696]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
+collision_layer = 16
 script = ExtResource("1_w45vc")
 target_level_path = "uid://bb7jauxfbwyae"
 target_spawn_point = "SegOut"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=1722672818]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4882813, 0.60608673)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2927246, 1.4882813, 0.098778725)
 shape = SubResource("BoxShape3D_r07s6")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=1876701993]
@@ -45,12 +46,12 @@ mesh = SubResource("BoxMesh_hw2kh")
 script = ExtResource("2_16i7t")
 npc_scene = ExtResource("3_mhuk8")
 
-[node name="Kid" type="Marker3D" parent="NPCHolder" unique_id=1902381446]
+[node name="Mom" type="Marker3D" parent="NPCHolder" unique_id=1902381446]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -0.20615959, 0, 0.8296995)
 script = ExtResource("4_qqdl6")
 npc_scene = ExtResource("3_mhuk8")
 alchemons_ids = Array[int]([3, 3])
-dialogue = "Marie Curie eh minha cientista favorita!"
+dialogue = "Filho, vah para o Laboratorio. O Dr. Ipe quer te ver."
 
 [node name="Environment" type="Node3D" parent="." unique_id=1238594941]
 
@@ -90,3 +91,5 @@ environment = SubResource("Environment_m1ys0")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment" unique_id=787029635]
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)
+
+[node name="PlayerSpawn" type="Marker3D" parent="." unique_id=1536130438]
