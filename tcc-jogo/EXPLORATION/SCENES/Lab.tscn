@@ -9,7 +9,7 @@
 size = Vector3(60, 0.5, 60)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_tcf8x"]
-size = Vector2(10, 8)
+size = Vector2(15, 12)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ph2ro"]
 size = Vector3(1, 5.632263, 60.583984)
@@ -28,11 +28,20 @@ size = Vector3(1.505, 3.23, 0.24)
 script = ExtResource("1_6e51k")
 npc_scene = ExtResource("2_pryhs")
 
-[node name="OldMan" type="Marker3D" parent="NPCHolder" unique_id=1643002770]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.53906, 0, 9.237663)
+[node name="Doutor" type="Marker3D" parent="NPCHolder" unique_id=1643002770]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 0.082120895, 1.9073486e-06, -6.51635)
 script = ExtResource("3_7yqpg")
 npc_scene = ExtResource("2_pryhs")
 alchemons_ids = Array[int]([3, 3])
+is_healer = true
+dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+
+[node name="Vendedor" type="Marker3D" parent="NPCHolder" unique_id=1760198995]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 6.757685, 2.861023e-06, -1.3846788)
+script = ExtResource("3_7yqpg")
+npc_scene = ExtResource("2_pryhs")
+alchemons_ids = Array[int]([3, 3])
+is_shopkeeper = true
 dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
 
 [node name="Environment" type="Node3D" parent="." unique_id=1824561473]
@@ -46,25 +55,26 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 shape = SubResource("BoxShape3D_lclgt")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Floor" unique_id=698044677]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.9889469)
 layers = 2
 mesh = SubResource("PlaneMesh_tcf8x")
 
-[node name="Arvores" type="StaticBody3D" parent="Environment" unique_id=1746715079]
+[node name="Paredes" type="StaticBody3D" parent="Environment" unique_id=1746715079]
 
-[node name="Baixo" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1337469968]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6613846, 2.245328, 30.260616)
+[node name="Baixo" type="CollisionShape3D" parent="Environment/Paredes" unique_id=1337469968]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6613846, 2.245328, 4.791792)
 shape = SubResource("BoxShape3D_ph2ro")
 
-[node name="Cima" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1490650980]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.66138077, 2.245328, -30.747921)
+[node name="Cima" type="CollisionShape3D" parent="Environment/Paredes" unique_id=1490650980]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.66138077, 2.245328, -8.599724)
 shape = SubResource("BoxShape3D_ph2ro")
 
-[node name="Direita" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1564616308]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.511759, 2.3161316, -0.12182617)
+[node name="Direita" type="CollisionShape3D" parent="Environment/Paredes" unique_id=1564616308]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.066603, 2.3161316, -0.12182617)
 shape = SubResource("BoxShape3D_ph2ro")
 
-[node name="Esquerda" type="CollisionShape3D" parent="Environment/Arvores" unique_id=2064428594]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30.496778, 2.3161316, -0.12182617)
+[node name="Esquerda" type="CollisionShape3D" parent="Environment/Paredes" unique_id=2064428594]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.10272, 2.3161316, -0.12182617)
 shape = SubResource("BoxShape3D_ph2ro")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1502775801]
