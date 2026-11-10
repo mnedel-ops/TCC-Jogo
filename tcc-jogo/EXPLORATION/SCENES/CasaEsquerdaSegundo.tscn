@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="4_qqdl6"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_r07s6"]
-size = Vector3(0.41455078, 2.984375, 1.0953369)
+size = Vector3(0.41455078, 2.984375, 0.41778564)
 
 [sub_resource type="BoxMesh" id="BoxMesh_hw2kh"]
 size = Vector3(1.505, 3.23, 0.24)
@@ -24,18 +24,18 @@ size = Vector3(1, 5.632263, 60.583984)
 
 [node name="CasaEsquerdaSegundo" type="Node3D" unique_id=203901319]
 
-[node name="SegIn" type="Marker3D" parent="." unique_id=1125948900]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0504019, 0, -10.06161)
+[node name="SegEIn" type="Marker3D" parent="." unique_id=1125948900]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2727466, 0, -8.30551)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1774479696]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.630896)
 collision_layer = 16
 script = ExtResource("1_w45vc")
 target_level_path = "uid://bb7jauxfbwyae"
-target_spawn_point = "SegOut"
+target_spawn_point = "SegEOut"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=1722672818]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2927246, 1.4882813, 0.098778725)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.09954178, 1.4882813, -0.23999691)
 shape = SubResource("BoxShape3D_r07s6")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=1876701993]
@@ -47,7 +47,7 @@ script = ExtResource("2_16i7t")
 npc_scene = ExtResource("3_mhuk8")
 
 [node name="Mom" type="Marker3D" parent="NPCHolder" unique_id=1902381446]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -0.20615959, 0, 0.8296995)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -2.8493278, 0, -5.6766214)
 script = ExtResource("4_qqdl6")
 npc_scene = ExtResource("3_mhuk8")
 alchemons_ids = Array[int]([3, 3])
@@ -69,6 +69,7 @@ layers = 2
 mesh = SubResource("PlaneMesh_edeqx")
 
 [node name="Arvores" type="StaticBody3D" parent="Environment" unique_id=1272591748]
+collision_layer = 2
 
 [node name="Baixo" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1729606230]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6613846, 2.245328, 4.727592)

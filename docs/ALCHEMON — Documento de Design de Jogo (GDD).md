@@ -48,7 +48,7 @@ Modelos poligonais no estilo PSX, inspirados visualmente em Digimon World. Trilh
 
 ### 1.3 Objetivos do Jogador
 
-- Coletar insígnias de ginásio — \[Parcial\] `PlayerData.award_badge()` e `BadgeData` existem; 1 insígnia (Metal) cadastrada.
+- Coletar insígnias de ginásio, cada uma associada a uma família da Tabela Periódica — \[Parcial\] `PlayerData.award_badge()` e `BadgeData` existem; a insígnia atual (Metal) ainda é genérica e provisória.
 - Derrotar o campeão da Super Liga — \[Pendente\]
 - Localizar criaturas raras ou lendárias — \[Pendente\]
 - Recuperar elementos artificiais fugitivos — \[Pendente\]
@@ -273,7 +273,7 @@ Ver seção 8.1.
 
 ### 12.3 Obediência por Insígnias — \[Pendente\]
 
-Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. Insígnia atual: **Insígnia do Metal**, concedida ao vencer o NPC `is_gym_trainer`.
+Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. A insígnia atual, **Insígnia do Metal**, é concedida ao vencer o NPC `is_gym_trainer`; ela funciona como registro provisório da vitória e ainda não corresponde à nomenclatura definitiva por famílias químicas.
 
 ---
 
@@ -367,9 +367,46 @@ Atualmente existem **3 espécies placeholder** (Metal, Ametal, Metaloide) + 1 es
 
 ---
 
-## 20. Ginásios — \[Parcial\]
+## 20. Ginásios e Insígnias — \[Parcial\]
 
-Não há cena de ginásio. Existe **um NPC líder de ginásio Metal** em `scene_1` (nível 8, espécies 1 e 2) que concede a **Insígnia do Metal**. A obediência garantida até nível 10 \[Pendente\].
+Os ginásios são pontos de progressão distribuídos pelos cenários do jogo. Cada ginásio representa uma **família da Tabela Periódica** e apresenta um líder especializado em criaturas associadas a essa classificação. Ao derrotar o líder, o jogador recebe a insígnia correspondente à família química do ginásio.
+
+### 20.1 Famílias e nomenclatura das insígnias
+
+As insígnias recebem nomes derivados das famílias da Tabela Periódica, em vez de nomes arbitrários ou baseados em elementos isolados. A nomenclatura prevista contempla:
+
+| Família representada | Nome da insígnia |
+| --- | --- |
+| Metais alcalinos | Insígnia dos Metais Alcalinos |
+| Metais alcalino-terrosos | Insígnia dos Metais Alcalino-Terrosos |
+| Metais de transição | Insígnia dos Metais de Transição |
+| Família do boro (grupo 13) | Insígnia da Família do Boro |
+| Família do carbono (grupo 14) | Insígnia da Família do Carbono |
+| Pnictogênios (grupo 15) | Insígnia dos Pnictogênios |
+| Calcogênios (grupo 16) | Insígnia dos Calcogênios |
+| Halogênios (grupo 17) | Insígnia dos Halogênios |
+| Gases nobres (grupo 18) | Insígnia dos Gases Nobres |
+| Lantanídeos | Insígnia dos Lantanídeos |
+| Actinídeos | Insígnia dos Actinídeos |
+
+A lista define uma referência temática para a construção dos ginásios. A quantidade, a ordem de obtenção e a distribuição dos ginásios pelos cenários ainda precisam ser definidas. A inclusão de famílias específicas também poderá acompanhar a seleção final de elementos disponíveis no jogo.
+
+### 20.2 Desafio dos ginásios
+
+Cada líder utiliza uma equipe formada por Alchemons relacionados à família que representa. Assim, o confronto permite ao jogador reconhecer características e relações entre elementos pertencentes a um mesmo grupo ou classificação periódica. A identidade visual, os diálogos e a composição da equipe do líder devem reforçar esse tema.
+
+A vitória contra o líder registra a insígnia correspondente no perfil do jogador. O sistema de insígnias também está relacionado à progressão de obediência das criaturas: a quantidade de insígnias deverá determinar os níveis até os quais os Alchemons obedecem ao jogador. Os limites e a fórmula dessa progressão permanecem pendentes de definição.
+
+### 20.3 Estado de implementação
+
+Não há cena de ginásio independente. Existe **um NPC líder de ginásio** em `scene_1` (nível 8, espécies 1 e 2), configurado como treinador e responsável por conceder uma insígnia após a vitória.
+
+- **Sistema de recompensa** \[Parcial\]: `PlayerData.award_badge()` e `BadgeData` registram e identificam insígnias.
+- **Insígnia cadastrada** \[Parcial\]: existe apenas a **Insígnia do Metal**, que representa a implementação inicial e ainda não utiliza a nomenclatura definitiva das famílias.
+- **Líderes especializados por família** \[Pendente\]: há somente um líder configurado; as demais equipes e os demais ginásios não foram implementados.
+- **Progressão de obediência** \[Pendente\]: as insígnias ainda não alteram o comportamento das criaturas.
+- **Cenas e desafios próprios** \[Pendente\]: os ginásios ainda não possuem cenas, estruturas ou desafios independentes.
+
 
 ---
 
@@ -484,7 +521,7 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 
 ### 25.4 Atributos e Progressão
 
-- Mapeamento nível → insígnias e implementação da obediência.
+- Definir a ordem dos ginásios por família, o mapeamento quantidade de insígnias → nível de obediência e implementar essa regra.
 - Ataques e níveis de desbloqueio dos 6 elementos.
 - XP Base fixo ou por criatura (hoje por espécie via `xp_reward`).
 - Nível máximo (20 no protótipo) ainda não aplicado.
@@ -497,5 +534,5 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 ### 25.6 Mundo e Encontros
 
 - Tabelas de encontro por área com pesos.
-- Cenas de hospital, loja e ginásio; mapas; Super Liga.
+- Cenas de hospital, loja e ginásio; ordem e distribuição dos ginásios por famílias; mapas; Super Liga.
 - Atalhos F5/F9 e ação de corrida.

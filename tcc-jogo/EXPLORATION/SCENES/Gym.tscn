@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="1_fx6w0"]
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="2_1xd12"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_wevfo"]
+[ext_resource type="Resource" path="res://DATABASE/Player/badges/insignia_metal.tres" id="4_fx6w0"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="5_hp86f"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_arop3"]
@@ -36,7 +37,9 @@ alchemons_ids = Array[int]([3, 3])
 level = 3
 is_fighter = true
 is_gym_trainer = true
-dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+badge = ExtResource("4_fx6w0")
+dialogue = "Vamos batalhar!"
+dialogue_defeated = "Voce eh forte. Merece a insignia!"
 
 [node name="Environment" type="Node3D" parent="." unique_id=597238018]
 
