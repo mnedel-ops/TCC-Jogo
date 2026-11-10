@@ -89,22 +89,22 @@ shape = SubResource("BoxShape3D_icno0")
 layers = 2
 mesh = SubResource("PlaneMesh_3xosi")
 
-[node name="DoorTo2" type="Area3D" parent="." unique_id=1359538025]
+[node name="Predio" type="Area3D" parent="." unique_id=1359538025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.6339803)
 collision_layer = 2
 script = ExtResource("1_3sd7o")
 target_level_path = "uid://dxh818mftoswm"
 target_spawn_point = "SpawnPointPlayer"
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DoorTo2" unique_id=737028408]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Predio" unique_id=737028408]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4882813, -0.97057104)
 shape = SubResource("BoxShape3D_3sd7o")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="DoorTo2" unique_id=1321682669]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Predio" unique_id=1321682669]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9243362, -0.69281864)
 mesh = SubResource("BoxMesh_3xosi")
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="DoorTo2" unique_id=175205377]
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Predio" unique_id=175205377]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5124393, -5.2117906)
 mesh = SubResource("CylinderMesh_3xosi")
 

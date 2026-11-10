@@ -3,8 +3,8 @@
 [ext_resource type="PackedScene" uid="uid://cvnumu170lca7" path="res://EXPLORATION/Player/player.tscn" id="1_ig7tw"]
 [ext_resource type="Script" uid="uid://bed66nl4l3rew" path="res://scenes/scene_manager.gd" id="1_lquwl"]
 [ext_resource type="Script" uid="uid://i8hwn8g0i6hc" path="res://EXPLORATION/Player/camera_rig.gd" id="2_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://dxh818mftoswm" path="res://scenes/scene_2.tscn" id="3_o6xl0"]
 [ext_resource type="Script" uid="uid://vq2d5kpllln5" path="res://scenes/follower_manager.gd" id="4_85g3d"]
+[ext_resource type="PackedScene" uid="uid://bvrsl6t5pawgb" path="res://EXPLORATION/SCENES/Town.tscn" id="4_choun"]
 [ext_resource type="Script" uid="uid://bfqixqon8hxy8" path="res://combat_scene_manager.gd" id="6_tefeu"]
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
 [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
@@ -23,8 +23,8 @@ script = ExtResource("1_lquwl")
 level_holder = NodePath("../LevelHolder")
 player = NodePath("../player")
 camera_rig = NodePath("../CameraRig")
-first_level = ExtResource("3_o6xl0")
-first_spawn_point = "SpawnPointPlayer"
+first_level = ExtResource("4_choun")
+first_spawn_point = "PlayerSpawn"
 
 [node name="FollowerManager" type="Node" parent="." unique_id=1803137416]
 script = ExtResource("4_85g3d")
