@@ -6,7 +6,7 @@ signal closed
 
 @export var interact_action: StringName = &"ui_interact"
 @export var player_group: StringName = &"player"
-@export var ui_scene: PackedScene = preload("res://scenes/pc/pc_ui.tscn")
+@export var ui_scene: PackedScene = preload("pc_ui.tscn")
 
 @export var party: PlayerPartyData = preload("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
 @export var storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")

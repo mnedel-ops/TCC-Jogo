@@ -1,0 +1,52 @@
+diff --git a/tcc-jogo/scenes/pc/pc.gd b/tcc-jogo/scenes/pc/pc.gd
+index 85b5020..ce27eaa 100644
+--- a/tcc-jogo/scenes/pc/pc.gd
++++ b/tcc-jogo/scenes/pc/pc.gd
+@@ -6,7 +6,7 @@ signal closed
+ 
+ @export var interact_action: StringName = &"ui_interact"
+ @export var player_group: StringName = &"player"
+-@export var ui_scene: PackedScene = preload("res://scenes/pc/pc_ui.tscn")
++@export var ui_scene: PackedScene = preload("pc_ui.tscn")
+ 
+ @export var party: PlayerPartyData = preload("res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres")
+ @export var storage: CapturedStorage = preload("res://DATABASE/Alchemons/captured_storage.tres")
+diff --git a/tcc-jogo/scenes/pc/pc.tscn b/tcc-jogo/scenes/pc/pc.tscn
+index 9c411ed..2f055ed 100644
+--- a/tcc-jogo/scenes/pc/pc.tscn
++++ b/tcc-jogo/scenes/pc/pc.tscn
+@@ -1,6 +1,6 @@
+-[gd_scene load_steps=14 format=3]
++[gd_scene load_steps=14 format=3 uid="uid://br3ljhxl2ql"]
+ 
+-[ext_resource type="Script" path="res://scenes/pc/pc.gd" id="1_script"]
++[ext_resource type="Script" uid="uid://c1sob46fnskg" path="res://scenes/pc/pc.gd" id="1_script"]
+ 
+ [sub_resource type="BoxMesh" id="BoxMesh_case"]
+ size = Vector3(0.3, 0.6, 0.6)
+diff --git a/tcc-jogo/scenes/pc/pc_ui.tscn b/tcc-jogo/scenes/pc/pc_ui.tscn
+index 3f2d740..baaf122 100644
+--- a/tcc-jogo/scenes/pc/pc_ui.tscn
++++ b/tcc-jogo/scenes/pc/pc_ui.tscn
+@@ -1,6 +1,6 @@
+-[gd_scene load_steps=2 format=3]
++[gd_scene load_steps=2 format=3 uid="uid://drrn8p7b8o0f2"]
+ 
+-[ext_resource type="Script" path="res://scenes/pc/pc_ui.gd" id="1_ui"]
++[ext_resource type="Script" uid="uid://fwe16idde7h2" path="res://scenes/pc/pc_ui.gd" id="1_ui"]
+ 
+ [node name="PCUI" type="CanvasLayer"]
+ script = ExtResource("1_ui")
+diff --git a/tcc-jogo/scenes/scene_2.tscn b/tcc-jogo/scenes/scene_2.tscn
+index eace63f..6d1b9ee 100644
+--- a/tcc-jogo/scenes/scene_2.tscn
++++ b/tcc-jogo/scenes/scene_2.tscn
+@@ -5,7 +5,7 @@
+ [ext_resource type="Resource" uid="uid://fhcne48rwxjc" path="res://DATABASE/Inventory/Itens/MetaloideMethod.tres" id="3_ccscm"]
+ [ext_resource type="Resource" uid="uid://cinfsi6tw4ff1" path="res://DATABASE/Inventory/Itens/AmetalMethod.tres" id="4_yun4j"]
+ [ext_resource type="Resource" uid="uid://cvokrnrlvijd3" path="res://DATABASE/Inventory/Itens/MetalMethod.tres" id="5_qo03w"]
+-[ext_resource type="PackedScene" path="res://scenes/pc/pc.tscn" id="6_yun4j"]
++[ext_resource type="PackedScene" uid="uid://br3ljhxl2ql" path="res://scenes/pc/pc.tscn" id="6_yun4j"]
+ [ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="7_is556"]
+ [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="7_qo03w"]
+ [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="9_ul8a6"]
