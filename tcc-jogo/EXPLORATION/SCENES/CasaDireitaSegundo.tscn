@@ -75,7 +75,7 @@ environment = SubResource("Environment_q5ube")
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)
 
 [node name="SegIn" type="Marker3D" parent="." unique_id=1107741275]
-transform = Transform3D(1.3311836e-07, 0, -1, 0, 1, 0, 1, 0, 1.3311836e-07, 1.0504019, 0, -10.06161)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0504019, 0, -10.06161)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1885955968]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
