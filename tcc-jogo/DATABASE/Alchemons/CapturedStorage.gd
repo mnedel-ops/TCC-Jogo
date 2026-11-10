@@ -20,6 +20,7 @@ func find_by_uid(uid: String) -> AlchemonInstance:
 
 
 func add_instance(inst: AlchemonInstance) -> void:
+	inst.ensure_uid()
 	instances.append(inst)
 	emit_changed()
 

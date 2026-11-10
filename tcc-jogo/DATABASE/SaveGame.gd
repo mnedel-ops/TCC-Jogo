@@ -6,6 +6,8 @@ const FORMAT_VERSION := 1
 
 
 static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: PlayerBondData, player: PlayerData, defeated: Dictionary = {}, inventory: InventoryData = null, position: Dictionary = {}) -> Dictionary:
+	_ensure_unique_uids(party.party, storage.instances)
+
 	var party_list: Array = []
 	for inst in party.party:
 		if inst != null:
@@ -15,11 +17,15 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 		if inst != null:
 			storage_list.append(inst.to_dict())
 
+	# Composto: quem participa é gravado pelo uid (seguro contra reordenação) e
+	# também pela posição na party (reserva, p/ saves antigos sem uid).
 	var bond_uids: Array = []
+	var bond_indices: Array = []
 	if bond.is_active():
 		for i in bond.member_indices:
 			if i >= 0 and i < party.party.size() and party.party[i] != null:
 				bond_uids.append(party.party[i].uid)
+				bond_indices.append(i)
 
 	var earned: Array = []
 	for b in player.badges:
@@ -30,7 +36,7 @@ static func serialize(party: PlayerPartyData, storage: CapturedStorage, bond: Pl
 		"saved_at_unix": int(Time.get_unix_time_from_system()),
 		"party": party_list,
 		"storage": storage_list,
-		"bond": {"kind": bond.kind, "member_uids": bond_uids},
+		"bond": {"kind": bond.kind, "member_uids": bond_uids, "member_indices": bond_indices},
 		"defeated_npcs": defeated.keys(),
 		"inventory": inventory.items.duplicate() if inventory != null else [],
 		"position": position.duplicate(),
@@ -72,6 +78,7 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 	var seen := {}
 	var new_party := _load_list(data["party"], seen)
 	var new_storage := _load_list(data["storage"], seen)
+	var new_bond := _read_bond(data.get("bond"), new_party, new_storage)
 
 	defeated.clear()
 	defeated.merge(new_defeated)
@@ -86,17 +93,9 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 	storage.instances.clear()
 	storage.instances.append_array(new_storage)
 
-	var b: Dictionary = data.get("bond", {}) if data.get("bond") is Dictionary else {}
-	var indices: Array[int] = []
-	var ok := str(b.get("kind", BondRules.NONE)) != BondRules.NONE
-	for uid in b.get("member_uids", []):
-		var idx := _index_of_uid(new_party, str(uid))
-		if idx == -1:
-			ok = false
-			break
-		indices.append(idx)
-	if ok and indices.size() >= 2:
-		bond.set_bond(str(b["kind"]), indices)
+	var indices: Array[int] = new_bond["indices"]
+	if indices.size() >= 2:
+		bond.set_bond(new_bond["kind"], indices)
 	else:
 		bond.clear()
 
@@ -115,6 +114,66 @@ static func apply(data: Dictionary, party: PlayerPartyData, storage: CapturedSto
 	party.emit_changed()
 	storage.emit_changed()
 	return OK
+
+
+# Garante que toda criatura da party/storage tem uid, e que ele é único.
+static func _ensure_unique_uids(party_list: Array, storage_list: Array) -> void:
+	var seen := {}
+	for list in [party_list, storage_list]:
+		for inst in list:
+			if inst == null:
+				continue
+			inst.ensure_uid()
+			while seen.has(inst.uid):
+				inst.uid = CreatureFactory.new_uid()
+			seen[inst.uid] = true
+
+
+# Reconstrói o composto salvo. Devolve {"kind": String, "indices": Array[int]}
+# (indices vazio = sem composto). Pode mover pra party um membro que esteja no storage.
+static func _read_bond(raw, party_list: Array[AlchemonInstance], storage_list: Array[AlchemonInstance]) -> Dictionary:
+	var none := {"kind": BondRules.NONE, "indices": [] as Array[int]}
+	if not (raw is Dictionary):
+		return none
+	var kind := str(raw.get("kind", BondRules.NONE))
+	var uids = raw.get("member_uids", [])
+	if kind == BondRules.NONE or not (uids is Array) or uids.size() < 2:
+		return none
+
+	var indices: Array[int] = []
+	var blank := false
+	for uid in uids:
+		var u := str(uid)
+		if u == "":
+			blank = true
+			break
+		var idx := _index_of_uid(party_list, u)
+		if idx == -1:
+			var si := _index_of_uid(storage_list, u)
+			if si != -1:
+				party_list.append(storage_list.pop_at(si))
+				idx = party_list.size() - 1
+		if idx == -1 or indices.has(idx):
+			return none
+		indices.append(idx)
+	if not blank:
+		return {"kind": kind, "indices": indices}
+
+	# Save antigo: criaturas sem uid. Usa as posições gravadas; sem elas, o PC
+	# sempre deixa na party só os membros do composto, então é a party inteira.
+	var saved = raw.get("member_indices", [])
+	var legacy: Array[int] = []
+	if saved is Array and saved.size() == uids.size():
+		for n in saved:
+			if (n is int or n is float) and int(n) >= 0 and int(n) < party_list.size() and not legacy.has(int(n)):
+				legacy.append(int(n))
+	if legacy.size() != uids.size() and party_list.size() == uids.size():
+		legacy.clear()
+		for n in party_list.size():
+			legacy.append(n)
+	if legacy.size() != uids.size():
+		return none
+	return {"kind": kind, "indices": legacy}
 
 
 static func _load_list(raw: Array, seen: Dictionary) -> Array[AlchemonInstance]:

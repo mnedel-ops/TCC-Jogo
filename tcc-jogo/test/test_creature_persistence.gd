@@ -514,3 +514,80 @@ func test_bad_or_missing_position_loads_as_empty() -> void:
 	var pos2 := {"level": "stale"}
 	assert_int(SaveGame.apply(old, w.party, w.storage, w.bond, w.player, {}, null, pos2)).is_equal(OK)
 	assert_bool(pos2.is_empty()).is_true()
+
+
+# --- composto (bond) + membros ----------------------------------------------
+
+func _bond_world_without_uids() -> Dictionary:
+	# Criatura capturada (AlchemonBuilder) nasce sem uid; o PC move ela pra party.
+	var w := _world(0, 0)
+	for i in 2:
+		var inst := AlchemonInstance.new()
+		inst.species_id = _species()
+		w.party.party.append(inst)
+	var pair: Array[int] = [0, 1]
+	w.bond.set_bond(BondRules.COMPOUND, pair)
+	return w
+
+
+func test_bond_survives_save_even_if_members_had_no_uid() -> void:
+	var w := _bond_world_without_uids()
+	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	var w2 := _world(0, 0)
+	_apply(JSON.parse_string(JSON.stringify(data)), w2)
+	assert_str(w2.bond.kind).is_equal(BondRules.COMPOUND)
+	assert_array(w2.bond.member_indices).contains_exactly([0, 1])
+	assert_int(w2.party.party.size()).is_equal(2)
+
+
+func test_serialize_gives_every_creature_a_unique_uid() -> void:
+	var w := _bond_world_without_uids()
+	SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	assert_str(w.party.party[0].uid).is_not_empty()
+	assert_str(w.party.party[0].uid).is_not_equal(w.party.party[1].uid)
+
+
+func test_storage_add_instance_assigns_uid() -> void:
+	var s := CapturedStorage.new()
+	var inst := AlchemonInstance.new()
+	s.add_instance(inst)
+	assert_str(inst.uid).is_not_empty()
+
+
+func test_bond_member_found_in_storage_is_brought_back_to_party() -> void:
+	var w := _world(2, 1)
+	var pair: Array[int] = [0, 1]
+	w.bond.set_bond(BondRules.MIXTURE, pair)
+	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	# simula save em que um membro do composto foi parar no storage
+	var moved = data["party"].pop_back()
+	data["storage"].append(moved)
+	var w2 := _world(0, 0)
+	_apply(data, w2)
+	assert_str(w2.bond.kind).is_equal(BondRules.MIXTURE)
+	assert_int(w2.party.party.size()).is_equal(2)
+	assert_str(w2.party.party[1].uid).is_equal(w.party.party[1].uid)
+	assert_int(w2.storage.instances.size()).is_equal(1)
+
+
+func test_old_save_with_blank_member_uids_is_repaired() -> void:
+	var w := _world(2, 1)
+	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	for e in data["party"]:
+		e["uid"] = ""
+	data["bond"] = {"kind": BondRules.COMPOUND, "member_uids": ["", ""]}
+	var w2 := _world(0, 0)
+	_apply(data, w2)
+	assert_str(w2.bond.kind).is_equal(BondRules.COMPOUND)
+	assert_array(w2.bond.member_indices).contains_exactly([0, 1])
+
+
+func test_bond_with_missing_member_is_cleared() -> void:
+	var w := _world(2, 0)
+	var pair: Array[int] = [0, 1]
+	w.bond.set_bond(BondRules.MIXTURE, pair)
+	var data := SaveGame.serialize(w.party, w.storage, w.bond, w.player)
+	data["party"].pop_back()
+	var w2 := _world(0, 0)
+	_apply(data, w2)
+	assert_bool(w2.bond.is_active()).is_false()
