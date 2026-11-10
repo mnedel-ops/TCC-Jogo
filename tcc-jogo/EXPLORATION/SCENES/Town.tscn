@@ -8,10 +8,10 @@
 [ext_resource type="PackedScene" uid="uid://dn5kkw48uiw21" path="res://EXPLORATION/wilderness_encounter.tscn" id="6_ea8wx"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_csqnk"]
-size = Vector3(60, 0.5, 60)
+size = Vector3(78.961426, 0.5, 60)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_beapv"]
-size = Vector2(60, 60)
+size = Vector2(80, 60)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_beapv"]
 size = Vector3(1, 5.632263, 60.583984)
@@ -32,6 +32,19 @@ size = Vector3(8, 8, 10)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_w7erb"]
 size = Vector3(1, 1.9873047, 0.3330078)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ceq6u"]
+size = Vector3(8.046387, 1, 10.080078)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_uxhkt"]
+size = Vector3(0.48840332, 1, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_ea8wx"]
+radius = 8.0
+height = 16.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ea8wx"]
+radius = 8.0
 
 [node name="Town" type="Node3D" unique_id=919393859]
 
@@ -82,14 +95,16 @@ collision_layer = 2
 collision_mask = 9
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor" unique_id=1360744354]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.480713, -0.25, 0)
 shape = SubResource("BoxShape3D_csqnk")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Floor" unique_id=750638051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.142914, 0, 0)
 layers = 2
 mesh = SubResource("PlaneMesh_beapv")
 
 [node name="Arvores" type="StaticBody3D" parent="Environment" unique_id=1206028257]
+collision_layer = 2
 
 [node name="Baixo" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1791857478]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6613846, 2.245328, 30.260616)
@@ -99,8 +114,20 @@ shape = SubResource("BoxShape3D_beapv")
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.66138077, 2.245328, -30.747921)
 shape = SubResource("BoxShape3D_beapv")
 
+[node name="Baixo2" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1087951953]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 58.869778, 2.245328, 30.260616)
+shape = SubResource("BoxShape3D_beapv")
+
+[node name="Cima2" type="CollisionShape3D" parent="Environment/Arvores" unique_id=644588445]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 58.86978, 2.245328, -30.747921)
+shape = SubResource("BoxShape3D_beapv")
+
 [node name="Direita" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1664719929]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.511759, 2.3161316, -0.12182617)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.511759, 2.3161316, -32.99813)
+shape = SubResource("BoxShape3D_beapv")
+
+[node name="Direita2" type="CollisionShape3D" parent="Environment/Arvores" unique_id=673181569]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.511759, 2.3161316, 33.56304)
 shape = SubResource("BoxShape3D_beapv")
 
 [node name="Esquerda" type="CollisionShape3D" parent="Environment/Arvores" unique_id=583619634]
@@ -139,10 +166,11 @@ environment = SubResource("Environment_beapv")
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)
 
 [node name="CasaDOut" type="Marker3D" parent="." unique_id=923017258]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -6.6499243)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -6.0219283)
 
 [node name="CasaDireita" type="Area3D" parent="." unique_id=589146877]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -11.896259)
+collision_layer = 16
 script = ExtResource("5_beapv")
 target_level_path = "uid://bwartm28yc5cm"
 target_spawn_point = "CasaDIn"
@@ -156,22 +184,52 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86976635, 4.8547416)
 shape = SubResource("BoxShape3D_w7erb")
 
 [node name="CasaEOut" type="Marker3D" parent="." unique_id=428095587]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.121705, 3.8146973e-06, -12.048)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.451509, 3.8146973e-06, -12.048)
 
-[node name="CasaEsquerda" type="Area3D" parent="." unique_id=1814054814]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.570477, 3.8146973e-06, -11.896259)
+[node name="predioEsquerdo" type="MeshInstance3D" parent="." unique_id=83874920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.570477, 3.8676271, -11.896259)
+mesh = SubResource("BoxMesh_ea8wx")
+
+[node name="Area3D" type="Area3D" parent="predioEsquerdo" unique_id=1106515144]
+collision_layer = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="predioEsquerdo/Area3D" unique_id=723333963]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.004638672, -3.8676233, 0.025390625)
+shape = SubResource("BoxShape3D_ceq6u")
+
+[node name="CasaEsquerda" type="Area3D" parent="predioEsquerdo" unique_id=1814054814]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.9062843, -3.8676233, 0)
+collision_layer = 16
 script = ExtResource("5_beapv")
 target_level_path = "uid://bb7jauxfbwyae"
 target_spawn_point = "CasaEIn"
 
-[node name="predio" type="MeshInstance3D" parent="CasaEsquerda" unique_id=83874920]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.8676233, 0)
-mesh = SubResource("BoxMesh_ea8wx")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CasaEsquerda" unique_id=184080395]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7145863, 0.86976635, 0.07742119)
+[node name="Porta" type="CollisionShape3D" parent="predioEsquerdo/CasaEsquerda" unique_id=184080395]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.37927246, 0.86976635, 0.07742119)
 shape = SubResource("BoxShape3D_w7erb")
 
 [node name="WildernessEncounter" parent="." unique_id=1096219808 instance=ExtResource("6_ea8wx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.105476, 0, 16.654728)
 alchemons = Array[int]([1, 2, 3])
+
+[node name="GymOut" type="Marker3D" parent="." unique_id=472358257]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.903618, 0, 0)
+
+[node name="Ginasio" type="StaticBody3D" parent="." unique_id=716074266]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 55.602894, 0, 0)
+
+[node name="Porta" type="Area3D" parent="Ginasio" unique_id=1384640458]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.05703, 0, 0)
+script = ExtResource("5_beapv")
+target_level_path = "uid://8gqqfc8maxgo"
+target_spawn_point = "GymIn"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ginasio/Porta" unique_id=308185824]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25579834, 0.4639387, 0)
+shape = SubResource("BoxShape3D_uxhkt")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ginasio" unique_id=340257428]
+mesh = SubResource("SphereMesh_ea8wx")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ginasio" unique_id=97116138]
+shape = SubResource("SphereShape3D_ea8wx")

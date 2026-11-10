@@ -28,12 +28,12 @@ size = Vector3(1.505, 3.23, 0.24)
 script = ExtResource("1_gqv8b")
 npc_scene = ExtResource("2_7g0a3")
 
-[node name="OldMan" type="Marker3D" parent="NPCHolder" unique_id=1477446290]
+[node name="Kid" type="Marker3D" parent="NPCHolder" unique_id=1477446290]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -0.20615959, 0, 0.8296995)
 script = ExtResource("3_dgjff")
 npc_scene = ExtResource("2_7g0a3")
 alchemons_ids = Array[int]([3, 3])
-dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+dialogue = "Marie Curie eh minha cientista favorita!"
 
 [node name="Environment" type="Node3D" parent="." unique_id=915643647]
 

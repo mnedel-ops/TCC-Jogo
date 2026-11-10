@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="2_pryhs"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_7yqpg"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="4_6e51k"]
+[ext_resource type="PackedScene" uid="uid://br3ljhxl2ql" path="res://scenes/pc/pc.tscn" id="4_pryhs"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lclgt"]
 size = Vector3(60, 0.5, 60)
@@ -43,6 +44,9 @@ npc_scene = ExtResource("2_pryhs")
 alchemons_ids = Array[int]([3, 3])
 is_shopkeeper = true
 dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+
+[node name="PC" parent="NPCHolder" unique_id=1971466549 instance=ExtResource("4_pryhs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3239431, 0, -4.622013)
 
 [node name="Environment" type="Node3D" parent="." unique_id=1824561473]
 

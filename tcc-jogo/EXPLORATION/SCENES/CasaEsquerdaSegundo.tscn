@@ -1,0 +1,92 @@
+[gd_scene format=3 uid="uid://de2r1po0hi8d8"]
+
+[ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="1_w45vc"]
+[ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="2_16i7t"]
+[ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="3_mhuk8"]
+[ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="4_qqdl6"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_r07s6"]
+size = Vector3(1, 2.984375, 0.2446289)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hw2kh"]
+size = Vector3(1.505, 3.23, 0.24)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hf3b2"]
+size = Vector3(60, 0.5, 60)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_edeqx"]
+size = Vector2(12, 15)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_q07vy"]
+size = Vector3(1, 5.632263, 60.583984)
+
+[sub_resource type="Environment" id="Environment_m1ys0"]
+
+[node name="CasaEsquerdaSegundo" type="Node3D" unique_id=203901319]
+
+[node name="SegIn" type="Marker3D" parent="." unique_id=1125948900]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0504019, 0, -10.06161)
+
+[node name="SegundoAndar" type="Area3D" parent="." unique_id=1774479696]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
+script = ExtResource("1_w45vc")
+target_level_path = "uid://bb7jauxfbwyae"
+target_spawn_point = "SegOut"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=1722672818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4882813, 0.60608673)
+shape = SubResource("BoxShape3D_r07s6")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=1876701993]
+transform = Transform3D(-8.270086e-08, 0.70710677, -0.70710677, -9.4128886e-08, 0.70710677, 0.70710677, 1, 1.250375e-07, 8.080853e-09, -1.2331619, -0.7480078, -0.03598404)
+mesh = SubResource("BoxMesh_hw2kh")
+
+[node name="NPCHolder" type="Node" parent="." unique_id=309363556]
+script = ExtResource("2_16i7t")
+npc_scene = ExtResource("3_mhuk8")
+
+[node name="Kid" type="Marker3D" parent="NPCHolder" unique_id=1902381446]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -0.20615959, 0, 0.8296995)
+script = ExtResource("4_qqdl6")
+npc_scene = ExtResource("3_mhuk8")
+alchemons_ids = Array[int]([3, 3])
+dialogue = "Marie Curie eh minha cientista favorita!"
+
+[node name="Environment" type="Node3D" parent="." unique_id=1238594941]
+
+[node name="Floor" type="StaticBody3D" parent="Environment" unique_id=305869393]
+collision_layer = 2
+collision_mask = 9
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor" unique_id=659557915]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+shape = SubResource("BoxShape3D_hf3b2")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Floor" unique_id=590509846]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.3935866)
+layers = 2
+mesh = SubResource("PlaneMesh_edeqx")
+
+[node name="Arvores" type="StaticBody3D" parent="Environment" unique_id=1272591748]
+
+[node name="Baixo" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1729606230]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6613846, 2.245328, 4.727592)
+shape = SubResource("BoxShape3D_q07vy")
+
+[node name="Cima" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1025399458]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.66138077, 2.245328, -11.413492)
+shape = SubResource("BoxShape3D_q07vy")
+
+[node name="Direita" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1765865988]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.622877, 2.3161316, -0.12182617)
+shape = SubResource("BoxShape3D_q07vy")
+
+[node name="Esquerda" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1428398824]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.8180084, 2.3161316, -0.12182617)
+shape = SubResource("BoxShape3D_q07vy")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=258506330]
+environment = SubResource("Environment_m1ys0")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment" unique_id=787029635]
+transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)

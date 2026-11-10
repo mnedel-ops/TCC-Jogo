@@ -167,6 +167,7 @@ move_right={
 3d_physics/layer_2="Environmetn"
 3d_physics/layer_3="Item"
 3d_physics/layer_4="NPC"
+3d_physics/layer_5="Porta"
 
 [physics]
 
