@@ -377,15 +377,15 @@ As insígnias recebem nomes derivados das famílias da Tabela Periódica, em vez
 
 | Família representada | Nome da insígnia |
 | --- | --- |
-| Metais alcalinos | Insígnia dos Metais Alcalinos |
-| Metais alcalino-terrosos | Insígnia dos Metais Alcalino-Terrosos |
-| Metais de transição | Insígnia dos Metais de Transição |
-| Família do boro (grupo 13) | Insígnia da Família do Boro |
-| Família do carbono (grupo 14) | Insígnia da Família do Carbono |
+| Metais alcalinos | Insígnia dos Alcalinos |
+| Metais alcalino-terrosos | Insígnia dos Terrosos |
+| Metais de transição | Insígnia dos Transição |
+| Família do boro (grupo 13) | Insígnia do Boro |
+| Família do carbono (grupo 14) | Insígnia do Carbono |
 | Pnictogênios (grupo 15) | Insígnia dos Pnictogênios |
 | Calcogênios (grupo 16) | Insígnia dos Calcogênios |
 | Halogênios (grupo 17) | Insígnia dos Halogênios |
-| Gases nobres (grupo 18) | Insígnia dos Gases Nobres |
+| Gases nobres (grupo 18) | Insígnia dos Nobres |
 | Lantanídeos | Insígnia dos Lantanídeos |
 | Actinídeos | Insígnia dos Actinídeos |
 
