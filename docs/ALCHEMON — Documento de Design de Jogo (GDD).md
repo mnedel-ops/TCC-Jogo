@@ -482,11 +482,9 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 3. **XP:** fórmula `√A·A²…` × XP fixo da espécie e 100 por nível; XP para ambas × só para quem derrotou.
 4. **Temperatura inicial:** 25 °C × 273,15 K; ΔT com `floor` × decimal.
 5. **Mistura/Composto:** a transferência de atributos do Composto ainda usa 70% fixos de HP e energia no código; o novo design prevê fator variável (50%–95%) para HP máximo, Ataque, Defesa e Velocidade, calculado por eletronegatividade e carga do Cátion. A energia de ação ainda não tem regra definida.
-6. **Derrota e cura:** hospital com teleporte × NPC curandeiro sem teleporte.
-7. **Fuga:** só contra selvagens × permitida sempre.
-8. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
-9. **Energia:** reduzida ao sofrer golpes × só ao atacar.
-10. **Menu:** Wiki/Alchemon/Bag/Name/Save/Options/Exit × Table/Bag/Alchemons/Player/Save/Exit; Tab abre o menu completo.
+6. **Fuga:** só contra selvagens × permitida sempre.
+7. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
+8. **Energia:** reduzida ao sofrer golpes × só ao atacar.
 
 ---
 
