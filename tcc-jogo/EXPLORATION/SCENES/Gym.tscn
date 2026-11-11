@@ -57,6 +57,8 @@ layers = 2
 mesh = SubResource("PlaneMesh_hfqb5")
 
 [node name="Paredes" type="StaticBody3D" parent="Environment" unique_id=1202851919]
+collision_layer = 2
+collision_mask = 9
 
 [node name="Baixo" type="CollisionShape3D" parent="Environment/Paredes" unique_id=2119953067]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6613846, 2.245328, 4.791792)
