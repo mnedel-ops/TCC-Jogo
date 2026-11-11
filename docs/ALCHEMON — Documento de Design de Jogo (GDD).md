@@ -177,6 +177,266 @@ IV: sorteado de 1 a 31 por `CreatureFactory.create()` e guardado na criatura. Se
 
 O recurso em combate é `valence_electrons` (máximo = `max_valence_electrons` da espécie). É gasto por ataque (`energy_cost`, padrão 2) e persiste entre combates (`PERSIST_ENERGY`). Recarrega no curandeiro (`GameSession.heal_party`). \[Parcial\] O GDD diz que a energia também **diminui ao sofrer golpes**; o código não faz isso. Sem energia → SLAP \[OK\].
 
+### 7.4 Cadastro de um novo Alchemon
+
+Para cadastrar uma nova espécie, preencher os dados abaixo no recurso `AlchemonSheet` e nos recursos associados. Os valores devem representar a espécie, não uma instância individual capturada pelo jogador.
+
+**Lista de preenchimento por espécie:**
+
+1. **Identificação:** nome da criatura, nome do elemento, símbolo químico e número atômico.
+2. **Classificação:** tipo de combate (`Metal`, `Ametal` ou `Metaloide`) e categoria química (`Metal`, `Ametal` ou `Metaloide`). Caso o projeto utilize um único campo para ambas, manter a nomenclatura consistente.
+3. **Propriedades químicas:** massa atômica, elétrons de valência e alvo da regra do octeto.
+4. **Atributos-base:** HP máximo, Ataque, Defesa, Velocidade Mecânica e Energia de Ação. Enquanto a correspondência química não estiver definida, preencher com valores provisórios balanceados e identificar esses valores como placeholders.
+5. **Propriedades térmicas:** ponto de fusão e ponto de ebulição, em Kelvin.
+6. **Combate:** cadastrar os ataques da espécie (até quatro; atualmente as espécies documentadas possuem três), com nome, tipo, poder e custo de energia conforme o formato de `AttackData` utilizado no projeto.
+7. **Progressão:** definir a recompensa de experiência (`xp_reward`) da espécie.
+8. **Representação visual:** associar o modelo 3D, ícone/retrato e demais recursos visuais exigidos pela cena ou interface.
+
+**Dados individuais não devem ser preenchidos no recurso da espécie:** UID, nível inicial, IV, personalidade, HP atual e energia atual pertencem à instância criada por `CreatureFactory`. O IV é sorteado entre 1 e 31; personalidade é sorteada pelo sistema atual.
+
+### 7.5 Tabela de referência — `AlchemonSheet`
+
+A tabela distingue os campos documentados no recurso atual das propriedades adicionais recomendadas para a futura implementação da formação de compostos. Confirmar os nomes e tipos diretamente no script `AlchemonSheet.gd` antes de alterar os recursos existentes.
+
+| Campo | Tipo sugerido | Valor a preencher | Situação / finalidade |
+| --- | --- | --- | --- |
+| `element_name` | `String` | Nome do elemento químico | Identificação; confirmar nome efetivo no script |
+| `element_symbol` | `String` | Símbolo químico (ex.: `Fe`) | Identificação; recomendado |
+| `atomic_number` | `int` | Número atômico | Propriedade química; recomendado |
+| `atomic_mass` | `float` | Massa atômica em u | Documentado no recurso |
+| `element_category` | `enum`/`String` | Metal, Ametal ou Metaloide | Categoria química; confirmar campo existente |
+| `max_hp` | `int` | HP máximo-base | Documentado; atualmente placeholder |
+| `base_attack` | `int` | Ataque-base | Documentado; atualmente placeholder |
+| `base_defense` | `int` | Defesa-base | Documentado; atualmente placeholder |
+| `base_mechanical_speed` | `int` | Velocidade-base | Documentado; atualmente placeholder |
+| `base_action_energy` | `int` | Energia de Ação-base, se utilizada pelo código | Documentado; verificar relação com o recurso de elétrons de valência |
+| `max_valence_electrons` | `int` | Limite máximo do recurso de energia atual | Documentado; usado como máximo de energia |
+| `valence_electrons` | `int` | Quantidade real de elétrons de valência | Propriedade química recomendada; não confundir com o limite de energia |
+| `octet_target` | `int` | Quantidade-alvo para a regra do octeto | Documentado; normalmente 2 para H e 8 para elementos representados pela regra do octeto |
+| `electronegativity` | `float` | Eletronegatividade na escala de Pauling | Recomendada para a fórmula de transferência do Composto |
+| `oxidation_states` | `Array[int]` | Estados de oxidação comuns (ex.: `[-2, 2, 4, 6]`) | Recomendada para validar compostos iônicos |
+| `bonding_capacity` | `int` | Capacidade covalente típica | Recomendada para regras covalentes iniciais |
+| `temperature` | `float` | Ponto de fusão em K | Campo térmico documentado com este nome no GDD |
+| `boiling_point` | `float` | Ponto de ebulição em K | Documentado no recurso |
+| `xp_reward` | `int` | Experiência concedida ao derrotar a espécie | Dado da espécie; confirmar recurso/campo efetivo |
+| `attacks` | `Array[AttackData]` ou estrutura equivalente | Até quatro ataques cadastrados | Dados associados à espécie; confirmar estrutura efetiva |
+| `model` / `portrait` | recurso visual | Modelo 3D e retrato/ícone | Referências de apresentação; não necessariamente campos de `AlchemonSheet` |
+
+**Observações para o cadastro:**
+
+- Usar valores de fontes químicas confiáveis e manter as unidades consistentes. Massa atômica deve estar em unidade de massa atômica; temperatura, em Kelvin; eletronegatividade, na escala de Pauling.
+- Para elementos com vários estados de oxidação, cadastrar todos os estados comuns relevantes, não apenas um valor arbitrário.
+- `valence_electrons` e `max_valence_electrons` têm significados diferentes. O primeiro é uma propriedade química; o segundo representa o limite do recurso de energia no sistema atual.
+- `electronegativity`, `oxidation_states` e `bonding_capacity` são propriedades recomendadas para a implementação futura dos Compostos; não presumir que já existam no código.
+- Os atributos-base de combate continuam placeholders até que as fórmulas de correspondência química sejam definidas e balanceadas.
+
+**Modelo de ficha para copiar e preencher:**
+
+```text
+Nome do Alchemon:
+Elemento químico:
+Símbolo:
+Número atômico:
+Categoria química / tipo de combate:
+Massa atômica (u):
+Elétrons de valência:
+Alvo do octeto:
+Estados de oxidação comuns:
+Eletronegatividade (Pauling):
+Capacidade covalente típica:
+Ponto de fusão (K):
+Ponto de ebulição (K):
+HP máximo-base:
+Ataque-base:
+Defesa-base:
+Velocidade-base:
+Energia de Ação-base / limite de energia:
+Recompensa de XP:
+Ataques (nome, tipo, poder e custo):
+Modelo 3D:
+Retrato / ícone:
+```
+
+
+
+### 7.6 Elementos cadastrados no protótipo
+
+Esta subseção documenta os seis elementos definidos para as espécies de Alchemon atualmente contempladas no protótipo. Os atributos-base correspondem aos valores de nível 1 fornecidos para o balanceamento inicial. Eles ainda não representam uma conversão automática das propriedades químicas em atributos de combate.
+
+**Convenções de cadastro:**
+
+- Massa atômica em unidade de massa atômica (`u`).
+- Eletronegatividade na escala de Pauling.
+- Pontos de fusão e ebulição em Kelvin (`K`).
+- `EV` representa a quantidade de elétrons da camada externa utilizada como referência para o recurso de energia de ação. Para metais de transição, a configuração eletrônica deve ser considerada ao interpretar esse valor.
+- Os estados de oxidação listados são os estados comuns considerados pelo projeto, não uma lista exaustiva de todos os compostos conhecidos.
+- A capacidade de ligação é uma referência didática para as regras iniciais de formação de Compostos; não representa um limite químico universal.
+
+#### 7.6.1 Hidrogênio (H)
+
+| Campo | Valor |
+|---|---|
+| Nome | Hidrogênio |
+| Símbolo | `H` |
+| Número atômico | 1 |
+| Categoria | Ametal |
+| Massa atômica | 1,008 u |
+| Elétrons de valência | 1 (`1s¹`) |
+| Estados de oxidação | +1, -1 |
+| Eletronegatividade | 2,20 |
+| Capacidade de ligação | 1 |
+| HP máximo-base (nível 1) | 45 |
+| Ataque-base | 60 |
+| Defesa-base | 40 |
+| Velocidade-base | 95 |
+| Energia de ação (EV) | 1 |
+| Ponto de fusão | 13,99 K |
+| Ponto de ebulição | 20,27 K |
+| Alvo de estabilidade | 2 elétrons (regra do dueto) |
+
+O Hidrogênio segue a regra do dueto: sua configuração estável mais simples corresponde a dois elétrons, como no Hélio. Pode participar de ligações covalentes simples e formar os íons H⁺ ou H⁻ em contextos químicos apropriados.
+
+#### 7.6.2 Oxigênio (O)
+
+| Campo | Valor |
+|---|---|
+| Nome | Oxigênio |
+| Símbolo | `O` |
+| Número atômico | 8 |
+| Categoria | Ametal |
+| Massa atômica | 15,999 u |
+| Elétrons de valência | 6 (`2s² 2p⁴`) |
+| Estados de oxidação | -2, -1, +2 |
+| Eletronegatividade | 3,44 |
+| Capacidade de ligação | 2 |
+| HP máximo-base (nível 1) | 60 |
+| Ataque-base | 85 |
+| Defesa-base | 45 |
+| Velocidade-base | 80 |
+| Energia de ação (EV) | 6 |
+| Ponto de fusão | 54,36 K |
+| Ponto de ebulição | 90,19 K |
+| Alvo de estabilidade | 8 elétrons |
+
+O Oxigênio tende a completar o octeto ao receber ou compartilhar dois elétrons. Sua capacidade de ligação típica é duas ligações, embora a estrutura efetiva dependa do composto formado.
+
+#### 7.6.3 Silício (Si)
+
+| Campo | Valor |
+|---|---|
+| Nome | Silício |
+| Símbolo | `Si` |
+| Número atômico | 14 |
+| Categoria | Metaloide |
+| Massa atômica | 28,085 u |
+| Elétrons de valência | 4 (`3s² 3p²`) |
+| Estados de oxidação | +4, -4, +2 |
+| Eletronegatividade | 1,90 |
+| Capacidade de ligação | 4 |
+| HP máximo-base (nível 1) | 75 |
+| Ataque-base | 65 |
+| Defesa-base | 75 |
+| Velocidade-base | 55 |
+| Energia de ação (EV) | 4 |
+| Ponto de fusão | 1.687 K |
+| Ponto de ebulição | 3.538 K |
+| Alvo de estabilidade | 8 elétrons |
+
+O Silício apresenta quatro elétrons de valência e participa de estruturas covalentes, inclusive redes cristalinas. A capacidade de quatro ligações é uma simplificação adequada ao modelo inicial do jogo.
+
+#### 7.6.4 Arsênio (As)
+
+| Campo | Valor |
+|---|---|
+| Nome | Arsênio |
+| Símbolo | `As` |
+| Número atômico | 33 |
+| Categoria | Metaloide |
+| Massa atômica | 74,922 u |
+| Elétrons de valência | 5 (`4s² 4p³`) |
+| Estados de oxidação | +5, +3, -3 |
+| Eletronegatividade | 2,18 |
+| Capacidade de ligação | 3 ou 5 |
+| HP máximo-base (nível 1) | 70 |
+| Ataque-base | 80 |
+| Defesa-base | 60 |
+| Velocidade-base | 60 |
+| Energia de ação (EV) | 5 |
+| Sublimação a 1 atm | aproximadamente 887 K |
+| Ponto de ebulição | Não se aplica como transição líquido-gás a 1 atm; o elemento sublima |
+| Alvo de estabilidade | 8 elétrons (modelo simplificado) |
+
+O Arsênio apresenta estados de oxidação variados e pode participar de estruturas com diferentes números de ligações. À pressão atmosférica, o arsênio cinza sublima; portanto, o valor de 887 K deve ser registrado como temperatura de sublimação, e não como ponto de fusão e ponto de ebulição convencionais. O valor de fusão próximo de 1.090 K ocorre sob pressão elevada e não deve ser usado como ponto de fusão padrão do recurso térmico.
+
+#### 7.6.5 Ferro (Fe)
+
+| Campo | Valor |
+|---|---|
+| Nome | Ferro |
+| Símbolo | `Fe` |
+| Número atômico | 26 |
+| Categoria | Metal de transição |
+| Massa atômica | 55,845 u |
+| Elétrons na camada externa | 2 (`4s²`) |
+| Estados de oxidação | +2, +3 |
+| Eletronegatividade | 1,83 |
+| Capacidade de ligação | 2 ou 3 em estados iônicos comuns; pode formar complexos de coordenação |
+| HP máximo-base (nível 1) | 95 |
+| Ataque-base | 55 |
+| Defesa-base | 90 |
+| Velocidade-base | 40 |
+| Energia de ação (EV) | 2 |
+| Ponto de fusão | 1.811 K |
+| Ponto de ebulição | 3.134 K |
+| Alvo de estabilidade | Não representado adequadamente pela regra simples do octeto |
+
+Para o Ferro, o cadastro de dois elétrons considera a camada externa `4s²`, utilizada como referência para o recurso de energia. A configuração eletrônica também inclui a subcamada `3d⁶`; por isso, a descrição de elétrons de valência em metais de transição depende do contexto químico. Os estados +2 e +3 são os principais considerados pelo projeto. A regra do octeto não descreve adequadamente todos os seus compostos e complexos de coordenação.
+
+#### 7.6.6 Ouro (Au)
+
+| Campo | Valor |
+|---|---|
+| Nome | Ouro |
+| Símbolo | `Au` |
+| Número atômico | 79 |
+| Categoria | Metal de transição / metal nobre |
+| Massa atômica | 196,967 u |
+| Elétrons na camada externa | 1 (`6s¹`) |
+| Estados de oxidação | +1, +3 |
+| Eletronegatividade | 2,54 |
+| Capacidade de ligação | Estados iônicos +1 e +3; também forma complexos de coordenação |
+| HP máximo-base (nível 1) | 110 |
+| Ataque-base | 50 |
+| Defesa-base | 95 |
+| Velocidade-base | 35 |
+| Energia de ação (EV) | 1 |
+| Ponto de fusão | 1.337,33 K |
+| Ponto de ebulição | 3.129 K |
+| Alvo de estabilidade | Não representado adequadamente pela regra simples do octeto |
+
+O Ouro apresenta os estados de oxidação +1 e +3 entre os mais relevantes para o projeto. Sua configuração eletrônica inclui a subcamada `5d¹⁰` preenchida e um elétron na camada `6s`. A regra do octeto não é suficiente para descrever sua química de coordenação e seus estados estáveis.
+
+#### 7.6.7 Resumo dos atributos-base
+
+A tabela reúne os valores de nível 1 para consulta durante o cadastro e o balanceamento das espécies.
+
+| Elemento | HP | Ataque | Defesa | Velocidade | EV |
+|---|---:|---:|---:|---:|---:|
+| Hidrogênio (H) | 45 | 60 | 40 | 95 | 1 |
+| Oxigênio (O) | 60 | 85 | 45 | 80 | 6 |
+| Silício (Si) | 75 | 65 | 75 | 55 | 4 |
+| Arsênio (As) | 70 | 80 | 60 | 60 | 5 |
+| Ferro (Fe) | 95 | 55 | 90 | 40 | 2 |
+| Ouro (Au) | 110 | 50 | 95 | 35 | 1 |
+
+**Observações de implementação:**
+
+- Os seis elementos acima passam a compor a lista de espécies documentadas para o protótipo. A presença nesta tabela registra os dados definidos para o projeto; não comprova, por si só, que todos os recursos `.tres`, modelos, ataques e entradas do banco já estejam integrados à build.
+- Os atributos-base são valores de balanceamento definidos por espécie. A justificativa temática entre propriedades químicas e atributos não equivale a uma fórmula científica de conversão.
+- O campo `octet_target` inteiro não representa adequadamente as exceções de metais de transição. Para Ferro e Ouro, não se deve aplicar automaticamente a regra do octeto como validador químico universal.
+- A estrutura térmica atual utiliza um ponto de fusão e um ponto de ebulição. Para o Arsênio, a sublimação a 1 atm exige tratamento específico; não preencher os dois campos com 887 K como se fossem transições distintas. Até que o código suporte sublimação, registrar a limitação e evitar classificar o valor como ponto de fusão convencional.
+- Para implementar a fórmula de transferência de atributos dos Compostos (seção 9.2), os recursos também precisam disponibilizar a eletronegatividade e a carga/valência positiva escolhida para o Cátion. Os estados de oxidação cadastrados permitem representar as alternativas, mas a escolha da carga usada no cálculo deve ser definida pela regra de formação.
+
 ---
 
 ## 8. Temperatura da Arena
@@ -202,9 +462,9 @@ No código, um Composto só se desfaz quando o **Ânion cai** (`BondRules.releas
 
 O jogador define o vínculo no PC (`PlayerBondData`: `kind` + índices). Ao iniciar o combate, `CombatStateFactory._apply_player_bond()` revalida e aplica; a IA também forma laços (`_try_bond`). Bônus ficam só no estado transitório de batalha e **não vazam** para a criatura salva.
 
-### 9.1 Misturas
+### 9.1 Misturas — \[Parcial\]
 
-`AlchemyStation.is_mixture()`: duas criaturas **Metal**. Nao concede bonus, pois eh facil de formar.
+`AlchemyStation.is_mixture()`: duas criaturas **Metal**. `BondRules.MIXTURE_BONUS = 8`, aplicado a **HP máximo e energia máxima** (e valores atuais) de ambos. \[Parcial\] O GDD diz "todos os atributos".
 
 ### 9.2 Compostos — \[Parcial\]
 
@@ -254,7 +514,7 @@ A implementação deverá proteger a divisão quando `HP_Máx, Ânion` for zero 
 
 `AttackData`: `indexAttack`, `attack_name`, `power`, `energy_cost` (padrão 2), `element_type`. \[Parcial\] **Faltam** probabilidade de acerto e de crítico por ataque (o código usa valores globais). Ataques existentes: Tackle, Scratch, TailStrike, SLAP e ataques de debug. Cada espécie tem **3** ataques, não 4. Aprendizado de ataques por nível \[Pendente\].
 
-### 10.1 Dano
+### 10.1 Dano — \[OK\]/\[Parcial\]
 
 `compute_damage = ((((2×nível/5 + 2) × poder × atq/def) / 50) + 2) × efetividade`, defesa mínima 1, resultado ≥ 0. Fórmula conforme o GDD. \[OK\]
 
@@ -482,9 +742,11 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 3. **XP:** fórmula `√A·A²…` × XP fixo da espécie e 100 por nível; XP para ambas × só para quem derrotou.
 4. **Temperatura inicial:** 25 °C × 273,15 K; ΔT com `floor` × decimal.
 5. **Mistura/Composto:** a transferência de atributos do Composto ainda usa 70% fixos de HP e energia no código; o novo design prevê fator variável (50%–95%) para HP máximo, Ataque, Defesa e Velocidade, calculado por eletronegatividade e carga do Cátion. A energia de ação ainda não tem regra definida.
-6. **Fuga:** só contra selvagens × permitida sempre.
-7. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
-8. **Energia:** reduzida ao sofrer golpes × só ao atacar.
+6. **Derrota e cura:** hospital com teleporte × NPC curandeiro sem teleporte.
+7. **Fuga:** só contra selvagens × permitida sempre.
+8. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
+9. **Energia:** reduzida ao sofrer golpes × só ao atacar.
+10. **Menu:** Wiki/Alchemon/Bag/Name/Save/Options/Exit × Table/Bag/Alchemons/Player/Save/Exit; Tab abre o menu completo.
 
 ---
 
