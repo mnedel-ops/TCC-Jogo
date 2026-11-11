@@ -35,7 +35,7 @@ script = ExtResource("3_7yqpg")
 npc_scene = ExtResource("2_pryhs")
 alchemons_ids = Array[int]([3, 3])
 is_healer = true
-dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+dialogue = "Ola! Precisa que seus Alchemons sejam curados?"
 
 [node name="Vendedor" type="Marker3D" parent="NPCHolder" unique_id=1760198995]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 6.757685, 2.861023e-06, -1.3846788)
@@ -43,7 +43,7 @@ script = ExtResource("3_7yqpg")
 npc_scene = ExtResource("2_pryhs")
 alchemons_ids = Array[int]([3, 3])
 is_shopkeeper = true
-dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+dialogue = "Saudacoes, meu jovem! Deseja comprar ou vender?"
 
 [node name="PC" parent="NPCHolder" unique_id=1971466549 instance=ExtResource("4_pryhs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3239431, 0, -4.622013)

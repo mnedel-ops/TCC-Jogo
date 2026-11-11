@@ -10,7 +10,7 @@
 size = Vector3(78.961426, 0.5, 60)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_beapv"]
-size = Vector2(80, 60)
+size = Vector2(100, 60)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_beapv"]
 size = Vector3(1, 5.632263, 60.583984)
@@ -86,7 +86,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.480713, -0.25, 0)
 shape = SubResource("BoxShape3D_csqnk")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Floor" unique_id=750638051]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.142914, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.365314, 0, 0)
 layers = 2
 mesh = SubResource("PlaneMesh_beapv")
 
@@ -115,6 +115,10 @@ shape = SubResource("BoxShape3D_beapv")
 
 [node name="Direita2" type="CollisionShape3D" parent="Environment/Arvores" unique_id=673181569]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.511759, 2.3161316, 33.56304)
+shape = SubResource("BoxShape3D_beapv")
+
+[node name="Direita3" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1051310478]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65.42809, 2.3161316, -0.1976757)
 shape = SubResource("BoxShape3D_beapv")
 
 [node name="Esquerda" type="CollisionShape3D" parent="Environment/Arvores" unique_id=583619634]

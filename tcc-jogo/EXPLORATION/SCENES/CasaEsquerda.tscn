@@ -23,7 +23,7 @@ size = Vector3(1, 2.984375, 0.2446289)
 size = Vector3(1.505, 3.23, 0.24)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_yeu7u"]
-size = Vector3(1, 2.984375, 1.3295898)
+size = Vector3(1.4926758, 2.984375, 0.17651367)
 
 [sub_resource type="BoxMesh" id="BoxMesh_nolo6"]
 size = Vector3(1.505, 3.23, 0.24)
@@ -97,20 +97,20 @@ mesh = SubResource("BoxMesh_13p4s")
 [node name="CasaEIn" type="Marker3D" parent="." unique_id=202040244]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9667225, -9.536743e-07, 0.037157893)
 
-[node name="SegEOut" type="Marker3D" parent="." unique_id=630463994]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0490615, 0, -9.291098)
+[node name="SegundorAndarEsquerdaOut" type="Marker3D" parent="." unique_id=630463994]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4291708, 0, -8.115797)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1003927300]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2801366, 0, -10.06161)
 collision_layer = 16
 script = ExtResource("4_evbne")
 target_level_path = "uid://de2r1po0hi8d8"
-target_spawn_point = "SegEIn"
+target_spawn_point = "SegundorAndarEsquerdaIn"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=2068142557]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5580945, 1.4882813, -0.03691578)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8044324, 1.4882813, 0.9663763)
 shape = SubResource("BoxShape3D_yeu7u")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=414985360]
-transform = Transform3D(-8.270086e-08, 0.70710677, -0.70710677, -9.4128886e-08, 0.70710677, 0.70710677, 1, 1.250375e-07, 8.080853e-09, 1.2327089, 1.2519922, -0.038784027)
+transform = Transform3D(1, 9.412888e-08, 3.8989466e-08, -9.4128886e-08, 0.70710677, 0.70710677, 3.898947e-08, -0.70710677, 0.70710677, 0.89428234, 1.2519922, -0.038784027)
 mesh = SubResource("BoxMesh_nolo6")

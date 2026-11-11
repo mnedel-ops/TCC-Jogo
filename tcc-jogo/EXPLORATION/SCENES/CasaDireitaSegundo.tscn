@@ -17,7 +17,7 @@ size = Vector3(1, 5.632263, 60.583984)
 [sub_resource type="Environment" id="Environment_q5ube"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_2gwnh"]
-size = Vector3(1, 2.984375, 0.2446289)
+size = Vector3(1.4559326, 2.984375, 0.2446289)
 
 [sub_resource type="BoxMesh" id="BoxMesh_axh4s"]
 size = Vector3(1.505, 3.23, 0.24)
@@ -75,18 +75,18 @@ environment = SubResource("Environment_q5ube")
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)
 
 [node name="SegIn" type="Marker3D" parent="." unique_id=1107741275]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0504019, 0, -10.06161)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7220607, 0, -7.820524)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1885955968]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10.06161)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5175333, 0, -10.06161)
 script = ExtResource("4_wgwcy")
 target_level_path = "uid://bwartm28yc5cm"
 target_spawn_point = "SegOut"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=78572438]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4882813, 0.60608673)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14013886, 1.4882813, 1.1789513)
 shape = SubResource("BoxShape3D_2gwnh")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=728684869]
-transform = Transform3D(-8.270086e-08, 0.70710677, -0.70710677, -9.4128886e-08, 0.70710677, 0.70710677, 1, 1.250375e-07, 8.080853e-09, -1.2331619, -0.7480078, -0.03598404)
+transform = Transform3D(-1, -1.5594611e-07, 2.282777e-08, -9.4128886e-08, 0.70710677, 0.70710677, -1.2641225e-07, 0.70710677, -0.70710677, -0.16693568, -0.7480078, -0.03598404)
 mesh = SubResource("BoxMesh_axh4s")
