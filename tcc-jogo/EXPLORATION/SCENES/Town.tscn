@@ -10,7 +10,7 @@
 size = Vector3(78.961426, 0.5, 60)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_beapv"]
-size = Vector2(100, 60)
+size = Vector2(100, 48)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_beapv"]
 size = Vector3(1, 5.632263, 60.583984)
@@ -56,24 +56,24 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33.46958, 0, 0)
 script = ExtResource("3_ea8wx")
 npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([1, 2])
-level = 2
+level = 4
 is_fighter = true
 dialogue = "Ei, você! Meus Alchemons estão com vontade de brigar. Prepare-se!"
 dialogue_defeated = "Você é forte mesmo... Meus Alchemons precisam treinar mais."
 
 [node name="Kid" type="Marker3D" parent="NPCHolder" unique_id=483256078]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -10.525158, 0, -3.5990982)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 0.24816227, 0, 7.091034)
 script = ExtResource("3_ea8wx")
 npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([1, 1])
-dialogue = "Dizem que cada Alchemon tem uma personalidade própria. Cuide bem dos seus!"
+dialogue = "Aquele predio baixo eh o laboratorio! Mal vejo a hora de trabalhar la!"
 
 [node name="OldMan" type="Marker3D" parent="NPCHolder" unique_id=2017377792]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 25.308487, 0, 0.2997818)
 script = ExtResource("3_ea8wx")
 npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([3, 3])
-dialogue = "Cuidado com a grama alta ao oeste. Tem Alchemon selvagem por lá."
+dialogue = "Jovem, voce precisa ter Alchemons fortes para desafiar o Lider do Ginasio."
 
 [node name="Environment" type="Node3D" parent="." unique_id=865101616]
 
@@ -86,7 +86,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.480713, -0.25, 0)
 shape = SubResource("BoxShape3D_csqnk")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Floor" unique_id=750638051]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.365314, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.365314, 0, 7.3594093)
 layers = 2
 mesh = SubResource("PlaneMesh_beapv")
 
@@ -98,7 +98,7 @@ transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.6
 shape = SubResource("BoxShape3D_beapv")
 
 [node name="Cima" type="CollisionShape3D" parent="Environment/Arvores" unique_id=986311846]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.66138077, 2.245328, -30.747921)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.66138077, 2.245328, -16.577488)
 shape = SubResource("BoxShape3D_beapv")
 
 [node name="Baixo2" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1087951953]
@@ -106,7 +106,7 @@ transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 58.8
 shape = SubResource("BoxShape3D_beapv")
 
 [node name="Cima2" type="CollisionShape3D" parent="Environment/Arvores" unique_id=644588445]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 58.86978, 2.245328, -30.747921)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 58.86978, 2.245328, -16.577488)
 shape = SubResource("BoxShape3D_beapv")
 
 [node name="Direita" type="CollisionShape3D" parent="Environment/Arvores" unique_id=1664719929]
@@ -154,10 +154,10 @@ environment = SubResource("Environment_beapv")
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)
 
 [node name="CasaDOut" type="Marker3D" parent="." unique_id=923017258]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -6.0219283)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -1.2622762)
 
 [node name="CasaDireita" type="Area3D" parent="." unique_id=589146877]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -11.896259)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.191665, 3.8146973e-06, -7.136607)
 collision_layer = 16
 script = ExtResource("5_beapv")
 target_level_path = "uid://bwartm28yc5cm"
@@ -172,10 +172,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.86976635, 4.8547416)
 shape = SubResource("BoxShape3D_w7erb")
 
 [node name="CasaEOut" type="Marker3D" parent="." unique_id=428095587]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.451509, 3.8146973e-06, -12.048)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8531132, 3.8146973e-06, -7.288348)
 
 [node name="predioEsquerdo" type="MeshInstance3D" parent="." unique_id=83874920]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.570477, 3.8676271, -11.896259)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.97208, 3.8676271, -7.136607)
 mesh = SubResource("BoxMesh_ea8wx")
 
 [node name="Area3D" type="Area3D" parent="predioEsquerdo" unique_id=1106515144]
@@ -197,7 +197,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.37927246, 0.86976635, 0.07
 shape = SubResource("BoxShape3D_w7erb")
 
 [node name="WildernessEncounter" parent="." unique_id=1096219808 instance=ExtResource("6_ea8wx")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.105476, 0, 16.654728)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.791673, 0, 17.913042)
+min_level = 1
+polygon = PackedVector2Array(-10, -10, 10, -10, 10, 10, -10, 10)
 alchemons = Array[int]([1, 2, 3])
 
 [node name="GymOut" type="Marker3D" parent="." unique_id=472358257]

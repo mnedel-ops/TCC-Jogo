@@ -15,5 +15,6 @@ description = "Brilhante e resistente. Doa eletrons com facilidade."
 lore = "Placeholder de lore: o Metal guarda o calor das forjas antigas."
 max_hp = 12
 max_valence_electrons = 2
+base_action_energy = 16
 attacks = Array[ExtResource("1_rwf4c")]([ExtResource("2_oxw2i"), ExtResource("3_d5wru"), ExtResource("4_oxw2i")])
 metadata/_custom_type_script = "uid://cxfaplp86c865"

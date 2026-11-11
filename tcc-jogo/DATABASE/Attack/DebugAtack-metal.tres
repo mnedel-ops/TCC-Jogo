@@ -8,4 +8,5 @@ indexAttack = -2
 attack_name = "Metal"
 power = 3000000
 energy_cost = 0
+unlock_level = 3
 metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

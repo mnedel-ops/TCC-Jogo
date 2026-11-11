@@ -8,4 +8,5 @@ attack_name = "Ametal"
 power = 3000000
 energy_cost = 0
 element_type = 1
+unlock_level = 2
 metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

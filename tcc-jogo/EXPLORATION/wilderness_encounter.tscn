@@ -11,3 +11,4 @@ polygon = PackedVector2Array(-3, -3, 3, -3, 3, 3, -3, 3)
 transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
 depth = 4.0
 polygon = PackedVector2Array(-3, -3, 3, -3, 3, 3, -3, 3)
+debug_color = Color(0, 0.6624799, 0.78196025, 1)

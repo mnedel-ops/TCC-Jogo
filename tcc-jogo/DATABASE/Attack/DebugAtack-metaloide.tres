@@ -9,4 +9,5 @@ attack_name = "Metaloide"
 power = 3000000
 energy_cost = 0
 element_type = 2
+unlock_level = 3
 metadata/_custom_type_script = "uid://chjyxlmn2nm8c"
