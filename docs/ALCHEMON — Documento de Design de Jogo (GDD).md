@@ -202,9 +202,9 @@ No código, um Composto só se desfaz quando o **Ânion cai** (`BondRules.releas
 
 O jogador define o vínculo no PC (`PlayerBondData`: `kind` + índices). Ao iniciar o combate, `CombatStateFactory._apply_player_bond()` revalida e aplica; a IA também forma laços (`_try_bond`). Bônus ficam só no estado transitório de batalha e **não vazam** para a criatura salva.
 
-### 9.1 Misturas — \[Parcial\]
+### 9.1 Misturas
 
-`AlchemyStation.is_mixture()`: duas criaturas **Metal**. `BondRules.MIXTURE_BONUS = 8`, aplicado a **HP máximo e energia máxima** (e valores atuais) de ambos. \[Parcial\] O GDD diz "todos os atributos".
+`AlchemyStation.is_mixture()`: duas criaturas **Metal**. Nao concede bonus, pois eh facil de formar.
 
 ### 9.2 Compostos — \[Parcial\]
 
@@ -224,7 +224,7 @@ O jogador define o vínculo no PC (`PlayerBondData`: `kind` + índices). Ao inic
 
 `AttackData`: `indexAttack`, `attack_name`, `power`, `energy_cost` (padrão 2), `element_type`. \[Parcial\] **Faltam** probabilidade de acerto e de crítico por ataque (o código usa valores globais). Ataques existentes: Tackle, Scratch, TailStrike, SLAP e ataques de debug. Cada espécie tem **3** ataques, não 4. Aprendizado de ataques por nível \[Pendente\].
 
-### 10.1 Dano — \[OK\]/\[Parcial\]
+### 10.1 Dano
 
 `compute_damage = ((((2×nível/5 + 2) × poder × atq/def) / 50) + 2) × efetividade`, defesa mínima 1, resultado ≥ 0. Fórmula conforme o GDD. \[OK\]
 
