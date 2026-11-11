@@ -198,29 +198,29 @@ Para cadastrar uma nova espécie, preencher os dados abaixo no recurso `Alchemon
 
 A tabela distingue os campos documentados no recurso atual das propriedades adicionais recomendadas para a futura implementação da formação de compostos. Confirmar os nomes e tipos diretamente no script `AlchemonSheet.gd` antes de alterar os recursos existentes.
 
-| Campo | Tipo sugerido | Valor a preencher | Situação / finalidade |
+| Campo | Tipo sugerido | Valor a preencher |
 | --- | --- | --- | --- |
-| `element_name` | `String` | Nome do elemento químico | Identificação; confirmar nome efetivo no script |
-| `element_symbol` | `String` | Símbolo químico (ex.: `Fe`) | Identificação; recomendado |
-| `atomic_number` | `int` | Número atômico | Propriedade química; recomendado |
-| `atomic_mass` | `float` | Massa atômica em u | Documentado no recurso |
-| `element_category` | `enum`/`String` | Metal, Ametal ou Metaloide | Categoria química; confirmar campo existente |
-| `max_hp` | `int` | HP máximo-base | Documentado; atualmente placeholder |
-| `base_attack` | `int` | Ataque-base | Documentado; atualmente placeholder |
-| `base_defense` | `int` | Defesa-base | Documentado; atualmente placeholder |
-| `base_mechanical_speed` | `int` | Velocidade-base | Documentado; atualmente placeholder |
-| `base_action_energy` | `int` | Energia de Ação-base, se utilizada pelo código | Documentado; verificar relação com o recurso de elétrons de valência |
-| `max_valence_electrons` | `int` | Limite máximo do recurso de energia atual | Documentado; usado como máximo de energia |
-| `valence_electrons` | `int` | Quantidade real de elétrons de valência | Propriedade química recomendada; não confundir com o limite de energia |
-| `octet_target` | `int` | Quantidade-alvo para a regra do octeto | Documentado; normalmente 2 para H e 8 para elementos representados pela regra do octeto |
-| `electronegativity` | `float` | Eletronegatividade na escala de Pauling | Recomendada para a fórmula de transferência do Composto |
-| `oxidation_states` | `Array[int]` | Estados de oxidação comuns (ex.: `[-2, 2, 4, 6]`) | Recomendada para validar compostos iônicos |
-| `bonding_capacity` | `int` | Capacidade covalente típica | Recomendada para regras covalentes iniciais |
-| `temperature` | `float` | Ponto de fusão em K | Campo térmico documentado com este nome no GDD |
-| `boiling_point` | `float` | Ponto de ebulição em K | Documentado no recurso |
-| `xp_reward` | `int` | Experiência concedida ao derrotar a espécie | Dado da espécie; confirmar recurso/campo efetivo |
-| `attacks` | `Array[AttackData]` ou estrutura equivalente | Até quatro ataques cadastrados | Dados associados à espécie; confirmar estrutura efetiva |
-| `model` / `portrait` | recurso visual | Modelo 3D e retrato/ícone | Referências de apresentação; não necessariamente campos de `AlchemonSheet` |
+| `element_name` | `String` | Nome do elemento químico | 
+| `element_symbol` | `String` | Símbolo químico (ex.: `Fe`)|
+| `atomic_number` | `int` | Número atômico |
+| `atomic_mass` | `float` | Massa atômica em u |
+| `element_category` | `enum`/`String` | Metal, Ametal ou Metaloide|
+| `max_hp` | `int` | HP máximo-base |
+| `base_attack` | `int` | Ataque-base |
+| `base_defense` | `int` | Defesa-base |
+| `base_mechanical_speed` | `int` | Velocidade-base |
+| `base_action_energy` | `int` | Energia de Ação-base, se utilizada pelo código |
+| `max_valence_electrons` | `int` | Limite máximo do recurso de energia atual |
+| `valence_electrons` | `int` | Quantidade real de elétrons de valência |
+| `octet_target` | `int` | Quantidade-alvo para a regra do octeto |
+| `electronegativity` | `float` | Eletronegatividade na escala de Pauling |
+| `oxidation_states` | `Array[int]` | Estados de oxidação comuns (ex.: `[-2, 2, 4, 6]`) |
+| `bonding_capacity` | `int` | Capacidade covalente típica |
+| `temperature` | `float` | Ponto de fusão em K |
+| `boiling_point` | `float` | Ponto de ebulição em K|
+| `xp_reward` | `int` | Experiência concedida ao derrotar a espécie|
+| `attacks` | `Array[AttackData]` ou estrutura equivalente | Até quatro ataques cadastrados |
+| `model` / `portrait` | recurso visual | Modelo 3D e retrato/ícone |
 
 **Observações para o cadastro:**
 
