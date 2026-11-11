@@ -20,7 +20,10 @@ func test_ionic_pair_balances_electrons() -> void:
 	var metal := _sheet(1, AlchemonType.Type.METAL, 2)
 	var ametal := _sheet(2, AlchemonType.Type.AMETAL, 6)
 	assert_str(_kind([metal, ametal])).is_equal(BondRules.COMPOUND)
-	assert_str(_kind([_sheet(3, AlchemonType.Type.METAL, 3), ametal])).is_equal(BondRules.NONE)
+	# Proporção calculada: metal +3 com ametal -2 forma X₂Y₃ (antes era rejeitado).
+	assert_str(_kind([_sheet(3, AlchemonType.Type.METAL, 3), ametal])).is_equal(BondRules.COMPOUND)
+	# Sem estado de oxidação positivo (valência 0) não doa elétron.
+	assert_str(_kind([_sheet(4, AlchemonType.Type.METAL, 0), ametal])).is_equal(BondRules.NONE)
 
 
 func test_ionic_with_three_and_four_members() -> void:
@@ -33,7 +36,7 @@ func test_ionic_with_three_and_four_members() -> void:
 	var a2 := _sheet(6, AlchemonType.Type.AMETAL, 6)
 	var a3 := _sheet(7, AlchemonType.Type.METALOIDE, 6)
 	assert_str(_kind([m3, m4, a2, a3])).is_equal(BondRules.COMPOUND)
-	assert_str(_kind([m3, m4, a2])).is_equal(BondRules.NONE)
+	assert_str(_kind([m3, m4, a2])).is_equal(BondRules.COMPOUND)
 
 
 func test_full_octet_atom_cannot_join_ionic_bond() -> void:
@@ -51,8 +54,11 @@ func test_covalent_molecules() -> void:
 	assert_str(_kind([o1, c, o2])).is_equal(BondRules.COMPOUND)
 	var f1 := _sheet(4, AlchemonType.Type.AMETAL, 7)
 	var f2 := _sheet(5, AlchemonType.Type.AMETAL, 7)
-	assert_str(_kind([c, f1, f2])).is_equal(BondRules.NONE)
-	assert_str(_kind([o1, f1])).is_equal(BondRules.NONE)
+	# Quantidades são calculadas: C com dois flúores diferentes fecha em CF₂F'₂.
+	assert_str(_kind([c, f1, f2])).is_equal(BondRules.COMPOUND)
+	assert_str(_kind([o1, f1])).is_equal(BondRules.COMPOUND)
+	# Mesmo gás nobre não liga com nada.
+	assert_str(_kind([o1, _sheet(6, AlchemonType.Type.AMETAL, 8)])).is_equal(BondRules.NONE)
 
 
 func test_octet_limit_and_size_limit() -> void:
@@ -76,8 +82,10 @@ func test_mixture_only_for_two_metals() -> void:
 func test_failure_reason_explains_rejection() -> void:
 	var metal := _sheet(1, AlchemonType.Type.METAL, 3)
 	var ametal := _sheet(2, AlchemonType.Type.AMETAL, 6)
-	var sheets: Array[AlchemonSheet] = [metal, ametal]
+	var sheets: Array[AlchemonSheet] = [_sheet(5, AlchemonType.Type.METAL, 7), ametal]
 	assert_str(AlchemyStation.bond_failure_reason(sheets)).contains("balance")
+	var lone: Array[AlchemonSheet] = [metal, metal]
+	assert_str(AlchemyStation.bond_failure_reason(lone)).is_empty()
 
 
 func test_three_member_compound_in_combat() -> void:

@@ -13,7 +13,7 @@ enum Level { LIST, OPTION }
 
 const OPTIONS := ["Alchemy", "Stored", "Exit"]
 const DESCRIPTIONS := {
-	"Alchemy": "Make the Component (bond).\nPick 2 to 4 Alchemons from party + storage.\nChemistry rules apply (octet rule, max 8 valence e-).\nThe Component goes into every fight.\nWith an active Component you can only break it.",
+	"Alchemy": "Make the Component (bond).\nPick 2 to 4 Alchemons from party + storage.\nChemistry rules apply: charges must cancel (ionic)\nor every valence must close (covalent).\nThe proportions are worked out for you.\nSeveral copies of one element make molecules (O₂, O₃, P₄).\nThe Component goes into every fight.\nWith an active Component you can only break it.",
 	"Stored": "Stored Alchemons.\nSwap captured Alchemons with your party.",
 	"Exit": "Close the PC.",
 }
@@ -131,7 +131,21 @@ func _bond_text() -> String:
 	for i in _bond.member_indices:
 		if i >= 0 and i < _party().size():
 			names.append(_short_name(_party()[i]))
-	return "Current Component: %s (%s)" % [_kind_label(_bond.kind), " + ".join(names)]
+	var formula := _bond_formula()
+	var tail := "  =  " + formula if formula != "" else ""
+	return "Current Component: %s (%s)%s" % [_kind_label(_bond.kind), " + ".join(names), tail]
+
+
+func _bond_formula() -> String:
+	if _bond == null or _bond.kind != BondRules.COMPOUND or _db == null:
+		return ""
+	var sheets: Array[AlchemonSheet] = []
+	for i in _bond.member_indices:
+		if i < 0 or i >= _party().size() or _party()[i] == null:
+			return ""
+		sheets.append(_db.get_by_id(_party()[i].species_id))
+	var data := AlchemyStation.resolve_compound(sheets)
+	return "" if data == null else "%s (%s)" % [data.chemical_formula, data.bond_type_label()]
 
 
 func _stats_text(inst: AlchemonInstance) -> String:
@@ -600,7 +614,12 @@ func _make_component() -> void:
 		member_indices.append(i)
 		member_names.append(_short_name(chosen[i]))
 	_bond.set_bond(kind, member_indices)
-	_alch_info.text = "Made: %s (%s)" % [_kind_label(kind), " + ".join(member_names)]
+	var made := "Made: %s (%s)" % [_kind_label(kind), " + ".join(member_names)]
+	if kind == BondRules.COMPOUND:
+		var data := AlchemyStation.resolve_compound(sheets)
+		if data != null:
+			made += "\n%s - %s, ligação %s" % [data.chemical_formula, data.compound_name, data.bond_type_label()]
+	_alch_info.text = made
 	_alch_picked.clear()
 	party_changed.emit()
 	bond_changed.emit()
