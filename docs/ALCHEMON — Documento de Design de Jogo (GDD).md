@@ -429,14 +429,6 @@ A tabela reúne os valores de nível 1 para consulta durante o cadastro e o bala
 | Ferro (Fe) | 95 | 55 | 90 | 40 | 2 |
 | Ouro (Au) | 110 | 50 | 95 | 35 | 1 |
 
-**Observações de implementação:**
-
-- Os seis elementos acima passam a compor a lista de espécies documentadas para o protótipo. A presença nesta tabela registra os dados definidos para o projeto; não comprova, por si só, que todos os recursos `.tres`, modelos, ataques e entradas do banco já estejam integrados à build.
-- Os atributos-base são valores de balanceamento definidos por espécie. A justificativa temática entre propriedades químicas e atributos não equivale a uma fórmula científica de conversão.
-- O campo `octet_target` inteiro não representa adequadamente as exceções de metais de transição. Para Ferro e Ouro, não se deve aplicar automaticamente a regra do octeto como validador químico universal.
-- A estrutura térmica atual utiliza um ponto de fusão e um ponto de ebulição. Para o Arsênio, a sublimação a 1 atm exige tratamento específico; não preencher os dois campos com 887 K como se fossem transições distintas. Até que o código suporte sublimação, registrar a limitação e evitar classificar o valor como ponto de fusão convencional.
-- Para implementar a fórmula de transferência de atributos dos Compostos (seção 9.2), os recursos também precisam disponibilizar a eletronegatividade e a carga/valência positiva escolhida para o Cátion. Os estados de oxidação cadastrados permitem representar as alternativas, mas a escolha da carga usada no cálculo deve ser definida pela regra de formação.
-
 ---
 
 ## 8. Temperatura da Arena
