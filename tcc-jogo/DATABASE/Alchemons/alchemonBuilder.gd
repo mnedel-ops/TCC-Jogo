@@ -35,6 +35,6 @@ func apply_level(sheet:AlchemonSheet, inst:AlchemonInstance) -> Dictionary:
 		"attack": AlchemonFormulas.compute_stat(sheet.base_attack, iv, lv),
 		"defense": AlchemonFormulas.compute_stat(sheet.base_defense, iv, lv),
 		"speed": AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, lv),
-		"energy": AlchemonFormulas.compute_stat(sheet.base_action_energy, iv, lv),
-		"max_hp": AlchemonFormulas.compute_stat(sheet.max_hp, iv, lv),
+		"energy": AlchemonFormulas.compute_stat(sheet.energia_de_acao, iv, lv),
+		"max_hp": AlchemonFormulas.compute_stat(sheet.base_hp, iv, lv),
 	}

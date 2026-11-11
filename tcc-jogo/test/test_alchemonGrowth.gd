@@ -12,7 +12,7 @@ func _make_template() -> AlchemonSheet:
 	t.base_attack = 10
 	t.base_defense = 10
 	t.base_mechanical_speed = 10
-	t.base_action_energy = 10
+	t.energia_de_acao = 10
 	return t
 
 func test_compute_stat_formula() -> void:
@@ -36,7 +36,7 @@ func test_level_up_keeps_spent_energy() -> void:
 	
 func test_state_at() -> void:
 	var s := AlchemonSheet.new()
-	s.temperature = 300.0
+	s.melting_point = 300.0
 	s.boiling_point = 400.0
 	assert_str(s.state_at(273.15)).is_equal(AlchemonSheet.SOLIDO)
 	assert_str(s.state_at(350.0)).is_equal(AlchemonSheet.LIQUIDO)

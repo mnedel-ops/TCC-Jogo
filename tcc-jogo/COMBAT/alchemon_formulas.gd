@@ -32,9 +32,6 @@ static func compute_capture_value(hp_max: int, hp_current: int, tool_multiplier:
 	return clampi(a, 1, CAPTURE_VALUE_MAX)
 
 
-static func compute_max_hp(base_hp: int, individual_value: int, level: int) -> int:
-	return base_hp + compute_stat(base_hp, individual_value, level) - compute_stat(base_hp, individual_value, 1)
-
 static func compute_stat(base: int, individual_value: int, level: int) -> int:
 	var raw := 0.01 * (2.0 * base + individual_value) * level
 	return int(floor(raw)) + 5

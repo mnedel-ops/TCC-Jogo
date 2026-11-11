@@ -92,7 +92,7 @@ func test_neutral_stats_match_formulas() -> void:
 	a.personality = AlchemonPersonality.NEUTRAL
 	var s := a.compute_stats(sheet)
 	assert_int(s.attack).is_equal(AlchemonFormulas.compute_stat(sheet.base_attack, a.individual_value, a.level))
-	assert_int(s.max_hp).is_equal(AlchemonFormulas.compute_max_hp(sheet.max_hp, a.individual_value, a.level))
+	assert_int(s.max_hp).is_equal(AlchemonFormulas.compute_stat(sheet.base_hp, a.individual_value, a.level))
 
 
 func test_personality_changes_only_its_two_stats() -> void:

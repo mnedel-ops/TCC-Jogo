@@ -22,16 +22,16 @@ static func xp_between(from_level: int, to_level: int) -> int:
 
 static func level_up(combatant: CombatantState, template: AlchemonSheet, levels: int = 1) -> void:
 	for i in levels:
-		var old_energy_max := AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
-		var old_hp_max := AlchemonFormulas.compute_max_hp(template.max_hp, combatant.individual_value, combatant.level)
+		var old_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, combatant.individual_value, combatant.level)
+		var old_hp_max := AlchemonFormulas.compute_stat(template.base_hp, combatant.individual_value, combatant.level)
 		combatant.level += 1
 		var iv := combatant.individual_value
 		combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, iv, combatant.level)
 		combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, iv, combatant.level)
 		combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, iv, combatant.level)
-		var new_energy_max := AlchemonFormulas.compute_stat(template.base_action_energy, iv, combatant.level)
+		var new_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, iv, combatant.level)
 		combatant.action_energy += new_energy_max - old_energy_max
-		var hp_gain := AlchemonFormulas.compute_max_hp(template.max_hp, iv, combatant.level) - old_hp_max
+		var hp_gain := AlchemonFormulas.compute_stat(template.base_hp, iv, combatant.level) - old_hp_max
 		combatant.max_hp += hp_gain
 		if combatant.hp > 0:
 			combatant.hp += hp_gain

@@ -405,14 +405,14 @@ func _fill_stats(s: AlchemonSheet) -> void:
 
 	var rows: Array = [
 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
-		["Massa atômica", str(s.max_hp)],
+		["Massa atômica", str(s.base_hp)],
 		["Eletronegatividade", str(s.base_attack)],
 		["Energia de ionização", str(s.base_defense)],
 		["Velocidade cinética", str(s.base_mechanical_speed)],
-		["Elétrons de valência", str(s.base_action_energy)],
+		["Elétrons de valência", str(s.energia_de_acao)],
 		["Camada de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
-		["Estado fisico", s.physical_state.capitalize()],
-		["Fusao", "%.1f K" % s.temperature],
+		["Estado fisico", s.state_at(298.15).capitalize()],
+		["Fusao", "%.1f K" % s.melting_point],
 		["Ebulicao", "%.1f K" % s.boiling_point],
 		["Ataques", ", ".join(attack_names) if not attack_names.is_empty() else "-"],
 	]

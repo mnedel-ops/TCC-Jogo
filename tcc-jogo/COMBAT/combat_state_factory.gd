@@ -143,7 +143,7 @@ static func _combatant_from(id: int, instance: AlchemonInstance, template: Alche
 	c.defense = stats.defense
 	c.mechanical_speed = stats.mechanical_speed
 	c.action_energy = stats.action_energy
-	c.temperature = template.temperature
+	c.temperature = template.melting_point
 	AttackLearning.sanitize_instance(instance, template)
 	c.attack_ids.assign(instance.attack_ids)
 	if CreatureSync.PERSIST_ENERGY and instance.current_energy != AlchemonInstance.UNSET:

@@ -32,7 +32,7 @@ func init_from_template(template: AlchemonSheet) -> void:
 
 
 func max_hp_for(sheet: AlchemonSheet) -> int:
-	return AlchemonFormulas.compute_max_hp(sheet.max_hp, individual_value, level)
+	return _stat(sheet.base_hp, "max_hp")
 
 
 func compute_stats(sheet: AlchemonSheet) -> Dictionary:
@@ -41,7 +41,7 @@ func compute_stats(sheet: AlchemonSheet) -> Dictionary:
 		"attack": _stat(sheet.base_attack, "attack"),
 		"defense": _stat(sheet.base_defense, "defense"),
 		"mechanical_speed": _stat(sheet.base_mechanical_speed, "mechanical_speed"),
-		"action_energy": _stat(sheet.base_action_energy, "action_energy"),
+		"action_energy": _stat(sheet.energia_de_acao, "action_energy"),
 	}
 
 

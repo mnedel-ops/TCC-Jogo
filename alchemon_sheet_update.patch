@@ -1,0 +1,448 @@
+diff --git a/tcc-jogo/COMBAT/alchemon_formulas.gd b/tcc-jogo/COMBAT/alchemon_formulas.gd
+index d791e37..0d09330 100644
+--- a/tcc-jogo/COMBAT/alchemon_formulas.gd
++++ b/tcc-jogo/COMBAT/alchemon_formulas.gd
+@@ -32,9 +32,6 @@ static func compute_capture_value(hp_max: int, hp_current: int, tool_multiplier:
+ 	return clampi(a, 1, CAPTURE_VALUE_MAX)
+ 
+ 
+-static func compute_max_hp(base_hp: int, individual_value: int, level: int) -> int:
+-	return base_hp + compute_stat(base_hp, individual_value, level) - compute_stat(base_hp, individual_value, 1)
+-
+ static func compute_stat(base: int, individual_value: int, level: int) -> int:
+ 	var raw := 0.01 * (2.0 * base + individual_value) * level
+ 	return int(floor(raw)) + 5
+diff --git a/tcc-jogo/COMBAT/alchemon_growth.gd b/tcc-jogo/COMBAT/alchemon_growth.gd
+index e1604cd..061dfbc 100644
+--- a/tcc-jogo/COMBAT/alchemon_growth.gd
++++ b/tcc-jogo/COMBAT/alchemon_growth.gd
+@@ -22,16 +22,16 @@ static func xp_between(from_level: int, to_level: int) -> int:
+ 
+ static func level_up(combatant: CombatantState, template: AlchemonSheet, levels: int = 1) -> void:
+ 	for i in levels:
+-		var old_energy_max := AlchemonFormulas.compute_stat(template.base_action_energy, combatant.individual_value, combatant.level)
+-		var old_hp_max := AlchemonFormulas.compute_max_hp(template.max_hp, combatant.individual_value, combatant.level)
++		var old_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, combatant.individual_value, combatant.level)
++		var old_hp_max := AlchemonFormulas.compute_stat(template.base_hp, combatant.individual_value, combatant.level)
+ 		combatant.level += 1
+ 		var iv := combatant.individual_value
+ 		combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, iv, combatant.level)
+ 		combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, iv, combatant.level)
+ 		combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, iv, combatant.level)
+-		var new_energy_max := AlchemonFormulas.compute_stat(template.base_action_energy, iv, combatant.level)
++		var new_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, iv, combatant.level)
+ 		combatant.action_energy += new_energy_max - old_energy_max
+-		var hp_gain := AlchemonFormulas.compute_max_hp(template.max_hp, iv, combatant.level) - old_hp_max
++		var hp_gain := AlchemonFormulas.compute_stat(template.base_hp, iv, combatant.level) - old_hp_max
+ 		combatant.max_hp += hp_gain
+ 		if combatant.hp > 0:
+ 			combatant.hp += hp_gain
+diff --git a/tcc-jogo/COMBAT/combat_result_applier.gd b/tcc-jogo/COMBAT/combat_result_applier.gd
+index 5c6bdb8..584f847 100644
+--- a/tcc-jogo/COMBAT/combat_result_applier.gd
++++ b/tcc-jogo/COMBAT/combat_result_applier.gd
+@@ -98,18 +98,26 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
+ 		_apply_damage(state, id, STATE_CHANGE_DAMAGE * int(exceeded[id]))
+ 
+ 
++## Concede a XP do derrotado a todas as criaturas vivas do lado de quem agiu
++## (as duas criaturas do time ganham, não só a que deu o golpe/captura).
+ static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: int, defeated_id: int) -> void:
+-	var actor := state.get_combatant(actor_id)
+-	if actor == null or not actor.alive:
+-		return
+-
+ 	var defeated := state.get_combatant(defeated_id)
+ 	if defeated == null:
+ 		return
+-
+ 	var defeated_template := database.get_by_id(defeated.species_id)
+-	var actor_template := database.get_by_id(actor.species_id)
+-	if defeated_template == null or actor_template == null:
++	if defeated_template == null:
+ 		return
+ 
+-	AlchemonGrowth.grant_experience(actor, actor_template, defeated_template.xp_reward)
++	var actor := state.get_combatant(actor_id)
++	if actor == null:
++		return
++	var side_ids: Array[int] = state.player_ids if actor.is_player else state.enemy_ids
++
++	for id in side_ids:
++		var receiver := state.get_combatant(id)
++		if receiver == null or not receiver.alive:
++			continue
++		var receiver_template := database.get_by_id(receiver.species_id)
++		if receiver_template == null:
++			continue
++		AlchemonGrowth.grant_experience(receiver, receiver_template, defeated_template.xp_reward)
+diff --git a/tcc-jogo/COMBAT/combat_state_factory.gd b/tcc-jogo/COMBAT/combat_state_factory.gd
+index 9b1ed0b..8f1a043 100644
+--- a/tcc-jogo/COMBAT/combat_state_factory.gd
++++ b/tcc-jogo/COMBAT/combat_state_factory.gd
+@@ -143,7 +143,7 @@ static func _combatant_from(id: int, instance: AlchemonInstance, template: Alche
+ 	c.defense = stats.defense
+ 	c.mechanical_speed = stats.mechanical_speed
+ 	c.action_energy = stats.action_energy
+-	c.temperature = template.temperature
++	c.temperature = template.melting_point
+ 	AttackLearning.sanitize_instance(instance, template)
+ 	c.attack_ids.assign(instance.attack_ids)
+ 	if CreatureSync.PERSIST_ENERGY and instance.current_energy != AlchemonInstance.UNSET:
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonInstance.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonInstance.gd
+index 3054b79..529d64f 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonInstance.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonInstance.gd
+@@ -32,7 +32,7 @@ func init_from_template(template: AlchemonSheet) -> void:
+ 
+ 
+ func max_hp_for(sheet: AlchemonSheet) -> int:
+-	return AlchemonFormulas.compute_max_hp(sheet.max_hp, individual_value, level)
++	return _stat(sheet.base_hp, "max_hp")
+ 
+ 
+ func compute_stats(sheet: AlchemonSheet) -> Dictionary:
+@@ -41,7 +41,7 @@ func compute_stats(sheet: AlchemonSheet) -> Dictionary:
+ 		"attack": _stat(sheet.base_attack, "attack"),
+ 		"defense": _stat(sheet.base_defense, "defense"),
+ 		"mechanical_speed": _stat(sheet.base_mechanical_speed, "mechanical_speed"),
+-		"action_energy": _stat(sheet.base_action_energy, "action_energy"),
++		"action_energy": _stat(sheet.energia_de_acao, "action_energy"),
+ 	}
+ 
+ 
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+index 46ea6f4..a1e7d22 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+@@ -1,77 +1,107 @@
+ class_name AlchemonSheet
+ extends Resource
+-
++## Ficha de uma espécie de Alchemon: dados fixos (identidade, stats base,
++## propriedades químicas e físicas). Valores por criatura (nível, XP, HP atual)
++## ficam em AlchemonInstance.
+ 
+ const SOLIDO := "solido"
+ const LIQUIDO := "liquido"
+ const GASOSO := "gasoso"
+ 
++enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
++
++
++@export_group("Identidade")
++## Identificador único da espécie no banco de dados.
+ @export var id: int = -1
++## Nome exibido da espécie.
+ @export var creature_name: String = ""
++## Massa atômica do elemento (u).
+ @export_range(0, 999) var atomic_mass: int = 0
++## Descrição curta mostrada na interface.
+ @export_multiline var description: String = ""
++## Texto de ambientação (história da espécie).
+ @export_multiline var lore: String = ""
++## Local onde a espécie pode ser encontrada.
+ @export var found_at: String = ""
++## Preferências positivas da espécie.
+ @export var likes: String = ""
++## Preferências negativas da espécie.
+ @export var dislikes: String = ""
+-@export var max_hp: int = 30
+-@export var hp: int = 30
++## Cena 3D usada para exibir a criatura.
++@export var model: PackedScene
++
+ 
+-# max_valence_electrons = limite de ENERGIA no combate (Mistura/Composto somam nele).
+-# valence_electrons = propriedade QUIMICA, usada so pelas regras de composto.
++@export_group("Atributos base")
++## HP base. O HP real da criatura é calculado a partir dele, do IV e do nível
++## (mesma fórmula do ataque: AlchemonFormulas.compute_stat).
++@export var base_hp: int = 30
++## Ataque base. Escala o dano causado.
++@export var base_attack: int = 70
++## Defesa base. Reduz o dano recebido.
++@export var base_defense: int = 70
++## Velocidade mecânica base. Define a iniciativa no combate.
++@export var base_mechanical_speed: int = 70
++## Energia de ação base. Escala a energia de ação da criatura com o nível.
++@export var energia_de_acao: int = 8
++## Limite de energia gasta pelos golpes no combate (Mistura/Composto somam nele).
++## Não é a valência química: ver valence_electrons.
+ @export var max_valence_electrons: int = 8
+-@export var octet_target: int = 8
++## XP concedida a quem derrota ou captura esta espécie.
++@export var xp_reward: int = 100
+ 
+-enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
+ 
+-# Propriedades quimicas. Valores "nao definidos" (-1 / vazio / 0 / AUTO) sao
+-# derivados de max_valence_electrons, octet_target e element_type pelos
+-# metodos chem_*(), entao os .tres antigos continuam validos sem migracao.
++@export_group("Propriedades químicas")
++## Número atômico. 0 = não definido (usa o id da espécie como identidade).
+ @export_range(0, 118) var atomic_number: int = 0
+-# Simbolo quimico para a formula (ex.: "Mg"). Vazio = usa creature_name.
++## Símbolo químico usado nas fórmulas (ex.: "Mg"). Vazio = usa creature_name.
+ @export var symbol: String = ""
++## Elétrons na camada de valência (propriedade química). -1 = usa max_valence_electrons.
+ @export var valence_electrons: int = -1
++## Total de elétrons que completa a camada de valência (regra do octeto, máx. 8).
++@export var octet_target: int = 8
++## Eletronegatividade (escala de Pauling). 0 = deriva da categoria.
+ @export var electronegativity: float = 0.0
+-# Primeiro item = estado preferido (ex.: Fe -> [3, 2]).
++## Estados de oxidação possíveis. O primeiro é o preferido (ex.: Fe -> [3, 2]).
++## Vazio = deriva da valência.
+ @export var oxidation_states: Array[int] = []
++## Quantas ligações o elemento aceita fazer. -1 = deriva da valência.
+ @export var bonding_capacity: int = -1
++## Categoria do elemento na tabela periódica. AUTO = deriva do tipo e da valência.
+ @export var element_category: Category = Category.AUTO
+-@export var base_attack: int = 70
+-@export var base_defense: int = 70
+-@export var base_mechanical_speed: int = 70
+-@export var base_action_energy: int = 8
++## Tipo de combate do elemento (metal, ametal, metaloide).
++@export var element_type: AlchemonType.Type = AlchemonType.Type.METAL
+ 
+-@export var xp_reward: int = 100
+ 
+-@export var physical_state: String = SOLIDO
+-@export var temperature: float = 298.15
++@export_group("Propriedades físicas")
++## Ponto de fusão em kelvin. Em temperaturas até ele, a criatura é sólida.
++@export var melting_point: float = 298.15
++## Ponto de ebulição em kelvin. Acima dele, a criatura é gasosa.
+ @export var boiling_point: float = 373.15
+ 
+-@export var element_type: AlchemonType.Type = AlchemonType.Type.METAL
+ 
++@export_group("Combate")
++## Golpes que a espécie conhece e pode aprender.
+ @export var attacks: Array[AttackData] = []
+ 
+-@export var model: PackedScene
+ 
+-func _init(p_name: String = "", p_max_hp: int = 30, p_id_or_is_player: Variant = -1, legacy_id: Variant = null) -> void:
+-	if legacy_id != null:
+-		id = int(legacy_id)
+-	else:
+-		id = int(p_id_or_is_player)
++func _init(p_name: String = "", p_base_hp: int = 30, p_id: int = -1) -> void:
+ 	creature_name = p_name
+-	max_hp = p_max_hp
+-	hp = p_max_hp
+-	
++	base_hp = p_base_hp
++	id = p_id
++
++
++## Estado físico na temperatura da arena (em kelvin).
+ func state_at(arena_temperature: float) -> String:
+-	if arena_temperature <= temperature:
++	if arena_temperature <= melting_point:
+ 		return SOLIDO
+ 	if arena_temperature <= boiling_point:
+ 		return LIQUIDO
+ 	return GASOSO
+ 
+ 
+-static func state_rank(physical_state: String) -> int:
+-	match physical_state:
++static func state_rank(state: String) -> int:
++	match state:
+ 		LIQUIDO:
+ 			return 1
+ 		GASOSO:
+@@ -79,15 +109,16 @@ static func state_rank(physical_state: String) -> int:
+ 	return 0
+ 
+ 
++## Quantos estados a criatura avançou (sólido -> líquido -> gasoso). Nunca negativo.
+ func transformation_points_exceeded(from_state: String, to_state: String) -> int:
+ 	return maxi(state_rank(to_state) - state_rank(from_state), 0)
+ 
+ 
+ # ---------------------------------------------------------------------------
+-# Propriedades quimicas efetivas (com fallback para os campos legados)
++# Propriedades químicas efetivas (valores não definidos caem num padrão derivado)
+ # ---------------------------------------------------------------------------
+ 
+-# Identidade do elemento: numero atomico, ou o id da especie se nao definido.
++## Identidade do elemento: número atômico, ou o id da espécie se não definido.
+ func element_key() -> int:
+ 	return atomic_number if atomic_number > 0 else -id - 1000
+ 
+@@ -152,7 +183,7 @@ func chem_electronegativity() -> float:
+ 	return 3.0
+ 
+ 
+-# Mensagem de erro se os dados quimicos forem incoerentes; "" se estiver ok.
++## Mensagem de erro se os dados químicos forem incoerentes; "" se estiver ok.
+ func chemistry_problem() -> String:
+ 	if octet_target > 8 or octet_target < 1:
+ 		return "%s breaks the octet limit (max 8)." % creature_name
+diff --git a/tcc-jogo/DATABASE/Alchemons/Ametal.tres b/tcc-jogo/DATABASE/Alchemons/Ametal.tres
+index 73241f8..13699af 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Ametal.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Ametal.tres
+@@ -13,11 +13,11 @@ creature_name = "Ametal"
+ atomic_mass = 14
+ description = "Nao-metal de aparencia opaca. Prefere ganhar eletrons a doa-los."
+ lore = "Placeholder de lore: o Ametal surgiu nas bordas da Tabela."
+-max_hp = 9
++base_hp = 9
+ max_valence_electrons = 6
+ atomic_number = 14
+ element_category = 2
+-base_action_energy = 10
++energia_de_acao = 10
+ element_type = 1
+ attacks = Array[ExtResource("1_irkcw")]([ExtResource("2_feu4h"), ExtResource("3_2fxa6"), ExtResource("4_u0657")])
+ metadata/_custom_type_script = "uid://cxfaplp86c865"
+diff --git a/tcc-jogo/DATABASE/Alchemons/Debug.tres b/tcc-jogo/DATABASE/Alchemons/Debug.tres
+index 4408392..cc56307 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Debug.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Debug.tres
+@@ -13,13 +13,12 @@ creature_name = "Debug"
+ atomic_mass = 999
+ description = "Criatura de teste. Stats absurdos."
+ lore = "Placeholder de lore: nao existe fora do editor."
+-max_hp = 3000000
+-hp = 3000000
++base_hp = 3000000
+ max_valence_electrons = 2
+ base_attack = 3000000
+ base_defense = 3000000
+ base_mechanical_speed = 3000000
+-base_action_energy = 3000000
+-temperature = 9.223372e+18
++energia_de_acao = 3000000
++melting_point = 9.223372e+18
+ attacks = Array[ExtResource("1_t5l6e")]([ExtResource("2_io3wn"), ExtResource("3_ewa28"), ExtResource("4_ndte5")])
+ metadata/_custom_type_script = "uid://cxfaplp86c865"
+diff --git a/tcc-jogo/DATABASE/Alchemons/Metal.tres b/tcc-jogo/DATABASE/Alchemons/Metal.tres
+index 321d4ee..9444b8c 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Metal.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Metal.tres
+@@ -13,8 +13,8 @@ creature_name = "Metal"
+ atomic_mass = 56
+ description = "Brilhante e resistente. Doa eletrons com facilidade."
+ lore = "Placeholder de lore: o Metal guarda o calor das forjas antigas."
+-max_hp = 12
++base_hp = 12
+ max_valence_electrons = 2
+-base_action_energy = 16
++energia_de_acao = 16
+ attacks = Array[ExtResource("1_rwf4c")]([ExtResource("2_oxw2i"), ExtResource("3_d5wru"), ExtResource("4_oxw2i")])
+ metadata/_custom_type_script = "uid://cxfaplp86c865"
+diff --git a/tcc-jogo/DATABASE/Alchemons/Metaloide.tres b/tcc-jogo/DATABASE/Alchemons/Metaloide.tres
+index d6415f6..b9aa3ad 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Metaloide.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Metaloide.tres
+@@ -13,9 +13,9 @@ creature_name = "Metaloide"
+ atomic_mass = 28
+ description = "Comportamento intermediario entre metais e ametais."
+ lore = "Placeholder de lore: o Metaloide nunca escolheu um lado."
+-max_hp = 8
++base_hp = 8
+ max_valence_electrons = 19
+-base_action_energy = 20
++energia_de_acao = 20
+ element_type = 2
+ attacks = Array[ExtResource("1_g0h4v")]([ExtResource("2_ypslv"), ExtResource("3_hw5sm"), ExtResource("4_j65ka")])
+ metadata/_custom_type_script = "uid://cxfaplp86c865"
+diff --git a/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd b/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd
+index 367b4fb..b535ad9 100644
+--- a/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd
++++ b/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd
+@@ -35,6 +35,6 @@ func apply_level(sheet:AlchemonSheet, inst:AlchemonInstance) -> Dictionary:
+ 		"attack": AlchemonFormulas.compute_stat(sheet.base_attack, iv, lv),
+ 		"defense": AlchemonFormulas.compute_stat(sheet.base_defense, iv, lv),
+ 		"speed": AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, lv),
+-		"energy": AlchemonFormulas.compute_stat(sheet.base_action_energy, iv, lv),
+-		"max_hp": AlchemonFormulas.compute_stat(sheet.max_hp, iv, lv),
++		"energy": AlchemonFormulas.compute_stat(sheet.energia_de_acao, iv, lv),
++		"max_hp": AlchemonFormulas.compute_stat(sheet.base_hp, iv, lv),
+ 	}
+diff --git a/tcc-jogo/INTERFACES/pages/table_page.gd b/tcc-jogo/INTERFACES/pages/table_page.gd
+index 7e50264..24bd647 100644
+--- a/tcc-jogo/INTERFACES/pages/table_page.gd
++++ b/tcc-jogo/INTERFACES/pages/table_page.gd
+@@ -405,14 +405,14 @@ func _fill_stats(s: AlchemonSheet) -> void:
+ 
+ 	var rows: Array = [
+ 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
+-		["Massa atômica", str(s.max_hp)],
++		["Massa atômica", str(s.base_hp)],
+ 		["Eletronegatividade", str(s.base_attack)],
+ 		["Energia de ionização", str(s.base_defense)],
+ 		["Velocidade cinética", str(s.base_mechanical_speed)],
+-		["Elétrons de valência", str(s.base_action_energy)],
++		["Elétrons de valência", str(s.energia_de_acao)],
+ 		["Camada de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
+-		["Estado fisico", s.physical_state.capitalize()],
+-		["Fusao", "%.1f K" % s.temperature],
++		["Estado fisico", s.state_at(298.15).capitalize()],
++		["Fusao", "%.1f K" % s.melting_point],
+ 		["Ebulicao", "%.1f K" % s.boiling_point],
+ 		["Ataques", ", ".join(attack_names) if not attack_names.is_empty() else "-"],
+ 	]
+diff --git a/tcc-jogo/test/test_alchemonGrowth.gd b/tcc-jogo/test/test_alchemonGrowth.gd
+index b56abe7..7c7db94 100644
+--- a/tcc-jogo/test/test_alchemonGrowth.gd
++++ b/tcc-jogo/test/test_alchemonGrowth.gd
+@@ -12,7 +12,7 @@ func _make_template() -> AlchemonSheet:
+ 	t.base_attack = 10
+ 	t.base_defense = 10
+ 	t.base_mechanical_speed = 10
+-	t.base_action_energy = 10
++	t.energia_de_acao = 10
+ 	return t
+ 
+ func test_compute_stat_formula() -> void:
+@@ -36,7 +36,7 @@ func test_level_up_keeps_spent_energy() -> void:
+ 	
+ func test_state_at() -> void:
+ 	var s := AlchemonSheet.new()
+-	s.temperature = 300.0
++	s.melting_point = 300.0
+ 	s.boiling_point = 400.0
+ 	assert_str(s.state_at(273.15)).is_equal(AlchemonSheet.SOLIDO)
+ 	assert_str(s.state_at(350.0)).is_equal(AlchemonSheet.LIQUIDO)
+diff --git a/tcc-jogo/test/test_arena_heat.gd b/tcc-jogo/test/test_arena_heat.gd
+index 4ae1ebf..2c9f3fb 100644
+--- a/tcc-jogo/test/test_arena_heat.gd
++++ b/tcc-jogo/test/test_arena_heat.gd
+@@ -10,7 +10,7 @@ func before_test() -> void:
+ 
+ func _sheet(id: int, melt: float, boil: float) -> AlchemonSheet:
+ 	var s := AlchemonSheet.new("S%d" % id, 100, id)
+-	s.temperature = melt
++	s.melting_point = melt
+ 	s.boiling_point = boil
+ 	db.alchemons.append(s)
+ 	return s
+@@ -21,7 +21,7 @@ func _state_with(sheets: Array[AlchemonSheet]) -> CombatState:
+ 	st.arena_temperature = 273.15
+ 	var slot := 0
+ 	for s in sheets:
+-		var c := CombatantState.new(s.id, s.id, 100, slot < 3, slot, 8, s.temperature)
++		var c := CombatantState.new(s.id, s.id, 100, slot < 3, slot, 8, s.melting_point)
+ 		c.physical_state = AlchemonSheet.SOLIDO
+ 		st.combatants[c.id] = c
+ 		if c.is_player:
+diff --git a/tcc-jogo/test/test_creature_persistence.gd b/tcc-jogo/test/test_creature_persistence.gd
+index edf8904..fc9e7a2 100644
+--- a/tcc-jogo/test/test_creature_persistence.gd
++++ b/tcc-jogo/test/test_creature_persistence.gd
+@@ -92,7 +92,7 @@ func test_neutral_stats_match_formulas() -> void:
+ 	a.personality = AlchemonPersonality.NEUTRAL
+ 	var s := a.compute_stats(sheet)
+ 	assert_int(s.attack).is_equal(AlchemonFormulas.compute_stat(sheet.base_attack, a.individual_value, a.level))
+-	assert_int(s.max_hp).is_equal(AlchemonFormulas.compute_max_hp(sheet.max_hp, a.individual_value, a.level))
++	assert_int(s.max_hp).is_equal(AlchemonFormulas.compute_stat(sheet.base_hp, a.individual_value, a.level))
+ 
+ 
+ func test_personality_changes_only_its_two_stats() -> void:

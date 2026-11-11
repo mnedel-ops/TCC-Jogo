@@ -10,7 +10,7 @@ func before_test() -> void:
 
 func _sheet(id: int, melt: float, boil: float) -> AlchemonSheet:
 	var s := AlchemonSheet.new("S%d" % id, 100, id)
-	s.temperature = melt
+	s.melting_point = melt
 	s.boiling_point = boil
 	db.alchemons.append(s)
 	return s
@@ -21,7 +21,7 @@ func _state_with(sheets: Array[AlchemonSheet]) -> CombatState:
 	st.arena_temperature = 273.15
 	var slot := 0
 	for s in sheets:
-		var c := CombatantState.new(s.id, s.id, 100, slot < 3, slot, 8, s.temperature)
+		var c := CombatantState.new(s.id, s.id, 100, slot < 3, slot, 8, s.melting_point)
 		c.physical_state = AlchemonSheet.SOLIDO
 		st.combatants[c.id] = c
 		if c.is_player:
