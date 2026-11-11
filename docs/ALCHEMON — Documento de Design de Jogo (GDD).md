@@ -48,7 +48,7 @@ Modelos poligonais no estilo PSX, inspirados visualmente em Digimon World. Trilh
 
 ### 1.3 Objetivos do Jogador
 
-- Coletar insígnias de ginásio, cada uma associada a uma família da Tabela Periódica — \[Parcial\] `PlayerData.award_badge()` e `BadgeData` existem; a insígnia atual (Metal) ainda é genérica e provisória.
+- Coletar insígnias de ginásio — \[Parcial\] `PlayerData.award_badge()` e `BadgeData` existem; 1 insígnia (Metal) cadastrada.
 - Derrotar o campeão da Super Liga — \[Pendente\]
 - Localizar criaturas raras ou lendárias — \[Pendente\]
 - Recuperar elementos artificiais fugitivos — \[Pendente\]
@@ -214,9 +214,39 @@ O jogador define o vínculo no PC (`PlayerBondData`: `kind` + índices). Ao inic
 - **Covalente** (sem metal): `(Σ octeto − Σ valência)` par e ≥ `n − 1` ligações.
 - O PC informa se a combinação é possível, sem ensinar a resposta ("Seu Composto foi criado!").
 - Ativo: `BondRules._pick_active_index` — maior nível; se houver Metal, o Metal é o **Cátion** (`is_bond_cation`: invisível, inalvejável, imune).
-- O membro ativo recebe `COMPOUND_TRANSFER_RATIO = 0,7` do HP máximo e da energia do outro. \[Parcial\] O GDD diz "70% de todos os atributos".
-- Se o ativo cai, os parceiros são liberados com 30% do HP (`COMPOUND_RELEASE_HP_RATIO`) e a energia do caído.
-- &#91;Parcial\] **Limitação:** `validate_stoichiometry` aceita apenas **2 elementos**; o exemplo H₂O (3 criaturas) ainda não é possível, embora `BondRules` já trate grupos maiores. Ainda não verificado se o Ânion é mostrado como "ativo" na UI do jogo além do rótulo do HUD.
+
+#### Transferência de atributos do Composto — [Pendente]
+
+A regra anterior de transferência fixa de 70% do HP máximo e da energia é substituída pelo cálculo abaixo. Para cada atributo geral `X` — HP máximo, Ataque, Defesa e Velocidade — o valor do Composto é calculado a partir do atributo do Ânion somado à parcela transferida do Cátion:
+
+\[
+X_{\text{Composto}} = X_{\text{Ânion}} + (\alpha \cdot X_{\text{Cátion}})
+\]
+
+O fator de transferência `α` varia conforme a diferença de eletronegatividade e a carga/valência do Cátion:
+
+\[
+\alpha = \operatorname{clamp}\left(0{,}50 + 0{,}10 \cdot \Delta E + 0{,}05 \cdot Z_{\text{Cátion}}\,;\,0{,}50\,;\,0{,}95\right)
+\]
+
+Onde:
+
+- `ΔE` é a diferença absoluta entre as eletronegatividades dos elementos, na mesma escala: `|EN_Ânion − EN_Cátion|`.
+- `Z_Cátion` é o módulo da carga/valência positiva atribuída ao Cátion na ligação (por exemplo, 1 para Li⁺, 2 para Mg²⁺ e 3 para Al³⁺); nesta fórmula, não representa o número atômico.
+- `clamp(valor, mínimo, máximo)` limita `α` ao intervalo de 0,50 a 0,95.
+- Os atributos usados no cálculo são os valores máximos finais das criaturas no momento da formação, após os modificadores de nível, IV e personalidade.
+- A fórmula contempla HP máximo, Ataque, Defesa e Velocidade. **Energia de ação não está incluída** nesta transferência e permanece sem regra definida para o Composto.
+
+Quando a fusão ocorrer durante uma batalha, a porcentagem de HP atual do Ânion será preservada sobre o novo HP máximo do Composto:
+
+\[
+HP_{\text{Atual, Composto}} = \left(\frac{HP_{\text{Atual, Ânion}}}{HP_{\text{Máx, Ânion}}}\right) \cdot HP_{\text{Máx, Composto}}
+\]
+
+A implementação deverá proteger a divisão quando `HP_Máx, Ânion` for zero ou negativo e limitar o HP atual ao intervalo válido do Composto. A regra de preservação proporcional aplica-se à fusão durante o combate; o HP inicial de fusões realizadas fora de combate ainda precisa ser definido.
+
+- Se o ativo cai, os parceiros são liberados com 30% do HP (`COMPOUND_RELEASE_HP_RATIO`) e a energia do caído. Essa regra de liberação não é alterada pela nova fórmula.
+- [Parcial] **Limitação:** `validate_stoichiometry` aceita apenas **2 elementos**; o exemplo H₂O (3 criaturas) ainda não é possível, embora `BondRules` já trate grupos maiores. Ainda não verificado se o Ânion é mostrado como "ativo" na UI do jogo além do rótulo do HUD.
 
 ---
 
@@ -273,7 +303,7 @@ Ver seção 8.1.
 
 ### 12.3 Obediência por Insígnias — \[Pendente\]
 
-Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. A insígnia atual, **Insígnia do Metal**, é concedida ao vencer o NPC `is_gym_trainer`; ela funciona como registro provisório da vitória e ainda não corresponde à nomenclatura definitiva por famílias químicas.
+Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. Insígnia atual: **Insígnia do Metal**, concedida ao vencer o NPC `is_gym_trainer`.
 
 ---
 
@@ -367,46 +397,9 @@ Atualmente existem **3 espécies placeholder** (Metal, Ametal, Metaloide) + 1 es
 
 ---
 
-## 20. Ginásios e Insígnias — \[Parcial\]
+## 20. Ginásios — \[Parcial\]
 
-Os ginásios são pontos de progressão distribuídos pelos cenários do jogo. Cada ginásio representa uma **família da Tabela Periódica** e apresenta um líder especializado em criaturas associadas a essa classificação. Ao derrotar o líder, o jogador recebe a insígnia correspondente à família química do ginásio.
-
-### 20.1 Famílias e nomenclatura das insígnias
-
-As insígnias recebem nomes derivados das famílias da Tabela Periódica, em vez de nomes arbitrários ou baseados em elementos isolados. A nomenclatura prevista contempla:
-
-| Família representada | Nome da insígnia |
-| --- | --- |
-| Metais alcalinos | Insígnia dos Alcalinos |
-| Metais alcalino-terrosos | Insígnia dos Terrosos |
-| Metais de transição | Insígnia dos Transição |
-| Família do boro (grupo 13) | Insígnia do Boro |
-| Família do carbono (grupo 14) | Insígnia do Carbono |
-| Pnictogênios (grupo 15) | Insígnia dos Pnictogênios |
-| Calcogênios (grupo 16) | Insígnia dos Calcogênios |
-| Halogênios (grupo 17) | Insígnia dos Halogênios |
-| Gases nobres (grupo 18) | Insígnia dos Nobres |
-| Lantanídeos | Insígnia dos Lantanídeos |
-| Actinídeos | Insígnia dos Actinídeos |
-
-A lista define uma referência temática para a construção dos ginásios. A quantidade, a ordem de obtenção e a distribuição dos ginásios pelos cenários ainda precisam ser definidas. A inclusão de famílias específicas também poderá acompanhar a seleção final de elementos disponíveis no jogo.
-
-### 20.2 Desafio dos ginásios
-
-Cada líder utiliza uma equipe formada por Alchemons relacionados à família que representa. Assim, o confronto permite ao jogador reconhecer características e relações entre elementos pertencentes a um mesmo grupo ou classificação periódica. A identidade visual, os diálogos e a composição da equipe do líder devem reforçar esse tema.
-
-A vitória contra o líder registra a insígnia correspondente no perfil do jogador. O sistema de insígnias também está relacionado à progressão de obediência das criaturas: a quantidade de insígnias deverá determinar os níveis até os quais os Alchemons obedecem ao jogador. Os limites e a fórmula dessa progressão permanecem pendentes de definição.
-
-### 20.3 Estado de implementação
-
-Não há cena de ginásio independente. Existe **um NPC líder de ginásio** em `scene_1` (nível 8, espécies 1 e 2), configurado como treinador e responsável por conceder uma insígnia após a vitória.
-
-- **Sistema de recompensa** \[Parcial\]: `PlayerData.award_badge()` e `BadgeData` registram e identificam insígnias.
-- **Insígnia cadastrada** \[Parcial\]: existe apenas a **Insígnia do Metal**, que representa a implementação inicial e ainda não utiliza a nomenclatura definitiva das famílias.
-- **Líderes especializados por família** \[Pendente\]: há somente um líder configurado; as demais equipes e os demais ginásios não foram implementados.
-- **Progressão de obediência** \[Pendente\]: as insígnias ainda não alteram o comportamento das criaturas.
-- **Cenas e desafios próprios** \[Pendente\]: os ginásios ainda não possuem cenas, estruturas ou desafios independentes.
-
+Não há cena de ginásio. Existe **um NPC líder de ginásio Metal** em `scene_1` (nível 8, espécies 1 e 2) que concede a **Insígnia do Metal**. A obediência garantida até nível 10 \[Pendente\].
 
 ---
 
@@ -488,7 +481,7 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 2. **Crítico:** multiplicador `(2L+5)/(L+5)` × fixo 1,5; acerto por ataque × erro global 1/6.
 3. **XP:** fórmula `√A·A²…` × XP fixo da espécie e 100 por nível; XP para ambas × só para quem derrotou.
 4. **Temperatura inicial:** 25 °C × 273,15 K; ΔT com `floor` × decimal.
-5. **Mistura/Composto:** "todos os atributos" × só HP e energia.
+5. **Mistura/Composto:** a transferência de atributos do Composto ainda usa 70% fixos de HP e energia no código; o novo design prevê fator variável (50%–95%) para HP máximo, Ataque, Defesa e Velocidade, calculado por eletronegatividade e carga do Cátion. A energia de ação ainda não tem regra definida.
 6. **Derrota e cura:** hospital com teleporte × NPC curandeiro sem teleporte.
 7. **Fuga:** só contra selvagens × permitida sempre.
 8. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
@@ -508,7 +501,9 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 ### 25.2 Misturas e Compostos
 
 - Percentual de incremento da Mistura (hoje fixo em +8 em HP e energia).
-- Ânion/Cátion em ligações covalentes.
+- Definir como identificar Ânion e Cátion em ligações covalentes.
+- Definir a regra de transferência ou preservação da energia de ação, não contemplada na nova fórmula.
+- Definir o HP inicial de Compostos formados fora de combate.
 - Se o jogador pode romper compostos adversários aquecendo a arena.
 - Limite de Compostos por combate.
 - *Novo:* suporte a Compostos de 3+ criaturas (ex.: H₂O).
@@ -521,7 +516,7 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 
 ### 25.4 Atributos e Progressão
 
-- Definir a ordem dos ginásios por família, o mapeamento quantidade de insígnias → nível de obediência e implementar essa regra.
+- Mapeamento nível → insígnias e implementação da obediência.
 - Ataques e níveis de desbloqueio dos 6 elementos.
 - XP Base fixo ou por criatura (hoje por espécie via `xp_reward`).
 - Nível máximo (20 no protótipo) ainda não aplicado.
@@ -534,5 +529,5 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 ### 25.6 Mundo e Encontros
 
 - Tabelas de encontro por área com pesos.
-- Cenas de hospital, loja e ginásio; ordem e distribuição dos ginásios por famílias; mapas; Super Liga.
+- Cenas de hospital, loja e ginásio; mapas; Super Liga.
 - Atalhos F5/F9 e ação de corrida.
