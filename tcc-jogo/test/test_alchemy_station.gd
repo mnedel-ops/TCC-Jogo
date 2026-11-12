@@ -22,8 +22,9 @@ func test_ionic_pair_balances_electrons() -> void:
 	assert_str(_kind([metal, ametal])).is_equal(BondRules.COMPOUND)
 	# Proporção calculada: metal +3 com ametal -2 forma X₂Y₃ (antes era rejeitado).
 	assert_str(_kind([_sheet(3, AlchemonType.Type.METAL, 3), ametal])).is_equal(BondRules.COMPOUND)
-	# Sem estado de oxidação positivo (valência 0) não doa elétron.
-	assert_str(_kind([_sheet(4, AlchemonType.Type.METAL, 0), ametal])).is_equal(BondRules.NONE)
+	# Sem estado de oxidação positivo (valência 0) não doa elétron: não forma
+	# composto -> mistura.
+	assert_str(_kind([_sheet(4, AlchemonType.Type.METAL, 0), ametal])).is_equal(BondRules.MIXTURE)
 
 
 func test_ionic_with_three_and_four_members() -> void:
@@ -34,7 +35,7 @@ func test_ionic_with_three_and_four_members() -> void:
 	var m3 := _sheet(4, AlchemonType.Type.METAL, 2)
 	var m4 := _sheet(5, AlchemonType.Type.METAL, 2)
 	var a2 := _sheet(6, AlchemonType.Type.AMETAL, 6)
-	var a3 := _sheet(7, AlchemonType.Type.METALOIDE, 6)
+	var a3 := _sheet(7, AlchemonType.Type.AMETAL, 6)
 	assert_str(_kind([m3, m4, a2, a3])).is_equal(BondRules.COMPOUND)
 	assert_str(_kind([m3, m4, a2])).is_equal(BondRules.COMPOUND)
 
@@ -49,7 +50,7 @@ func test_full_octet_atom_cannot_join_ionic_bond() -> void:
 func test_covalent_molecules() -> void:
 	var o1 := _sheet(1, AlchemonType.Type.AMETAL, 6)
 	var o2 := _sheet(2, AlchemonType.Type.AMETAL, 6)
-	var c := _sheet(3, AlchemonType.Type.METALOIDE, 4)
+	var c := _sheet(3, AlchemonType.Type.AMETAL, 4)
 	assert_str(_kind([o1, o2])).is_equal(BondRules.COMPOUND)
 	assert_str(_kind([o1, c, o2])).is_equal(BondRules.COMPOUND)
 	var f1 := _sheet(4, AlchemonType.Type.AMETAL, 7)
@@ -57,8 +58,8 @@ func test_covalent_molecules() -> void:
 	# Quantidades são calculadas: C com dois flúores diferentes fecha em CF₂F'₂.
 	assert_str(_kind([c, f1, f2])).is_equal(BondRules.COMPOUND)
 	assert_str(_kind([o1, f1])).is_equal(BondRules.COMPOUND)
-	# Mesmo gás nobre não liga com nada.
-	assert_str(_kind([o1, _sheet(6, AlchemonType.Type.AMETAL, 8)])).is_equal(BondRules.NONE)
+	# Gás nobre não forma composto: com 2 membros vira mistura.
+	assert_str(_kind([o1, _sheet(6, AlchemonType.Type.AMETAL, 8)])).is_equal(BondRules.MIXTURE)
 
 
 func test_octet_limit_and_size_limit() -> void:
@@ -71,19 +72,28 @@ func test_octet_limit_and_size_limit() -> void:
 	assert_str(_kind(list)).is_equal(BondRules.NONE)
 
 
-func test_mixture_only_for_two_metals() -> void:
+func test_mixture_is_anything_that_is_not_a_compound() -> void:
 	var m1 := _sheet(1, AlchemonType.Type.METAL, 2)
 	var m2 := _sheet(2, AlchemonType.Type.METAL, 2)
 	var m3 := _sheet(3, AlchemonType.Type.METAL, 2)
-	assert_str(_kind([m1, m2])).is_equal(BondRules.MIXTURE)
-	assert_str(_kind([m1, m2, m3])).is_equal(BondRules.NONE)
+	assert_str(_kind([m1, m2])).is_equal(BondRules.MIXTURE) # metal + metal
+	assert_str(_kind([m1, m2, m3])).is_equal(BondRules.NONE) # mistura é só de 2
+	var metaloid := _sheet(4, AlchemonType.Type.METALOIDE, 4)
+	var ametal := _sheet(5, AlchemonType.Type.AMETAL, 6)
+	assert_str(_kind([metaloid, ametal])).is_equal(BondRules.MIXTURE) # metaloide
+	# ΔE < 2,0 entre metal e ametal: não é iônico -> mistura.
+	var weak_metal := _sheet(6, AlchemonType.Type.METAL, 2)
+	weak_metal.electronegativity = 1.6
+	assert_str(_kind([weak_metal, ametal])).is_equal(BondRules.MIXTURE)
 
 
 func test_failure_reason_explains_rejection() -> void:
 	var metal := _sheet(1, AlchemonType.Type.METAL, 3)
 	var ametal := _sheet(2, AlchemonType.Type.AMETAL, 6)
 	var sheets: Array[AlchemonSheet] = [_sheet(5, AlchemonType.Type.METAL, 7), ametal]
-	assert_str(AlchemyStation.bond_failure_reason(sheets)).contains("balance")
+	# Não fecha composto (cargas não balanceiam) -> mistura, e o motivo explica.
+	assert_str(_kind(sheets)).is_equal(BondRules.MIXTURE)
+	assert_str(CompoundRules.failure_reason(sheets)).contains("balance")
 	var lone: Array[AlchemonSheet] = [metal, metal]
 	assert_str(AlchemyStation.bond_failure_reason(lone)).is_empty()
 

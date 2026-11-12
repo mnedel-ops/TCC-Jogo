@@ -49,7 +49,7 @@ func _formula(list: Array) -> String:
 
 func test_required_combinations() -> void:
 	assert_str(_formula([_na(), _cl()])).is_equal("NaCl")
-	assert_str(_formula([_mg(), _cl()])).is_equal("MgCl₂")
+	assert_str(_formula([_mg(), _o()])).is_equal("MgO")
 	assert_str(_formula([_h(), _o()])).is_equal("H₂O")
 	assert_str(_formula([_c(), _o()])).is_equal("CO₂")
 	assert_str(_formula([_c(), _h()])).is_equal("CH₄")
@@ -90,16 +90,16 @@ func test_unknown_allotropes_rejected() -> void:
 # --- complementares ------------------------------------------------------
 
 func test_ionic_proportions() -> void:
-	assert_str(_formula([_al(), _o()])).is_equal("Al₂O₃")
+	assert_str(_formula([_al(), _f()])).is_equal("AlF₃")
 	assert_str(_formula([_mg(), _o()])).is_equal("MgO")
-	assert_str(_formula([_fe(), _cl()])).is_equal("FeCl₃")
-	assert_str(_formula([_na(), _mg(), _cl()])).is_equal("NaMgCl₃")
+	assert_str(_formula([_mg(), _f()])).is_equal("MgF₂")
+	assert_str(_formula([_na(), _o()])).is_equal("Na₂O")
+	assert_str(_formula([_na(), _mg(), _o()])).is_equal("Na₂MgO₂")
 
 
 func test_covalent_molecules() -> void:
 	assert_str(_formula([_n(), _h()])).is_equal("NH₃")
 	assert_str(_formula([_c(), _cl()])).is_equal("CCl₄")
-	assert_str(_formula([_si(), _o()])).is_equal("SiO₂")
 	assert_str(_formula([_c(), _h(), _o()])).is_equal("CH₂O")
 
 
@@ -118,6 +118,46 @@ func test_rejections() -> void:
 	assert_object(_resolve([])).is_null()
 
 
+# --- regra dos 2 tipos: tudo que não é iônico/covalente é MISTURA ---------
+
+func _is_mixture(list: Array) -> bool:
+	var sheets: Array[AlchemonSheet] = []
+	for s in list:
+		sheets.append(s)
+	return CompoundRules.is_mixture(sheets)
+
+
+func test_ionic_needs_delta_e_at_least_2() -> void:
+	# NaCl 2,23 e MgO 2,13: iônico.
+	assert_int(_resolve([_na(), _cl()]).bond_type).is_equal(CompoundData.BondType.IONIC)
+	assert_int(_resolve([_mg(), _o()]).bond_type).is_equal(CompoundData.BondType.IONIC)
+	# MgCl₂ 1,85, FeCl₃ 1,33, Al₂O₃ 1,83: ΔE < 2,0 -> não é iônico -> mistura.
+	for pair in [[_mg(), _cl()], [_fe(), _cl()], [_al(), _o()], [_fe(), _o()]]:
+		assert_object(_resolve(pair)).is_null()
+		assert_bool(_is_mixture(pair)).is_true()
+
+
+func test_covalent_needs_delta_e_below_2() -> void:
+	# Ametal + ametal com ΔE < 2,0: covalente.
+	assert_int(_resolve([_h(), _f()]).bond_type).is_equal(CompoundData.BondType.COVALENT_POLAR)
+	assert_bool(_is_mixture([_h(), _o()])).is_false()
+	# Ametal com ΔE >= 2,0 (sintético 1,0 vs 3,3): não é covalente -> mistura.
+	var low := _el(30, "Xa", A, 5, 1.0, [-3], 3)
+	var high := _el(31, "Xb", A, 7, 3.3, [-1], 1)
+	assert_object(_resolve([low, high])).is_null()
+	assert_bool(_is_mixture([low, high])).is_true()
+
+
+func test_mixture_cases() -> void:
+	assert_bool(_is_mixture([_na(), _mg()])).is_true() # metal + metal
+	assert_bool(_is_mixture([_he(), _cl()])).is_true() # gás nobre
+	assert_bool(_is_mixture([_si(), _o()])).is_true() # metaloide não é metal nem ametal
+	assert_bool(_is_mixture([_na(), _cl()])).is_false() # composto, não mistura
+	assert_bool(_is_mixture([_o(), _o()])).is_false() # O₂ é composto
+	assert_bool(_is_mixture([_na()])).is_false() # tamanho != 2
+	assert_bool(_is_mixture([_na(), _mg(), _cl()])).is_false()
+
+
 func test_bond_types() -> void:
 	assert_int(_resolve([_na(), _cl()]).bond_type).is_equal(CompoundData.BondType.IONIC)
 	assert_int(_resolve([_h(), _o()]).bond_type).is_equal(CompoundData.BondType.COVALENT_POLAR)
@@ -132,13 +172,13 @@ func test_known_names() -> void:
 # --- propriedades --------------------------------------------------------
 
 func test_order_and_duplicates_do_not_matter() -> void:
-	assert_str(_formula([_cl(), _mg()])).is_equal("MgCl₂")
-	assert_str(_formula([_cl(), _mg(), _cl()])).is_equal("MgCl₂")
+	assert_str(_formula([_o(), _mg()])).is_equal("MgO")
+	assert_str(_formula([_o(), _mg(), _o()])).is_equal("MgO")
 	assert_str(_formula([_o(), _h(), _o()])).is_equal("H₂O")
 
 
 func test_ionic_total_charge_is_zero() -> void:
-	for pair in [[_na(), _cl()], [_mg(), _cl()], [_al(), _o()], [_fe(), _o()]]:
+	for pair in [[_na(), _cl()], [_mg(), _o()], [_al(), _f()], [_na(), _o()]]:
 		var d := _resolve(pair)
 		assert_int(d.total_charge).is_equal(0)
 		assert_int(d.atom_count()).is_less_equal(CompoundRules.MAX_ATOMS)

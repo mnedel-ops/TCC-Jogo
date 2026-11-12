@@ -1,14 +1,26 @@
 class_name CompoundRules
 extends RefCounted
-## Regras de formação de compostos (iônicos, covalentes e moléculas elementares).
+## Regras de formação de compostos. Só existem 2 tipos: IÔNICO e COVALENTE.
+## Qualquer combinação que não forme um deles é uma MISTURA.
 ##
-## A seleção do jogador é reduzida a elementos distintos; as QUANTIDADES são
-## calculadas aqui (Mg + Cl -> MgCl₂). Nada nesta classe depende de combate.
+## Iônico:    METAL + AMETAL, ΔE >= IONIC_THRESHOLD (2,0) e Σ n·Z = 0
+##            (n_cátion · Z_cátion = n_ânion · (8 − V_ânion)).
+## Covalente: AMETAL + AMETAL, ΔE < IONIC_THRESHOLD e valências fechadas por
+##            pares compartilhados (inclui moléculas elementares: O₂, N₂...).
+## Mistura:   metal + metal (liga), gás nobre (octeto completo), metaloide
+##            (não é metal nem ametal) ou qualquer par sem ligação possível.
+##
+## ΔE = |eletronegatividade| na escala de Pauling. A seleção do jogador é
+## reduzida a elementos distintos; as QUANTIDADES são calculadas aqui
+## (Na + O -> Na₂O). Nada nesta classe depende de combate.
 
 const MAX_ELEMENTS := 4
 const MAX_QTY := 6
 const MAX_ATOMS := 12
 const MAX_BOND_ORDER := 3
+# ΔE >= isto = transferência de elétrons (iônico); ΔE < isto = compartilhamento
+# (covalente). Valor do GDD do protótipo.
+const IONIC_THRESHOLD := 2.0
 # |Δχ| abaixo disto = ligação apolar.
 const POLAR_THRESHOLD := 0.4
 # Limite de passos da busca de moléculas (evita travar a UI).
@@ -53,11 +65,15 @@ const KNOWN := {
 # API pública
 # ---------------------------------------------------------------------------
 
-## Dois metais (de qualquer espécie) formam uma Mistura, não um composto.
+## Mistura = seleção de 2 elementos válidos que NÃO forma composto iônico nem
+## covalente (metal + metal, gás nobre, metaloide, ΔE incompatível...).
 static func is_mixture(sheets: Array[AlchemonSheet]) -> bool:
 	if sheets.size() != 2 or sheets[0] == null or sheets[1] == null:
 		return false
-	return sheets[0].is_metal() and sheets[1].is_metal()
+	for s in sheets:
+		if s.chemistry_problem() != "":
+			return false
+	return _analyze(sheets).get("data") == null
 
 
 ## Resultado da combinação, ou null se ela não forma composto.
@@ -93,6 +109,11 @@ static func _fail(reason: String) -> Dictionary:
 	return {"data": null, "reason": reason}
 
 
+# ΔE >= limiar (com folga p/ erro de ponto flutuante: 3.44 − 1.44 etc.).
+static func _is_ionic_gap(delta: float) -> bool:
+	return delta >= IONIC_THRESHOLD - 0.0001
+
+
 static func _analyze(sheets: Array[AlchemonSheet]) -> Dictionary:
 	if sheets.is_empty():
 		return _fail("Select at least one Alchemon.")
@@ -108,26 +129,48 @@ static func _analyze(sheets: Array[AlchemonSheet]) -> Dictionary:
 		return _fail("Max %d different elements per Component." % MAX_ELEMENTS)
 
 	var metals: Array[AlchemonSheet] = []
-	var others: Array[AlchemonSheet] = []
+	var nonmetals: Array[AlchemonSheet] = []
 	for e in elems:
-		if e.chem_category() == AlchemonSheet.Category.GAS_NOBRE:
-			return _fail("%s already has a full octet and cannot bond." % e.creature_name)
-		if e.is_metal():
-			metals.append(e)
-		else:
-			others.append(e)
+		match e.chem_category():
+			AlchemonSheet.Category.GAS_NOBRE:
+				return _fail("%s already has a full octet and cannot bond." % e.creature_name)
+			AlchemonSheet.Category.METAL:
+				metals.append(e)
+			AlchemonSheet.Category.AMETAL:
+				nonmetals.append(e)
+			_:
+				return _fail("%s is neither metal nor nonmetal: no compound." % e.creature_name)
 
-	if others.is_empty():
+	if nonmetals.is_empty():
 		if metals.size() == 1:
 			return _fail("A lone metal does not form a compound.")
-		return _fail("Metals only bond as a Mixture (2 metals).")
+		return _fail("Metal + metal never forms a compound (metallic alloy).")
+
 	if metals.is_empty():
+		# Ametal + ametal: covalente só se ΔE < limiar.
+		var lo := nonmetals[0].chem_electronegativity()
+		var hi := lo
+		for n in nonmetals:
+			lo = minf(lo, n.chem_electronegativity())
+			hi = maxf(hi, n.chem_electronegativity())
+		if _is_ionic_gap(hi - lo):
+			return _fail("ΔE %.2f >= %.1f: not covalent." % [hi - lo, IONIC_THRESHOLD])
 		var copies := 0
 		for sh in sheets:
-			if sh.element_key() == others[0].element_key():
+			if sh.element_key() == nonmetals[0].element_key():
 				copies += 1
-		return _covalent(others, copies)
-	return _ionic(metals, others)
+		return _covalent(nonmetals, copies)
+
+	# Metal + ametal: iônico só se TODO ânion atrai bem mais que TODO cátion.
+	var cation_max := 0.0
+	for m in metals:
+		cation_max = maxf(cation_max, m.chem_electronegativity())
+	var anion_min := nonmetals[0].chem_electronegativity()
+	for n in nonmetals:
+		anion_min = minf(anion_min, n.chem_electronegativity())
+	if not _is_ionic_gap(anion_min - cation_max):
+		return _fail("ΔE %.2f < %.1f: not ionic." % [anion_min - cation_max, IONIC_THRESHOLD])
+	return _ionic(metals, nonmetals)
 
 
 # ---------------------------------------------------------------------------
@@ -143,9 +186,16 @@ static func _ionic(cations: Array[AlchemonSheet], anions: Array[AlchemonSheet]) 
 	for e in elems:
 		var want_positive := e.is_metal()
 		var states: Array[int] = []
-		for q in e.chem_oxidation_states():
-			if q != 0 and (q > 0) == want_positive:
-				states.append(q)
+		if want_positive:
+			# Z_cátion: elétrons cedidos (estados de oxidação positivos).
+			for q in e.chem_oxidation_states():
+				if q > 0:
+					states.append(q)
+		else:
+			# Ânion: recebe (octeto − V) elétrons até completar o octeto.
+			var gap := e.octet_target - e.chem_valence()
+			if gap > 0:
+				states.append(-gap)
 		if states.is_empty():
 			return _fail("%s has no %s oxidation state." % [e.creature_name, "positive" if want_positive else "negative"])
 		options.append(states)

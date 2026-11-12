@@ -456,14 +456,15 @@ O jogador define o vínculo no PC (`PlayerBondData`: `kind` + índices). Ao inic
 
 ### 9.1 Misturas — \[Parcial\]
 
-`AlchemyStation.is_mixture()`: duas criaturas **Metal**. `BondRules.MIXTURE_BONUS = 8`, aplicado a **HP máximo e energia máxima** (e valores atuais) de ambos. \[Parcial\] O GDD diz "todos os atributos".
+`AlchemyStation.is_mixture()`: dois Alchemons que **não formam** composto iônico nem covalente (metal + metal, gás nobre, metaloide, ΔE ou cargas incompatíveis). `BondRules.MIXTURE_BONUS = 8`, aplicado a **HP máximo e energia máxima** (e valores atuais) de ambos. \[Parcial\] O GDD diz "todos os atributos".
 
 ### 9.2 Compostos — \[Parcial\]
 
-`AlchemyStation.validate_stoichiometry()` valida a Regra do Octeto:
+Só existem 2 tipos de composto (`CompoundRules`); o que não for iônico nem covalente é Mistura. `AlchemyStation.validate_stoichiometry()` valida a Regra do Octeto:
 
-- **Iônico** (metal + não metal): elétrons doados = elétrons necessários (`octet_target − max_valence_electrons`).
-- **Covalente** (sem metal): `(Σ octeto − Σ valência)` par e ≥ `n − 1` ligações.
+- **Iônico** (metal + ametal, ΔE ≥ 2,0): `n_cátion · Z_cátion = n_ânion · (8 − V_ânion)`.
+- **Covalente** (ametal + ametal, ΔE < 2,0): `(Σ octeto − Σ valência)` par e ≥ `n − 1` ligações.
+- **Mistura:** metal + metal, gás nobre, metaloide ou qualquer par fora das regras acima.
 - O PC informa se a combinação é possível, sem ensinar a resposta ("Seu Composto foi criado!").
 - Ativo: `BondRules._pick_active_index` — maior nível; se houver Metal, o Metal é o **Cátion** (`is_bond_cation`: invisível, inalvejável, imune).
 

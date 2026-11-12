@@ -191,16 +191,26 @@ dano definido para a mudança. Vínculos alquímicos são aplicados ao estado
 transitório da batalha e seus bônus não são gravados como atributos
 permanentes.
 
-`AlchemyStation` valida os vínculos pelas regras da Química: nenhum átomo passa
-de 8 elétrons de valência (`octet_target ≤ 8`). Em compostos iônicos (metais +
-ametais/metaloides), os metais doam todos os elétrons de valência e a soma
-doada deve ser igual à necessária para completar o octeto dos receptores;
-átomos com octeto completo não participam. Em compostos covalentes (só
-não-metais), cada átomo faz `octeto − valência` ligações e a molécula precisa
-ser conectada, com grau par e sem átomo que exija mais ligações que os demais
-juntos. Dois metais formam uma mistura. Um composto aceita de 2 a
-`AlchemyStation.MAX_BOND_SIZE` (4) Alchemons; os membros além dos 2 slots do
-campo ficam sem slot e o ativo sempre ocupa um slot.
+`AlchemyStation` valida os vínculos pelas regras da Química (`CompoundRules`).
+Só existem **2 tipos de composto**; qualquer combinação que não forme um deles
+é uma **Mistura**. Nenhum átomo passa de 8 elétrons de valência
+(`octet_target ≤ 8`). ΔE é a diferença de eletronegatividade (Pauling) e o
+limiar é `CompoundRules.IONIC_THRESHOLD = 2,0`.
+
+- **Iônico:** metal + ametal, ΔE ≥ 2,0 e eletroneutralidade
+  `n_cátion · Z_cátion = n_ânion · (8 − V_ânion)`; os metais doam elétrons e o
+  ametal recebe até completar o octeto.
+- **Covalente:** ametal + ametal, ΔE < 2,0; cada átomo fecha `octeto − valência`
+  ligações por pares compartilhados e a molécula precisa ser conectada, com grau
+  par e sem átomo que exija mais ligações que os demais juntos (inclui moléculas
+  elementares como O₂ e N₂).
+- **Mistura:** todo o resto — metal + metal (liga), gás nobre (octeto completo),
+  metaloide (não é metal nem ametal), ΔE incompatível com o tipo ou cargas que
+  não fecham. Mistura é sempre de 2 Alchemons; 3-4 que não formam composto são
+  rejeitados.
+
+Um composto aceita de 2 a `AlchemyStation.MAX_BOND_SIZE` (4) Alchemons; os
+membros além dos 2 slots do campo ficam sem slot e o ativo sempre ocupa um slot.
 
 ### 2.4 Progressão e condições de vitória/derrota
 
