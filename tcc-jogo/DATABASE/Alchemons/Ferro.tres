@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://ss7bhk2g5iyl"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_clgy6"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_8i17a"]
+
+[resource]
+script = ExtResource("2_8i17a")
+id = 5
+creature_name = "Ferro"
+atomic_mass = 56
+description = "Metal de transição ferromagnético de elevada densidade, dureza e rigidez estrutural."
+lore = "Espinha dorsal da siderurgia e das armas antigas, forma complexos octaédricos essenciais à vida."
+found_at = "Mina de hematita, jazidas siderúrgicas e crateras meteoríticas"
+likes = "Campos magnéticos, ligas com Carbono (aço), estruturas rígidas"
+dislikes = "Umidade e Oxigênio combinados (corrosão/ferrugem), ácidos fortes"
+base_hp = 95
+base_attack = 55
+base_defense = 90
+base_mechanical_speed = 40
+energia_de_acao = 2
+atomic_number = 26
+symbol = "Fe"
+valence_electrons = 2
+electronegativity = 1.83
+oxidation_states = Array[int]([7, 0])
+bonding_capacity = 6
+element_category = 1
+melting_point = 1811.0
+boiling_point = 3134.0
+metadata/_custom_type_script = "uid://cxfaplp86c865"

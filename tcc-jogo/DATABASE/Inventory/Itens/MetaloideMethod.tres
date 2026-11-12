@@ -9,3 +9,4 @@ nome = "Metaloide method"
 descricao = "Placeholder. Captura criaturas do tipo Metaloide."
 is_capture_method = true
 capture_type = 2
+valorVenda = 100

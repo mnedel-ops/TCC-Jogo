@@ -8,3 +8,4 @@ index = 2
 nome = "Item Super Generico"
 descricao = "Item generico para testar."
 metadata/_custom_type_script = "uid://dmtha2nlqm4o7"
+valorVenda = 10

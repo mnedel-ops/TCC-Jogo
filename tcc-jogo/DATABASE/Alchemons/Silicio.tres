@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://i4fslifabl1m"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_yfap6"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_kidgu"]
+
+[resource]
+script = ExtResource("2_kidgu")
+id = 3
+creature_name = "Silicio"
+atomic_mass = 28
+description = "Metaloide semicondutor capaz de formar redes cristalinas sólidas e altamente resistentes."
+lore = "ase das rochas e da tecnologia microeletrônica, constrói arranjos tetraédricos duradouros."
+found_at = "Areias, depósitos minerais de sílica e laboratórios de chips"
+likes = "Estruturas cristalinas, semicondutores, ligar-se ao Oxigênio"
+dislikes = "Bases altamente concentradas e vibrações excessivas"
+base_hp = 75
+base_attack = 65
+base_defense = 75
+base_mechanical_speed = 55
+energia_de_acao = 4
+atomic_number = 14
+symbol = "Si"
+valence_electrons = 4
+electronegativity = 1.9
+oxidation_states = Array[int]([4, -4, 2])
+bonding_capacity = 4
+element_category = 3
+element_type = 2
+melting_point = 1687.0
+boiling_point = 3265.0
+metadata/_custom_type_script = "uid://cxfaplp86c865"

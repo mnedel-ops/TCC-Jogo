@@ -14,6 +14,7 @@ var _message_token := 0
 var _dialogue_box: DialogueBox
 
 var is_shopkeeper: bool = false
+var shop_stock: Array[ItemData] = []
 const SHOP_FALLBACK_GREETING := "Bem-vindo! O que deseja?"
 var _shop: ShopDialogueBox
 
@@ -139,7 +140,7 @@ func open_shop() -> void:
 	_lock_player(true)
 	_shop = ShopDialogueBox.new()
 	add_child(_shop)
-	_shop.open(dialogue if dialogue != "" else SHOP_FALLBACK_GREETING)
+	_shop.open(dialogue if dialogue != "" else SHOP_FALLBACK_GREETING, shop_stock)
 	_shop.closed.connect(_close_shop)
 	_shop.option_chosen.connect(_on_shop_option)
 

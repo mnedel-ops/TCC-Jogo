@@ -9,3 +9,4 @@ nome = "Ametal method"
 descricao = "Placeholder. Captura criaturas do tipo Ametal."
 is_capture_method = true
 capture_type = 1
+valorVenda = 100

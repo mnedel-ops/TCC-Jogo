@@ -7,6 +7,8 @@ class_name NPCSpawnPoint
 @export var is_gym_trainer: bool = false
 @export var badge: BadgeData
 @export var is_shopkeeper: bool = false
+## Itens que o lojista vende (preço = valorVenda). Vazio = tudo que tem preço no ItemDatabase.
+@export var shop_stock: Array[ItemData] = []
 @export var is_healer: bool = false
 
 @export_group("Dialogue")

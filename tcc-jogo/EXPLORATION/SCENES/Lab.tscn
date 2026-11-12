@@ -5,6 +5,11 @@
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_7yqpg"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="4_6e51k"]
 [ext_resource type="PackedScene" uid="uid://br3ljhxl2ql" path="res://scenes/pc/pc.tscn" id="4_pryhs"]
+[ext_resource type="Resource" uid="uid://c0epucu803i5k" path="res://DATABASE/Inventory/Itens/1ItemGenerico.tres" id="5_shop1"]
+[ext_resource type="Resource" uid="uid://cvokrnrlvijd3" path="res://DATABASE/Inventory/Itens/MetalMethod.tres" id="5_shop2"]
+[ext_resource type="Resource" uid="uid://cinfsi6tw4ff1" path="res://DATABASE/Inventory/Itens/AmetalMethod.tres" id="5_shop3"]
+[ext_resource type="Resource" uid="uid://fhcne48rwxjc" path="res://DATABASE/Inventory/Itens/MetaloideMethod.tres" id="5_shop4"]
+[ext_resource type="Script" uid="uid://dkvjbbo1yc74m" path="res://DATABASE/Inventory/itemdata.gd" id="5_shopscript"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lclgt"]
 size = Vector3(60, 0.5, 60)
@@ -43,6 +48,7 @@ script = ExtResource("3_7yqpg")
 npc_scene = ExtResource("2_pryhs")
 alchemons_ids = Array[int]([3, 3])
 is_shopkeeper = true
+shop_stock = Array[ExtResource("5_shopscript")]([ExtResource("5_shop1"), ExtResource("5_shop2"), ExtResource("5_shop3"), ExtResource("5_shop4")])
 dialogue = "Saudacoes, meu jovem! Deseja comprar ou vender?"
 
 [node name="PC" parent="NPCHolder" unique_id=1971466549 instance=ExtResource("4_pryhs")]

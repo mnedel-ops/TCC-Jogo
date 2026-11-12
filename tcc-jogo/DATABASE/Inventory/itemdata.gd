@@ -8,3 +8,6 @@ extends Resource
 @export var heal_amount: int = 0
 @export var is_capture_method: bool = false
 @export var capture_type: AlchemonType.Type = AlchemonType.Type.METAL
+
+## Valor de venda do lojista, que compra pela metade.
+@export var valorVenda: int = 0

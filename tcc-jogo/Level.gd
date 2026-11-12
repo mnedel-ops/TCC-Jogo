@@ -30,6 +30,7 @@ func  place_npcs():
 		npc_scene_guy.dialogue_defeated = marker.dialogue_defeated
 		npc_scene_guy.dialogue_healed = marker.dialogue_healed
 		npc_scene_guy.is_shopkeeper = marker.is_shopkeeper
+		npc_scene_guy.shop_stock = marker.shop_stock
 		npc_scene_guy.is_healer = marker.is_healer
 		var has_role := marker.is_shopkeeper or marker.is_healer
 		if has_role and marker.is_fighter:

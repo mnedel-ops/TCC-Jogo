@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://ijpqro81ks88"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_lq0fb"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_81xai"]
+
+[resource]
+script = ExtResource("2_81xai")
+id = 1
+creature_name = "Hidrogenio"
+atomic_mass = 1
+description = "O elemento mais leve do universo, gasoso, altamente reativo e com extrema mobilidade cinética."
+lore = "Abundante nas estrelas e na água, o Hidrogênio forma pontes moleculares e reações de combustão limpa."
+found_at = "Atmosfera superior e laboratórios de eletrólise"
+likes = "Calor, eletricidade, formar ligações de hidrogênio e compostos moleculares"
+dislikes = "Frio extremo, contenções rígidas e isolantes"
+base_hp = 45
+base_attack = 60
+base_defense = 40
+base_mechanical_speed = 95
+energia_de_acao = 1
+max_valence_electrons = 2
+atomic_number = 1
+symbol = "H"
+valence_electrons = 1
+octet_target = 2
+electronegativity = 2.2
+oxidation_states = Array[int]([1, -1])
+bonding_capacity = 1
+element_category = 2
+element_type = 1
+melting_point = 13.99
+boiling_point = 20.27
+metadata/_custom_type_script = "uid://cxfaplp86c865"

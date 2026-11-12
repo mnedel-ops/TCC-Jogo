@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://brwdt4yty7qnk"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_22hxa"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_enhit"]
+
+[resource]
+script = ExtResource("2_enhit")
+id = 4
+creature_name = "ARSÊNIO"
+atomic_mass = 75
+description = "Metaloide tóxico e versátil, famoso na história da alquimia e essencial na optoeletrônica."
+lore = "Empregado por alquimistas sob disfarces para alterar cores metálicas e usado em semicondutores avançados."
+found_at = "Minérios sulfetados (arsenopirita) e jazidas minerais"
+likes = "Ligas semicondutoras, sublimação, reações de redução"
+dislikes = "Agentes redutores fortes e purificação extrema"
+base_hp = 70
+base_attack = 80
+base_defense = 60
+base_mechanical_speed = 60
+energia_de_acao = 5
+atomic_number = 33
+symbol = "As"
+valence_electrons = 5
+electronegativity = 2.18
+oxidation_states = Array[int]([5, 3, -3])
+bonding_capacity = 3
+element_category = 3
+element_type = 2
+melting_point = 887.0
+boiling_point = 887.0
+metadata/_custom_type_script = "uid://cxfaplp86c865"

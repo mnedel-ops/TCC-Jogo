@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://jksd0lc4jewx"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_840j4"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_1ujxo"]
+
+[resource]
+script = ExtResource("2_1ujxo")
+id = 6
+creature_name = "Ouro"
+atomic_mass = 197
+description = "Metal nobre de altíssima densidade, maleabilidade extrema e inércia química absoluta."
+lore = "O objetivo da alquímia e metal de cunhagem por excelência, imune à corrosão."
+found_at = "Veios aluviais, minas nobres e cofres de alta precisão"
+likes = "Inércia química, maleabilidade de folha, alta condutividade"
+dislikes = "qua regia (mistura de ácidos) e soluções de cianeto"
+base_hp = 110
+base_attack = 50
+base_defense = 95
+base_mechanical_speed = 35
+energia_de_acao = 1
+atomic_number = 79
+symbol = "Au"
+valence_electrons = 1
+electronegativity = 2.54
+oxidation_states = Array[int]([1, 7])
+bonding_capacity = 4
+element_category = 1
+melting_point = 1337.33
+boiling_point = 3129.0
+metadata/_custom_type_script = "uid://cxfaplp86c865"

@@ -8,3 +8,4 @@ index = 3
 nome = "Metal method"
 descricao = "Placeholder. Captura criaturas do tipo Metal."
 is_capture_method = true
+valorVenda = 100

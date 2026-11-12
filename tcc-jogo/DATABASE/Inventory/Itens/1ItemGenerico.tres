@@ -8,3 +8,4 @@ index = 1
 nome = "Pocao de Cura"
 descricao = "Curar o usuario em 20 pontos"
 heal_amount = 20
+valorVenda = 50

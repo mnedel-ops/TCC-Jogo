@@ -23,7 +23,7 @@ Creature capture baseado na Tabela Periódica. Este documento mantém o design o
 | Captura | \[Parcial\] | Fórmula \[OK\]; métodos de separação são placeholders por tipo |
 | XP e níveis | \[OK\] | XP segue a fórmula $N^3$|
 | Obediência por insígnias | \[Pendente\] | Insígnia existe e é concedida; obediência não |
-| Economia (moeda, loja) | \[Parcial\] | Moeda \[OK\]; loja abre mas Comprar/Vender são "Em breve" |
+| Economia (moeda, loja) | \[OK\] | Moeda \[OK\]; loja compra e vende (`ShopRules`). Falta balancear preços |
 | PC / Armazenamento | \[Parcial\] | Troca de time e Compostos \[OK\]; sem caixas e sem troca de ataques |
 | Cura / Hospital | \[Parcial\] | NPC curandeiro e teleporte na derrota  \[OK\]; sem hospital como cena|
 | Salvamento | \[OK\] | JSON atômico + backup, posição, inventário, NPCs derrotados |
@@ -563,15 +563,15 @@ Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award
 
 ### 13.1 Moeda — \[Parcial\]
 
-`PlayerData.money` inicia em **500**; `add_money()` nunca fica negativo. Vitória contra treinador = 100. Venda de itens \[Pendente\].
+`PlayerData.money` inicia em **500**; `add_money()` nunca fica negativo. Vitória contra treinador = 100. Venda de itens \[OK\] (loja).
 
 ### 13.2 Itens — \[Parcial\]
 
-`ItemDatabase` e `ItemData` (`index`, `nome`, `descricao`, `icone`, `heal_amount`, `is_capture_method`, `capture_type`). Cadastrados: 2 itens genéricos e 3 "métodos" de captura. Poção e Recuperador de Energia ainda **não existem como dados**.
+`ItemDatabase` e `ItemData` (`index`, `nome`, `descricao`, `icone`, `heal_amount`, `is_capture_method`, `capture_type`, `valorVenda`). `valorVenda` (int) = valor de venda do lojista, que compra pela metade. Cadastrados: 2 itens genéricos e 3 "métodos" de captura. Poção e Recuperador de Energia ainda **não existem como dados**.
 
-### 13.3 Lojas — \[Parcial\]
+### 13.3 Lojas — \[OK\]
 
-NPC lojista abre `ShopDialogueBox` com Comprar / Vender / Sair, mas Comprar e Vender exibem "(Em breve...)". Custos \[Pendente\].
+NPC lojista abre `ShopDialogueBox` com Comprar / Vender / Sair. O lojista tem uma lista de itens à venda (`NPCSpawnPoint.shop_stock`; vazia = todos os itens com preço do `ItemDatabase`). Jogador **compra** pelo `valorVenda` e **vende** por metade dele (arredonda pra baixo; item com `valorVenda` ≤ 0 não é negociado). Regras em `ShopRules` (`buy_price`, `sell_price`, `buy`, `sell`), sem UI, cobertas por `test_shop.gd`.
 
 ---
 
@@ -775,8 +775,7 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de 
 
 ### 25.5 Economia
 
-- Custos dos itens, valor de venda e recompensa por vitória.
-- Implementar Comprar/Vender na loja.
+- Balancear `valorVenda` dos itens e recompensa por vitória.
 
 ### 25.6 Mundo e Encontros
 

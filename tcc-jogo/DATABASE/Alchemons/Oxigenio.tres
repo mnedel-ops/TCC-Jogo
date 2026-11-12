@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="AlchemonSheet" format=3 uid="uid://lxqrycy4045c"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_gp5r3"]
+[ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_m3aut"]
+
+[resource]
+script = ExtResource("2_m3aut")
+id = 2
+creature_name = "Oxigênio"
+atomic_mass = 16
+description = "Agente oxidante forte e essencial para a vida, atraindo elétrons com imensa força."
+lore = "Presente na atmosfera e na água, o Oxigênio reage vorazmente com metais e ametais gerando óxidos."
+found_at = "Atmosfera e zonas aquosas"
+likes = "Combustão, metais alcalinos, oxidar oponentes"
+dislikes = "Inércia química, gases nobres e ambientes rarefeitos"
+base_hp = 60
+base_attack = 85
+base_defense = 45
+base_mechanical_speed = 80
+energia_de_acao = 6
+atomic_number = 8
+symbol = "O"
+valence_electrons = 6
+electronegativity = 3.44
+oxidation_states = Array[int]([-2, -1])
+bonding_capacity = 2
+element_category = 2
+element_type = 1
+melting_point = 54.36
+boiling_point = 90.19
+metadata/_custom_type_script = "uid://cxfaplp86c865"
