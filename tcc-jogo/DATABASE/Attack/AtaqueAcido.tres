@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://cik8f4bogm3j0"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_2pbfw"]
+
+[resource]
+script = ExtResource("1_2pbfw")
+indexAttack = 7
+attack_name = "Ataque Ácido"
+power = 70
+element_type = 1
+unlock_level = 11
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

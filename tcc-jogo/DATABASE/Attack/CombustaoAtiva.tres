@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://4c7671kjaacg"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_woc4n"]
+
+[resource]
+script = ExtResource("1_woc4n")
+indexAttack = 8
+attack_name = "Combustão Ativa"
+power = 80
+energy_cost = 3
+element_type = 1
+unlock_level = 19
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

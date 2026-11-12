@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://b74bm0jif4uyp"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_ohbqo"]
+
+[resource]
+script = ExtResource("1_ohbqo")
+indexAttack = 9
+attack_name = "Dopagem Semicondutora"
+power = 45
+energy_cost = 1
+element_type = 2
+unlock_level = 5
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

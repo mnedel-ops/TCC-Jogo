@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://dx6ny5t7d8pf2"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_pbbfr"]
+
+[resource]
+script = ExtResource("1_pbbfr")
+indexAttack = 4
+attack_name = "Magnetismo de Giro"
+power = 60
+unlock_level = 12
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

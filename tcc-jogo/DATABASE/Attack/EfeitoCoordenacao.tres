@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://drp1kx2nvhvhj"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_dkl1p"]
+
+[resource]
+script = ExtResource("1_dkl1p")
+indexAttack = 5
+attack_name = "Efeito de Coordenação"
+power = 90
+energy_cost = 3
+unlock_level = 24
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"

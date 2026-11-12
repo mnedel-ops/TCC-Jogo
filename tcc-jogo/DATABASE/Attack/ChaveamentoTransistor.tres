@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="AttackData" format=3 uid="uid://c7cripgq1r2qu"]
+
+[ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_tpwov"]
+
+[resource]
+script = ExtResource("1_tpwov")
+indexAttack = 11
+attack_name = "Chaveamento de Transistor"
+power = 155
+energy_cost = 5
+element_type = 2
+unlock_level = 25
+metadata/_custom_type_script = "uid://chjyxlmn2nm8c"
