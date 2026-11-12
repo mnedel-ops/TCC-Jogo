@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="1_22hxa"]
 [ext_resource type="Script" uid="uid://cxfaplp86c865" path="res://DATABASE/Alchemons/AlchemonSheet.gd" id="2_enhit"]
+[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="2_vsqie"]
+[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="3_kmuga"]
 
 [resource]
 script = ExtResource("2_enhit")
@@ -28,4 +30,5 @@ element_category = 3
 element_type = 2
 melting_point = 887.0
 boiling_point = 887.0
+attacks = Array[ExtResource("1_22hxa")]([ExtResource("2_vsqie"), ExtResource("3_kmuga")])
 metadata/_custom_type_script = "uid://cxfaplp86c865"
