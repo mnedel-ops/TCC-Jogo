@@ -7,6 +7,6 @@ script = ExtResource("1_l8cbe")
 indexAttack = 3
 attack_name = "Atração de Rede"
 power = 40
-energy_cost = 3
+energy_cost = 1
 unlock_level = 3
 metadata/_custom_type_script = "uid://chjyxlmn2nm8c"
