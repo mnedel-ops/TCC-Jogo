@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_4xuym")
-indexAttack = 3
+indexAttack = 12
 attack_name = "TailStrike"
 power = 40
 unlock_level = 2

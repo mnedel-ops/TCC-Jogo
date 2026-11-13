@@ -2,13 +2,23 @@
 
 [ext_resource type="Script" uid="uid://4ghw5n3mgxqd" path="res://DATABASE/Attack/AttackDatabase.gd" id="1_db"]
 [ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="2_ad"]
-[ext_resource type="Resource" uid="uid://btpx7i0xrh8u0" path="res://DATABASE/Attack/Scratch.tres" id="3_scratch"]
-[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="4_tackle"]
-[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="5_tail"]
-[ext_resource type="Resource" uid="uid://c25qdtmik86ik" path="res://DATABASE/Attack/DebugAtack-ametal.tres" id="6_dbg1"]
-[ext_resource type="Resource" uid="uid://da5jr7rrhllb6" path="res://DATABASE/Attack/DebugAtack-metal.tres" id="7_dbg2"]
-[ext_resource type="Resource" uid="uid://dno02val6h1bm" path="res://DATABASE/Attack/DebugAtack-metaloide.tres" id="8_dbg3"]
+[ext_resource type="Resource" uid="uid://cik8f4bogm3j0" path="res://DATABASE/Attack/AtaqueAcido.tres" id="a3_AtaqueAcido"]
+[ext_resource type="Resource" uid="uid://01c4ko04tr0h" path="res://DATABASE/Attack/AtracaodeRede.tres" id="a4_AtracaodeRede"]
+[ext_resource type="Resource" uid="uid://c7cripgq1r2qu" path="res://DATABASE/Attack/ChaveamentoTransistor.tres" id="a5_ChaveamentoTransistor"]
+[ext_resource type="Resource" uid="uid://4o8c1cfcrie4" path="res://DATABASE/Attack/Combustao.tres" id="a6_Combustao"]
+[ext_resource type="Resource" uid="uid://4c7671kjaacg" path="res://DATABASE/Attack/CombustaoAtiva.tres" id="a7_CombustaoAtiva"]
+[ext_resource type="Resource" uid="uid://c25qdtmik86ik" path="res://DATABASE/Attack/DebugAtack-ametal.tres" id="a8_DebugAtack_ametal"]
+[ext_resource type="Resource" uid="uid://da5jr7rrhllb6" path="res://DATABASE/Attack/DebugAtack-metal.tres" id="a9_DebugAtack_metal"]
+[ext_resource type="Resource" uid="uid://dno02val6h1bm" path="res://DATABASE/Attack/DebugAtack-metaloide.tres" id="a10_DebugAtack_metaloide"]
+[ext_resource type="Resource" uid="uid://c1oh34ck3nfvm" path="res://DATABASE/Attack/DescargaEletronica.tres" id="a11_DescargaEletronica"]
+[ext_resource type="Resource" uid="uid://b74bm0jif4uyp" path="res://DATABASE/Attack/DopagemSemicondutora.tres" id="a12_DopagemSemicondutora"]
+[ext_resource type="Resource" uid="uid://drp1kx2nvhvhj" path="res://DATABASE/Attack/EfeitoCoordenacao.tres" id="a13_EfeitoCoordenacao"]
+[ext_resource type="Resource" uid="uid://dx6ny5t7d8pf2" path="res://DATABASE/Attack/MagnetismoGiro.tres" id="a14_MagnetismoGiro"]
+[ext_resource type="Resource" uid="uid://cufoebh308gcv" path="res://DATABASE/Attack/SLAP.tres" id="a15_SLAP"]
+[ext_resource type="Resource" uid="uid://btpx7i0xrh8u0" path="res://DATABASE/Attack/Scratch.tres" id="a16_Scratch"]
+[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="a17_Tackle"]
+[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="a18_TailStrike"]
 
 [resource]
 script = ExtResource("1_db")
-attacks = Array[ExtResource("2_ad")]([ExtResource("3_scratch"), ExtResource("4_tackle"), ExtResource("5_tail"), ExtResource("6_dbg1"), ExtResource("7_dbg2"), ExtResource("8_dbg3")])
+attacks = Array[ExtResource("2_ad")]([ExtResource("a15_SLAP"), ExtResource("a4_AtracaodeRede"), ExtResource("a5_ChaveamentoTransistor"), ExtResource("a6_Combustao"), ExtResource("a7_CombustaoAtiva"), ExtResource("a8_DebugAtack_ametal"), ExtResource("a9_DebugAtack_metal"), ExtResource("a10_DebugAtack_metaloide"), ExtResource("a11_DescargaEletronica"), ExtResource("a12_DopagemSemicondutora"), ExtResource("a13_EfeitoCoordenacao"), ExtResource("a14_MagnetismoGiro"), ExtResource("a3_AtaqueAcido"), ExtResource("a16_Scratch"), ExtResource("a17_Tackle"), ExtResource("a18_TailStrike")])

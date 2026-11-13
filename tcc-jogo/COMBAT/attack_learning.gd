@@ -2,12 +2,18 @@ class_name AttackLearning
 extends RefCounted
 
 
-static func pool_for(sheet: AlchemonSheet) -> Array[AttackData]:
+## Troca a lista de golpes em testes. null = usa AttackDatabase.default().
+static var db_override: AttackDatabase = null
+
+
+## Lista comum de golpes (igual para todas as espécies), ordenada por nível.
+## O parâmetro `sheet` é ignorado; fica só por compatibilidade com os chamadores.
+## Golpes de debug (indexAttack < 0) não entram na lista.
+static func pool_for(_sheet: AlchemonSheet = null) -> Array[AttackData]:
+	var db := db_override if db_override != null else AttackDatabase.default()
 	var out: Array[AttackData] = []
-	if sheet == null:
-		return out
-	for a in sheet.attacks:
-		if a == null or a in out:
+	for a in db.attacks:
+		if a == null or a.indexAttack < 0 or a in out:
 			continue
 		var pos := out.size()
 		for i in out.size():
@@ -19,7 +25,8 @@ static func pool_for(sheet: AlchemonSheet) -> Array[AttackData]:
 
 
 static func resolve(sheet: AlchemonSheet, attack_id: int) -> AttackData:
-	var a := AttackDatabase.default().get_by_id(attack_id)
+	var db := db_override if db_override != null else AttackDatabase.default()
+	var a := db.get_by_id(attack_id)
 	if a != null:
 		return a
 	if sheet != null:

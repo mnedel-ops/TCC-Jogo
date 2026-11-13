@@ -1,0 +1,133 @@
+diff --git a/tcc-jogo/COMBAT/attack_learning.gd b/tcc-jogo/COMBAT/attack_learning.gd
+index a1fb071..074aff1 100644
+--- a/tcc-jogo/COMBAT/attack_learning.gd
++++ b/tcc-jogo/COMBAT/attack_learning.gd
+@@ -2,12 +2,18 @@ class_name AttackLearning
+ extends RefCounted
+ 
+ 
+-static func pool_for(sheet: AlchemonSheet) -> Array[AttackData]:
++## Troca a lista de golpes em testes. null = usa AttackDatabase.default().
++static var db_override: AttackDatabase = null
++
++
++## Lista comum de golpes (igual para todas as espécies), ordenada por nível.
++## O parâmetro `sheet` é ignorado; fica só por compatibilidade com os chamadores.
++## Golpes de debug (indexAttack < 0) não entram na lista.
++static func pool_for(_sheet: AlchemonSheet = null) -> Array[AttackData]:
++	var db := db_override if db_override != null else AttackDatabase.default()
+ 	var out: Array[AttackData] = []
+-	if sheet == null:
+-		return out
+-	for a in sheet.attacks:
+-		if a == null or a in out:
++	for a in db.attacks:
++		if a == null or a.indexAttack < 0 or a in out:
+ 			continue
+ 		var pos := out.size()
+ 		for i in out.size():
+@@ -19,7 +25,8 @@ static func pool_for(sheet: AlchemonSheet) -> Array[AttackData]:
+ 
+ 
+ static func resolve(sheet: AlchemonSheet, attack_id: int) -> AttackData:
+-	var a := AttackDatabase.default().get_by_id(attack_id)
++	var db := db_override if db_override != null else AttackDatabase.default()
++	var a := db.get_by_id(attack_id)
+ 	if a != null:
+ 		return a
+ 	if sheet != null:
+diff --git a/tcc-jogo/DATABASE/Attack/AttackDatabase.tres b/tcc-jogo/DATABASE/Attack/AttackDatabase.tres
+index 5ba6e33..900beef 100644
+--- a/tcc-jogo/DATABASE/Attack/AttackDatabase.tres
++++ b/tcc-jogo/DATABASE/Attack/AttackDatabase.tres
+@@ -2,13 +2,23 @@
+ 
+ [ext_resource type="Script" uid="uid://4ghw5n3mgxqd" path="res://DATABASE/Attack/AttackDatabase.gd" id="1_db"]
+ [ext_resource type="Script" uid="uid://chjyxlmn2nm8c" path="res://DATABASE/Attack/AttackData.gd" id="2_ad"]
+-[ext_resource type="Resource" uid="uid://btpx7i0xrh8u0" path="res://DATABASE/Attack/Scratch.tres" id="3_scratch"]
+-[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="4_tackle"]
+-[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="5_tail"]
+-[ext_resource type="Resource" uid="uid://c25qdtmik86ik" path="res://DATABASE/Attack/DebugAtack-ametal.tres" id="6_dbg1"]
+-[ext_resource type="Resource" uid="uid://da5jr7rrhllb6" path="res://DATABASE/Attack/DebugAtack-metal.tres" id="7_dbg2"]
+-[ext_resource type="Resource" uid="uid://dno02val6h1bm" path="res://DATABASE/Attack/DebugAtack-metaloide.tres" id="8_dbg3"]
++[ext_resource type="Resource" uid="uid://cik8f4bogm3j0" path="res://DATABASE/Attack/AtaqueAcido.tres" id="a3_AtaqueAcido"]
++[ext_resource type="Resource" uid="uid://01c4ko04tr0h" path="res://DATABASE/Attack/AtracaodeRede.tres" id="a4_AtracaodeRede"]
++[ext_resource type="Resource" uid="uid://c7cripgq1r2qu" path="res://DATABASE/Attack/ChaveamentoTransistor.tres" id="a5_ChaveamentoTransistor"]
++[ext_resource type="Resource" uid="uid://4o8c1cfcrie4" path="res://DATABASE/Attack/Combustao.tres" id="a6_Combustao"]
++[ext_resource type="Resource" uid="uid://4c7671kjaacg" path="res://DATABASE/Attack/CombustaoAtiva.tres" id="a7_CombustaoAtiva"]
++[ext_resource type="Resource" uid="uid://c25qdtmik86ik" path="res://DATABASE/Attack/DebugAtack-ametal.tres" id="a8_DebugAtack_ametal"]
++[ext_resource type="Resource" uid="uid://da5jr7rrhllb6" path="res://DATABASE/Attack/DebugAtack-metal.tres" id="a9_DebugAtack_metal"]
++[ext_resource type="Resource" uid="uid://dno02val6h1bm" path="res://DATABASE/Attack/DebugAtack-metaloide.tres" id="a10_DebugAtack_metaloide"]
++[ext_resource type="Resource" uid="uid://c1oh34ck3nfvm" path="res://DATABASE/Attack/DescargaEletronica.tres" id="a11_DescargaEletronica"]
++[ext_resource type="Resource" uid="uid://b74bm0jif4uyp" path="res://DATABASE/Attack/DopagemSemicondutora.tres" id="a12_DopagemSemicondutora"]
++[ext_resource type="Resource" uid="uid://drp1kx2nvhvhj" path="res://DATABASE/Attack/EfeitoCoordenacao.tres" id="a13_EfeitoCoordenacao"]
++[ext_resource type="Resource" uid="uid://dx6ny5t7d8pf2" path="res://DATABASE/Attack/MagnetismoGiro.tres" id="a14_MagnetismoGiro"]
++[ext_resource type="Resource" uid="uid://cufoebh308gcv" path="res://DATABASE/Attack/SLAP.tres" id="a15_SLAP"]
++[ext_resource type="Resource" uid="uid://btpx7i0xrh8u0" path="res://DATABASE/Attack/Scratch.tres" id="a16_Scratch"]
++[ext_resource type="Resource" uid="uid://dmtffltot07ps" path="res://DATABASE/Attack/Tackle.tres" id="a17_Tackle"]
++[ext_resource type="Resource" uid="uid://bat4borqfb643" path="res://DATABASE/Attack/TailStrike.tres" id="a18_TailStrike"]
+ 
+ [resource]
+ script = ExtResource("1_db")
+-attacks = Array[ExtResource("2_ad")]([ExtResource("3_scratch"), ExtResource("4_tackle"), ExtResource("5_tail"), ExtResource("6_dbg1"), ExtResource("7_dbg2"), ExtResource("8_dbg3")])
++attacks = Array[ExtResource("2_ad")]([ExtResource("a3_AtaqueAcido"), ExtResource("a4_AtracaodeRede"), ExtResource("a5_ChaveamentoTransistor"), ExtResource("a6_Combustao"), ExtResource("a7_CombustaoAtiva"), ExtResource("a8_DebugAtack_ametal"), ExtResource("a9_DebugAtack_metal"), ExtResource("a10_DebugAtack_metaloide"), ExtResource("a11_DescargaEletronica"), ExtResource("a12_DopagemSemicondutora"), ExtResource("a13_EfeitoCoordenacao"), ExtResource("a14_MagnetismoGiro"), ExtResource("a15_SLAP"), ExtResource("a16_Scratch"), ExtResource("a17_Tackle"), ExtResource("a18_TailStrike")])
+diff --git a/tcc-jogo/DATABASE/Attack/TailStrike.tres b/tcc-jogo/DATABASE/Attack/TailStrike.tres
+index 1e5a54f..e399c18 100644
+--- a/tcc-jogo/DATABASE/Attack/TailStrike.tres
++++ b/tcc-jogo/DATABASE/Attack/TailStrike.tres
+@@ -4,7 +4,7 @@
+ 
+ [resource]
+ script = ExtResource("1_4xuym")
+-indexAttack = 3
++indexAttack = 12
+ attack_name = "TailStrike"
+ power = 40
+ unlock_level = 2
+diff --git a/tcc-jogo/test/test_attack_learning.gd b/tcc-jogo/test/test_attack_learning.gd
+index 15bf458..f9c9906 100644
+--- a/tcc-jogo/test/test_attack_learning.gd
++++ b/tcc-jogo/test/test_attack_learning.gd
+@@ -10,11 +10,18 @@ func _atk(id: int, lvl: int, power: int = 10) -> AttackData:
+ 	return a
+ 
+ 
++## Monta a lista comum de golpes com `list` e devolve uma ficha qualquer
++## (a lista não depende da espécie).
+ func _sheet(list: Array) -> AlchemonSheet:
+-	var s := AlchemonSheet.new()
++	var db := AttackDatabase.new()
+ 	for a in list:
+-		s.attacks.append(a)
+-	return s
++		db.attacks.append(a)
++	AttackLearning.db_override = db
++	return AlchemonSheet.new()
++
++
++func after_test() -> void:
++	AttackLearning.db_override = null
+ 
+ 
+ func _combatant(is_player: bool = true) -> CombatantState:
+@@ -33,6 +40,20 @@ func test_pool_is_sorted_by_unlock_level() -> void:
+ 	assert_array(ids).contains_exactly([11, 12, 10])
+ 
+ 
++func test_pool_is_common_to_all_species() -> void:
++	var s1 := _sheet([_atk(10, 1), _atk(11, 5)])
++	var s2 := AlchemonSheet.new()
++	s2.id = 77
++	assert_int(AttackLearning.pool_for(s1).size()).is_equal(2)
++	assert_int(AttackLearning.pool_for(s2).size()).is_equal(2)
++	assert_array(AttackLearning.initial_attack_ids(s2, 5)).contains_exactly([10, 11])
++
++
++func test_pool_skips_debug_attacks() -> void:
++	var s := _sheet([_atk(-2, 1), _atk(10, 1)])
++	assert_int(AttackLearning.pool_for(s).size()).is_equal(1)
++
++
+ func test_initial_attacks_respect_level_and_cap() -> void:
+ 	var s := _sheet([_atk(10, 1), _atk(11, 3), _atk(12, 5), _atk(13, 7), _atk(14, 9), _atk(15, 11)])
+ 	assert_array(AttackLearning.initial_attack_ids(s, 4)).contains_exactly([10, 11])

@@ -10,11 +10,18 @@ func _atk(id: int, lvl: int, power: int = 10) -> AttackData:
 	return a
 
 
+## Monta a lista comum de golpes com `list` e devolve uma ficha qualquer
+## (a lista não depende da espécie).
 func _sheet(list: Array) -> AlchemonSheet:
-	var s := AlchemonSheet.new()
+	var db := AttackDatabase.new()
 	for a in list:
-		s.attacks.append(a)
-	return s
+		db.attacks.append(a)
+	AttackLearning.db_override = db
+	return AlchemonSheet.new()
+
+
+func after_test() -> void:
+	AttackLearning.db_override = null
 
 
 func _combatant(is_player: bool = true) -> CombatantState:
@@ -31,6 +38,20 @@ func test_pool_is_sorted_by_unlock_level() -> void:
 	for a in AttackLearning.pool_for(s):
 		ids.append(a.indexAttack)
 	assert_array(ids).contains_exactly([11, 12, 10])
+
+
+func test_pool_is_common_to_all_species() -> void:
+	var s1 := _sheet([_atk(10, 1), _atk(11, 5)])
+	var s2 := AlchemonSheet.new()
+	s2.id = 77
+	assert_int(AttackLearning.pool_for(s1).size()).is_equal(2)
+	assert_int(AttackLearning.pool_for(s2).size()).is_equal(2)
+	assert_array(AttackLearning.initial_attack_ids(s2, 5)).contains_exactly([10, 11])
+
+
+func test_pool_skips_debug_attacks() -> void:
+	var s := _sheet([_atk(-2, 1), _atk(10, 1)])
+	assert_int(AttackLearning.pool_for(s).size()).is_equal(1)
 
 
 func test_initial_attacks_respect_level_and_cap() -> void:
