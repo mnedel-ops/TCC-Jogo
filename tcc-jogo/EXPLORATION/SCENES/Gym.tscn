@@ -30,7 +30,7 @@ script = ExtResource("1_fx6w0")
 npc_scene = ExtResource("2_1xd12")
 
 [node name="Lider" type="Marker3D" parent="NPCHolder" unique_id=1599157343]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 0.082120895, 1.9073486e-06, -6.51635)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 6.16143, 1.9073486e-06, -1.7976136)
 script = ExtResource("3_wevfo")
 npc_scene = ExtResource("2_1xd12")
 alchemons_ids = Array[int]([3, 3])
@@ -83,18 +83,18 @@ environment = SubResource("Environment_fetl1")
 transform = Transform3D(1, 0, 0, 0, 0.49999997, 0.86602545, 0, -0.86602545, 0.49999997, 0, 3.014634, 3.2644968)
 
 [node name="PortaTown" type="Area3D" parent="." unique_id=1566928865]
-transform = Transform3D(-1, 0, -8.940697e-08, 0, 1, 0, 8.940697e-08, 0, -1, 0, 0, 3.4076185)
+transform = Transform3D(-1, 0, -8.940697e-08, 0, 1, 0, 8.940697e-08, 0, -1, -7.5237193, 9.536743e-07, -2.9080672)
 script = ExtResource("5_hp86f")
 target_level_path = "uid://bvrsl6t5pawgb"
 target_spawn_point = "GymOut"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PortaTown" unique_id=1508002782]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4882813, -0.37768555)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7683716e-07, 1.4882813, -0.742095)
 shape = SubResource("BoxShape3D_s8vb3")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="PortaTown" unique_id=1590876415]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6821923, -0.69281864)
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 1.6821923, -0.6928185)
 mesh = SubResource("BoxMesh_3n2yx")
 
 [node name="GymIn" type="Marker3D" parent="." unique_id=396594376]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0034122467, 0, 2.8504162)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.43733, 0, -2.3132348)
