@@ -550,7 +550,7 @@ Ver seção 8.1.
 - **Nível:** \[Parcial\] não há teto de nível 20 no código.
 - **Level up** (`AlchemonGrowth.level_up`): recalcula ataque, defesa e velocidade, aumenta o limite de energia (sem restaurar a atual) e o HP máximo (somado ao HP atual se vivo). Múltiplos níveis por recompensa \[OK\].
 - **XP necessário:** \[Parcial\] fixo, `XP_TO_LEVEL_UP = 100` por nível, com sobra preservada.
-- **XP ganho:** \[Parcial\] vem de `xp_reward` da espécie derrotada (padrão 100). A fórmula do GDD (seção 12.1) **não está implementada**.
+- **XP ganho:** \[OK\] `EXP = ((a × b × L) / 5) / 2` (`AlchemonGrowth.xp_for_defeat`). `a` = 1 (selvagem) ou 1,5 (treinador); `b` = `xp_reward` da espécie derrotada (padrão 100); `L` = nível do derrotado. Arredonda para baixo, mínimo 1.
 - **Distribuição:** \[Parcial\] `_grant_xp` concede XP **somente à criatura que derrotou/capturou** o alvo, e não igualmente às duas.
 - Tela de recompensas mostra XP, level up e moedas \[OK\] (`BattleRewards.entries`).
 

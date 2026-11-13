@@ -25,21 +25,21 @@ size = Vector3(1, 5.632263, 60.583984)
 [node name="CasaEsquerdaSegundo" type="Node3D" unique_id=203901319]
 
 [node name="SegundorAndarEsquerdaIn" type="Marker3D" parent="." unique_id=1125948900]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.741739, 4.7683716e-07, -7.021178)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.741739, 4.7683716e-07, -9.395347)
 
 [node name="SegundoAndar" type="Area3D" parent="." unique_id=1774479696]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9084105, 0, -7.8241873)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9084105, 0, -4.4439974)
 collision_layer = 16
 script = ExtResource("1_w45vc")
 target_level_path = "uid://bb7jauxfbwyae"
 target_spawn_point = "SegundorAndarEsquerdaOut"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="SegundoAndar" unique_id=1722672818]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7808162, 1.4882813, -0.23999691)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.7808161, 1.4882813, -2.5376258)
 shape = SubResource("BoxShape3D_r07s6")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=1876701993]
-transform = Transform3D(-1, -1.5594611e-07, 2.282777e-08, -9.4128886e-08, 0.70710677, 0.70710677, -1.2641225e-07, 0.70710677, -0.70710677, -1.2331619, -0.7480078, -1.3822985)
+transform = Transform3D(1, 2.1776333e-07, -8.464503e-08, -9.412887e-08, 0.70710677, 0.70710677, 2.13835e-07, -0.70710677, 0.70710677, -1.2331619, -0.7480078, -1.3822985)
 mesh = SubResource("BoxMesh_hw2kh")
 
 [node name="NPCHolder" type="Node" parent="." unique_id=309363556]

@@ -20,6 +20,7 @@ base_attack = 80
 base_defense = 60
 base_mechanical_speed = 60
 energia_de_acao = 5
+xp_reward = 62
 atomic_number = 33
 symbol = "As"
 valence_electrons = 5

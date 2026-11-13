@@ -55,3 +55,17 @@ func test_grant_experience_uses_cubic_curve() -> void:
 	AlchemonGrowth.grant_experience(c, _make_template(), 91 + 127 + 10)
 	assert_int(c.level).is_equal(7)
 	assert_int(c.experience).is_equal(10)
+
+
+func test_xp_for_defeat_wild_formula() -> void:
+	# ((1 * 64 * 10) / 5) / 2 = 64
+	assert_int(AlchemonGrowth.xp_for_defeat(false, 64, 10)).is_equal(64)
+
+
+func test_xp_for_defeat_trainer_is_1_5x() -> void:
+	# ((1.5 * 64 * 10) / 5) / 2 = 96
+	assert_int(AlchemonGrowth.xp_for_defeat(true, 64, 10)).is_equal(96)
+
+
+func test_xp_for_defeat_never_zero() -> void:
+	assert_int(AlchemonGrowth.xp_for_defeat(false, 1, 1)).is_equal(1)

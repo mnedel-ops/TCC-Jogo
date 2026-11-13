@@ -31,6 +31,7 @@ var _highlighted: Node3D = null
 
 func _ready() -> void:
 	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids, enemy_level, player_bond)
+	state.is_trainer_battle = is_trainer_battle
 	if state.player_ids.is_empty():
 		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
 		ui.set_turn_text("Erro de configuracao - veja o console.")

@@ -58,6 +58,7 @@ func _activate(row: int, dir: int) -> void:
 			GameSettings.cycle_fps_limit(dir)
 		Row.SHOW_FPS:
 			GameSettings.set_show_fps(not GameSettings.show_fps)
+	GameSettings.save()
 
 
 func _build() -> void:

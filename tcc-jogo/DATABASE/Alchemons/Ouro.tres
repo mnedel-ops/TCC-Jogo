@@ -20,6 +20,7 @@ base_attack = 50
 base_defense = 95
 base_mechanical_speed = 35
 energia_de_acao = 1
+xp_reward = 66
 atomic_number = 79
 symbol = "Au"
 valence_electrons = 1

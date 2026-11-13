@@ -13,6 +13,7 @@ extends Resource
 @export var player_won: bool = false
 
 @export var arena_temperature: float = 273.15
+var is_trainer_battle: bool = false
 var enemy_instances: Dictionary = {}
 var captured_instances: Array[AlchemonInstance] = []
 

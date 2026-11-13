@@ -20,6 +20,7 @@ base_attack = 85
 base_defense = 45
 base_mechanical_speed = 80
 energia_de_acao = 6
+xp_reward = 64
 atomic_number = 8
 symbol = "O"
 valence_electrons = 6

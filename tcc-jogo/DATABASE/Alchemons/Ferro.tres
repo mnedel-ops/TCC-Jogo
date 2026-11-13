@@ -20,6 +20,7 @@ base_attack = 55
 base_defense = 90
 base_mechanical_speed = 40
 energia_de_acao = 2
+xp_reward = 61
 atomic_number = 26
 symbol = "Fe"
 valence_electrons = 2

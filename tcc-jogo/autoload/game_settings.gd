@@ -73,6 +73,11 @@ var window_mode: int = WindowMode.WINDOWED
 var resolution := BASE_RESOLUTION
 var fps_limit := -1
 var show_fps := false
+# Atalhos on/off (usados pela SettingsPage): ligado = volume > 0.
+var music_on: bool:
+	get: return music_volume > 0
+var sfx_on: bool:
+	get: return sfx_volume > 0
 # ação -> Array[int] com os códigos das teclas atuais (tecla física, ou keycode
 # quando não há física, como na tecla "Menu").
 var keys := {}
@@ -116,6 +121,14 @@ func set_sfx_volume(v: int) -> void:
 	changed.emit()
 
 
+func set_music(on: bool) -> void:
+	set_music_volume(100 if on else 0)
+
+
+func set_sfx(on: bool) -> void:
+	set_sfx_volume(100 if on else 0)
+
+
 # ---------------------------------------------------------------- vídeo
 
 func set_window_mode(mode: int) -> void:
@@ -134,6 +147,19 @@ func set_fps_limit(limit: int) -> void:
 	fps_limit = limit if FPS_OPTIONS.has(limit) else -1
 	_apply_video()
 	changed.emit()
+
+
+# Passa pro próximo (dir = 1) ou anterior (dir = -1) valor de FPS_OPTIONS.
+func cycle_fps_limit(dir: int) -> void:
+	var i := FPS_OPTIONS.find(fps_limit)
+	set_fps_limit(FPS_OPTIONS[wrapi(i + dir, 0, FPS_OPTIONS.size())])
+
+
+func fps_limit_text() -> String:
+	match fps_limit:
+		-1: return "VSync"
+		0: return "Ilimitado"
+		_: return "%d FPS" % fps_limit
 
 
 func set_show_fps(on: bool) -> void:

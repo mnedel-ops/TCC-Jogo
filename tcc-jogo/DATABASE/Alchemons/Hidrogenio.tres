@@ -21,6 +21,7 @@ base_defense = 40
 base_mechanical_speed = 95
 energia_de_acao = 1
 max_valence_electrons = 2
+xp_reward = 68
 atomic_number = 1
 symbol = "H"
 valence_electrons = 1

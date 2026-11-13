@@ -98,7 +98,7 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 		_apply_damage(state, id, STATE_CHANGE_DAMAGE * int(exceeded[id]))
 
 
-## Concede a XP do derrotado a todas as criaturas vivas do lado de quem agiu
+## XP = ((a*b*L)/5)/2 (ver AlchemonGrowth.xp_for_defeat). Concede a XP do derrotado a todas as criaturas vivas do lado de quem agiu
 ## (as duas criaturas do time ganham, não só a que deu o golpe/captura).
 static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: int, defeated_id: int) -> void:
 	var defeated := state.get_combatant(defeated_id)
@@ -111,6 +111,7 @@ static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: 
 	var actor := state.get_combatant(actor_id)
 	if actor == null:
 		return
+	var xp := AlchemonGrowth.xp_for_defeat(state.is_trainer_battle, defeated_template.xp_reward, defeated.level)
 	var side_ids: Array[int] = state.player_ids if actor.is_player else state.enemy_ids
 
 	for id in side_ids:
@@ -120,4 +121,4 @@ static func _grant_xp(state: CombatState, database: AlchemonDatabase, actor_id: 
 		var receiver_template := database.get_by_id(receiver.species_id)
 		if receiver_template == null:
 			continue
-		AlchemonGrowth.grant_experience(receiver, receiver_template, defeated_template.xp_reward)
+		AlchemonGrowth.grant_experience(receiver, receiver_template, xp)

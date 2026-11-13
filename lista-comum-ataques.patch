@@ -84,6 +84,54 @@ index 1e5a54f..e399c18 100644
  attack_name = "TailStrike"
  power = 40
  unlock_level = 2
+diff --git a/tcc-jogo/INTERFACES/pages/alchemons_page.gd b/tcc-jogo/INTERFACES/pages/alchemons_page.gd
+index 21412f4..77d1d92 100644
+--- a/tcc-jogo/INTERFACES/pages/alchemons_page.gd
++++ b/tcc-jogo/INTERFACES/pages/alchemons_page.gd
+@@ -287,7 +287,7 @@ func _show_detail() -> void:
+ 	var inst: AlchemonInstance = _entries[_selected].inst
+ 	var sheet: AlchemonSheet = _entries[_selected].sheet
+ 	_fill_stats(inst, sheet)
+-	_fill_attacks(sheet)
++	_fill_attacks(inst, sheet)
+ 	_fill_info(sheet)
+ 
+ 
+@@ -336,14 +336,17 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
+ 		_add_pair(_stats_grid, r[0], r[1])
+ 
+ 
+-func _fill_attacks(s: AlchemonSheet) -> void:
++func _fill_attacks(inst: AlchemonInstance, s: AlchemonSheet) -> void:
+ 	_clear(_attacks_grid)
+-	var any := false
+-	for a in s.attacks:
++	# Instância que nunca entrou em combate pode estar sem golpes: preenche pelo nível.
++	if inst.attack_ids.is_empty():
++		AttackLearning.sanitize_instance(inst, s)
++	var known: Array[AttackData] = []
++	for id in inst.attack_ids:
++		var a := AttackLearning.resolve(s, id)
+ 		if a != null:
+-			any = true
+-			break
+-	if not any:
++			known.append(a)
++	if known.is_empty():
+ 		_add_pair(_attacks_grid, "Ataques", "-")
+ 		return
+ 
+@@ -353,9 +356,7 @@ func _fill_attacks(s: AlchemonSheet) -> void:
+ 		head.modulate.a = 0.7
+ 		head.size_flags_horizontal = Control.SIZE_EXPAND_FILL if h == "Nome" else Control.SIZE_FILL
+ 		_attacks_grid.add_child(head)
+-	for a in s.attacks:
+-		if a == null:
+-			continue
++	for a in known:
+ 		var name_lbl := Label.new()
+ 		name_lbl.text = a.attack_name
+ 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 diff --git a/tcc-jogo/test/test_attack_learning.gd b/tcc-jogo/test/test_attack_learning.gd
 index 15bf458..f9c9906 100644
 --- a/tcc-jogo/test/test_attack_learning.gd

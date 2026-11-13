@@ -35,12 +35,13 @@ script = ExtResource("1_6e51k")
 npc_scene = ExtResource("2_pryhs")
 
 [node name="Doutor" type="Marker3D" parent="NPCHolder" unique_id=1643002770]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 0.082120895, 1.9073486e-06, -6.51635)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 3.5868635, 1.9073486e-06, -4.474312)
 script = ExtResource("3_7yqpg")
 npc_scene = ExtResource("2_pryhs")
 alchemons_ids = Array[int]([3, 3])
 is_healer = true
 dialogue = "Ola! Precisa que seus Alchemons sejam curados?"
+dialogue_healed = "Volte quando precisar!"
 
 [node name="Vendedor" type="Marker3D" parent="NPCHolder" unique_id=1760198995]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 6.757685, 2.861023e-06, -1.3846788)
@@ -51,8 +52,13 @@ is_shopkeeper = true
 shop_stock = Array[ExtResource("5_shopscript")]([ExtResource("5_shop1"), ExtResource("5_shop2"), ExtResource("5_shop3"), ExtResource("5_shop4")])
 dialogue = "Saudacoes, meu jovem! Deseja comprar ou vender?"
 
-[node name="PC" parent="NPCHolder" unique_id=1971466549 instance=ExtResource("4_pryhs")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -6.8905363, 0, -2.0840569)
+[node name="DrIpe" type="Marker3D" parent="NPCHolder" unique_id=257628155]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -0.24231482, 2.861023e-06, -3.3846788)
+script = ExtResource("3_7yqpg")
+npc_scene = ExtResource("2_pryhs")
+alchemons_ids = Array[int]([3, 3])
+dialogue = "Ola, garoto! Preciso que voce capture todos os Alchemons da regiao e derrote o Lider do Ginasio!
+Agora, va! Se divirta!"
 
 [node name="Environment" type="Node3D" parent="." unique_id=1824561473]
 
@@ -111,3 +117,6 @@ mesh = SubResource("BoxMesh_uj048")
 
 [node name="LabIn" type="Marker3D" parent="." unique_id=970622250]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0034122467, 0, 2.8504162)
+
+[node name="PC" parent="." unique_id=1971466549 instance=ExtResource("4_pryhs")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -6.8905363, 0, -2.0840569)

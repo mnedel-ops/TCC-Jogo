@@ -38,6 +38,19 @@ static func level_up(combatant: CombatantState, template: AlchemonSheet, levels:
 		AttackLearning.on_level_reached(combatant, template, combatant.level)
 		print("LVUP %s Lv%d atk=%d def=%d spd=%d en=%d" % [combatant.id, combatant.level, combatant.attack, combatant.defense, combatant.mechanical_speed, combatant.action_energy])
 
+
+const WILD_MULT := 1.0
+const TRAINER_MULT := 1.5
+
+
+# EXP = ((a * b * L) / 5) / 2
+# a: 1.0 selvagem, 1.5 treinador | b: xp_reward da espécie derrotada | L: nível do derrotado.
+# Arredonda para baixo; mínimo 1 para nunca zerar o ganho.
+static func xp_for_defeat(is_trainer_battle: bool, base_yield: int, defeated_level: int) -> int:
+	var a := TRAINER_MULT if is_trainer_battle else WILD_MULT
+	return maxi(int(floor(((a * base_yield * defeated_level) / 5.0) / 2.0)), 1)
+
+
 static func grant_experience(combatant: CombatantState, template: AlchemonSheet, amount: int) -> void:
 	if amount <= 0:
 		return
