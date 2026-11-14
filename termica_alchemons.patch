@@ -1,0 +1,384 @@
+diff --git a/tcc-jogo/COMBAT/combat_result.gd b/tcc-jogo/COMBAT/combat_result.gd
+index 1078b83..c38f582 100644
+--- a/tcc-jogo/COMBAT/combat_result.gd
++++ b/tcc-jogo/COMBAT/combat_result.gd
+@@ -24,6 +24,8 @@ var amount: int
+ var critical: bool
+ var reason: String
+ var temperature_delta: float
++## Energia térmica Q entregue ao alvo (Alchemon fora de Composto).
++var thermal_energy: float = 0.0
+ var effectiveness: float
+ var energy_cost: int
+ 
+diff --git a/tcc-jogo/COMBAT/combat_result_applier.gd b/tcc-jogo/COMBAT/combat_result_applier.gd
+index 1169acf..5c18e07 100644
+--- a/tcc-jogo/COMBAT/combat_result_applier.gd
++++ b/tcc-jogo/COMBAT/combat_result_applier.gd
+@@ -10,6 +10,8 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
+ 			state.arena_temperature += result.temperature_delta
+ 			_apply_arena_heat(state, database)
+ 			var died := _apply_damage(state, result.target_id, result.damage)
++			if not died:
++				died = _apply_thermal_hit(state, database, result.target_id, result.thermal_energy)
+ 			if died:
+ 				_grant_xp(state, database, result.actor_id, result.target_id)
+ 		CombatResult.Outcome.ITEM_USED:
+@@ -69,6 +71,24 @@ static func _kill(state: CombatState, target: CombatantState) -> void:
+ 	state.battlefield.free_slot(target.slot)
+ 	BondRules.release_compound_partners(state, target)
+ 
++## Calor individual do alvo (só fora de Composto). Dano de transição ocorre uma vez
++## por transição; HP não passa de zero (_apply_damage). Devolve true se o alvo morreu.
++static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, target_id: int, q: float) -> bool:
++	var target := state.get_combatant(target_id)
++	if target == null or not target.alive or not ThermalRules.applies_to(target):
++		return false
++	var sheet := database.get_by_id(target.species_id)
++	if sheet == null:
++		return false
++	var previous := target.physical_state
++	var damage := ThermalRules.heat(target, sheet, q)
++	if target.physical_state != previous:
++		target.arena_hotter_than_myself.emit(target.slot)
++	if damage <= 0:
++		return false
++	return _apply_damage(state, target_id, damage)
++
++
+ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
+ 	var all_ids: Array[int] = state.player_ids + state.enemy_ids
+ 	var exceeded: Dictionary = {}
+@@ -76,6 +96,8 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
+ 
+ 	for id in state.get_alive_ids(all_ids):
+ 		var c := state.get_combatant(id)
++		if ThermalRules.applies_to(c):
++			continue
+ 		var template := database.get_by_id(c.species_id)
+ 		if template == null:
+ 			continue
+diff --git a/tcc-jogo/COMBAT/combat_rules.gd b/tcc-jogo/COMBAT/combat_rules.gd
+index 6dffc59..8929a24 100644
+--- a/tcc-jogo/COMBAT/combat_rules.gd
++++ b/tcc-jogo/COMBAT/combat_rules.gd
+@@ -115,7 +115,9 @@ static func _resolve_attack(state: CombatState, command: ActionCommand, database
+ 	
+ 	var base_damage := SLAP_DAMAGE if is_slap else AlchemonFormulas.compute_damage(actor.level, power, actor.attack, target.defense, effectiveness)
+ 	var temperature_delta :float= 0 if is_slap else AlchemonFormulas.compute_temperature_delta(actor.level, power, actor.attack)
+-	return CombatResult.attack_hit(actor.id, target.id, attack_name, compute_damage(base_damage, critical), critical, temperature_delta, effectiveness, cost)
++	var hit := CombatResult.attack_hit(actor.id, target.id, attack_name, compute_damage(base_damage, critical), critical, temperature_delta, effectiveness, cost)
++	hit.thermal_energy = temperature_delta * ThermalRules.ENERGY_SCALE
++	return hit
+ 
+ 
+ static func _resolve_item(state: CombatState, command: ActionCommand, target_id: int, item_database: ItemDatabase) -> CombatResult:
+diff --git a/tcc-jogo/COMBAT/combat_state_factory.gd b/tcc-jogo/COMBAT/combat_state_factory.gd
+index 8f1a043..eb37d47 100644
+--- a/tcc-jogo/COMBAT/combat_state_factory.gd
++++ b/tcc-jogo/COMBAT/combat_state_factory.gd
+@@ -67,7 +67,9 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
+ 		var c := state.get_combatant(id)
+ 		var t := database.get_by_id(c.species_id)
+ 		if t != null:
+-			c.physical_state = t.state_at(state.arena_temperature)
++			c.temperature = state.arena_temperature
++			c.physical_state = t.state_at(c.temperature)
++			c.previous_physical_state = c.physical_state
+ 	
+ 	return state
+ 	
+@@ -143,7 +145,6 @@ static func _combatant_from(id: int, instance: AlchemonInstance, template: Alche
+ 	c.defense = stats.defense
+ 	c.mechanical_speed = stats.mechanical_speed
+ 	c.action_energy = stats.action_energy
+-	c.temperature = template.melting_point
+ 	AttackLearning.sanitize_instance(instance, template)
+ 	c.attack_ids.assign(instance.attack_ids)
+ 	if CreatureSync.PERSIST_ENERGY and instance.current_energy != AlchemonInstance.UNSET:
+diff --git a/tcc-jogo/COMBAT/combatant_state.gd b/tcc-jogo/COMBAT/combatant_state.gd
+index 3dde3d1..8cc1b1e 100644
+--- a/tcc-jogo/COMBAT/combatant_state.gd
++++ b/tcc-jogo/COMBAT/combatant_state.gd
+@@ -31,6 +31,8 @@ signal arena_hotter_than_myself(slot: int)
+ @export var alive: bool = true
+ @export var physical_state: String = AlchemonSheet.SOLIDO 
+ @export var temperature: float = 0.00
++## Estado físico anterior (identifica a transição).
++@export var previous_physical_state: String = AlchemonSheet.SOLIDO
+ @export var attack_ids: Array[int] = []
+ @export var pending_attack_ids: Array[int] = []
+ @export var learned_attack_ids: Array[int] = []
+diff --git a/tcc-jogo/COMBAT/thermal_rules.gd b/tcc-jogo/COMBAT/thermal_rules.gd
+new file mode 100644
+index 0000000..47d243d
+--- /dev/null
++++ b/tcc-jogo/COMBAT/thermal_rules.gd
+@@ -0,0 +1,78 @@
++class_name ThermalRules
++extends RefCounted
++## Mecânica térmica de Alchemons FORA de Composto.
++## Cada criatura tem temperatura e estado físico próprios. Ataque que acerta
++## injeta energia térmica Q no alvo: dT = Q / (m * cp). Cruzar um ponto de
++## transição causa dano direto uma única vez. Não há bônus/penalidade de
++## atributos por estado físico: só o dano de transição.
++
++## Fator de escala jogo: converte o "valor térmico" do golpe em energia Q.
++## Parâmetro de balanceamento (sem ele dT seria desprezível frente a pontos em K).
++const ENERGY_SCALE := 1000.0
++
++## [percentual de HP máx (inteiro), fator por nível x10 (inteiro)] por transição.
++## Inteiros evitam erro de ponto flutuante no arredondamento para baixo.
++const TRANSITIONS := {
++	"solido>liquido": [10, 10],  # Fusão
++	"liquido>gasoso": [20, 20],  # Ebulição
++	"gasoso>liquido": [15, 15],  # Condensação
++	"liquido>solido": [10, 10],  # Solidificação
++}
++
++
++## Conta se a criatura está fora de Composto (única que usa esta rotina).
++static func applies_to(c: CombatantState) -> bool:
++	return c != null and c.bond_kind != BondRules.COMPOUND
++
++
++## dT = Q / (m * cp). Q negativo = resfriamento.
++static func delta_temperature(q: float, mass: float, specific_heat: float) -> float:
++	return q / (maxf(mass, 0.0001) * maxf(specific_heat, 0.0001))
++
++
++## Dano de uma transição: floor(pct * HPmax + nivel * fator). Sobre HP MÁXIMO.
++@warning_ignore("integer_division")
++static func transition_damage(from_state: String, to_state: String, max_hp: int, level: int) -> int:
++	var key := "%s>%s" % [from_state, to_state]
++	if not TRANSITIONS.has(key):
++		return 0
++	var p: Array = TRANSITIONS[key]
++	return (max_hp * int(p[0]) + level * int(p[1]) * 10) / 100
++
++
++## Sequência de transições entre dois estados (sólido->gasoso = fusão + ebulição).
++static func transition_path(from_state: String, to_state: String) -> Array[String]:
++	var order := [AlchemonSheet.SOLIDO, AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO]
++	var a: int = order.find(from_state)
++	var b: int = order.find(to_state)
++	var path: Array[String] = []
++	if a < 0 or b < 0 or a == b:
++		return path
++	var step := 1 if b > a else -1
++	var i := a
++	while i != b:
++		path.append(order[i])
++		i += step
++		path.append(order[i])
++	return path
++
++
++## Esfria/aquece a criatura em dT e aplica as transições. Devolve o dano total
++## calculado (a aplicação em HP é feita por quem chama, com piso em zero).
++## Atualiza temperatura, estado anterior/atual e flags de perfil.
++static func heat(c: CombatantState, sheet: AlchemonSheet, q: float) -> int:
++	if not applies_to(c) or sheet == null or q == 0.0:
++		return 0
++	c.temperature += delta_temperature(q, float(sheet.atomic_mass), sheet.specific_heat)
++	var new_state := sheet.state_at(c.temperature)
++	if new_state == c.physical_state:
++		return 0
++	c.previous_physical_state = c.physical_state
++	var path := transition_path(c.physical_state, new_state)
++	var total := 0
++	var i := 0
++	while i < path.size():
++		total += transition_damage(path[i], path[i + 1], c.max_hp, c.level)
++		i += 2
++	c.physical_state = new_state
++	return total
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+index a1e7d22..3b45ac9 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+@@ -74,6 +74,8 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
+ 
+ 
+ @export_group("Propriedades físicas")
++## Calor específico (parâmetro de jogo). Maior = esquenta/esfria mais devagar.
++@export_range(0.001, 100.0) var specific_heat: float = 1.0
+ ## Ponto de fusão em kelvin. Em temperaturas até ele, a criatura é sólida.
+ @export var melting_point: float = 298.15
+ ## Ponto de ebulição em kelvin. Acima dele, a criatura é gasosa.
+diff --git a/tcc-jogo/test/test_arena_heat.gd b/tcc-jogo/test/test_arena_heat.gd
+index 2c9f3fb..b7dc9ac 100644
+--- a/tcc-jogo/test/test_arena_heat.gd
++++ b/tcc-jogo/test/test_arena_heat.gd
+@@ -38,28 +38,6 @@ func _heat_to(st: CombatState, temp: float) -> void:
+ 	CombatResultApplier._apply_arena_heat(st, db)
+ 
+ 
+-func test_damages_every_creature_whose_point_was_exceeded() -> void:
+-	var a := _sheet(1, 300.0, 400.0)
+-	var b := _sheet(2, 350.0, 500.0)
+-	var c := _sheet(3, 500.0, 600.0)
+-	var st := _state_with([a, b, c])
+-	_heat_to(st, 320.0)
+-	assert_int(st.get_combatant(1).hp).is_equal(100 - CombatResultApplier.STATE_CHANGE_DAMAGE)
+-	assert_int(st.get_combatant(2).hp).is_equal(100)
+-	assert_int(st.get_combatant(3).hp).is_equal(100)
+-	_heat_to(st, 360.0)
+-	assert_int(st.get_combatant(1).hp).is_equal(100 - CombatResultApplier.STATE_CHANGE_DAMAGE)
+-	assert_int(st.get_combatant(2).hp).is_equal(100 - CombatResultApplier.STATE_CHANGE_DAMAGE)
+-
+-
+-func test_skipping_two_points_damages_twice() -> void:
+-	var a := _sheet(1, 300.0, 400.0)
+-	var st := _state_with([a])
+-	_heat_to(st, 450.0)
+-	assert_int(st.get_combatant(1).hp).is_equal(100 - 2 * CombatResultApplier.STATE_CHANGE_DAMAGE)
+-	assert_str(st.get_combatant(1).physical_state).is_equal(AlchemonSheet.GASOSO)
+-
+-
+ func test_compound_breaks_and_cation_takes_damage() -> void:
+ 	var anion := _sheet(1, 500.0, 600.0)
+ 	var cation := _sheet(2, 300.0, 400.0)
+diff --git a/tcc-jogo/test/test_thermal_rules.gd b/tcc-jogo/test/test_thermal_rules.gd
+new file mode 100644
+index 0000000..c284721
+--- /dev/null
++++ b/tcc-jogo/test/test_thermal_rules.gd
+@@ -0,0 +1,137 @@
++extends GdUnitTestSuite
++## Mecânica térmica individual (Alchemons fora de Composto).
++
++var db: AlchemonDatabase
++
++
++func before_test() -> void:
++	db = AlchemonDatabase.new()
++
++
++## Massa 10 e cp 1 => dT = Q / 10.
++func _sheet(melt: float = 300.0, boil: float = 400.0) -> AlchemonSheet:
++	var s := AlchemonSheet.new("S", 100, 1)
++	s.atomic_mass = 10
++	s.specific_heat = 1.0
++	s.melting_point = melt
++	s.boiling_point = boil
++	db.alchemons.append(s)
++	return s
++
++
++func _creature(max_hp: int = 200, level: int = 15, temp: float = 273.15) -> CombatantState:
++	var c := CombatantState.new(1, 1, max_hp, true, 0, 8, temp)
++	c.level = level
++	c.defense = 100
++	c.mechanical_speed = 100
++	return c
++
++
++func _state(c: CombatantState) -> CombatState:
++	var st := CombatState.new()
++	st.combatants[c.id] = c
++	st.player_ids.append(c.id)
++	st.battlefield.assign_combatant(c.id, 0)
++	return st
++
++
++func _hit(st: CombatState, q: float) -> void:
++	var r := CombatResult.attack_hit(99, 1, "x", 0, false)
++	r.thermal_energy = q
++	CombatResultApplier.apply(st, r, db)
++
++
++func test_heating_below_melting_no_transition_damage() -> void:
++	var s := _sheet()
++	var c := _creature()
++	var st := _state(c)
++	_hit(st, 100.0) # +10 K
++	assert_float(c.temperature).is_equal_approx(283.15, 0.001)
++	assert_int(c.hp).is_equal(200)
++	assert_str(c.physical_state).is_equal(AlchemonSheet.SOLIDO)
++
++
++func test_fusion_damage() -> void:
++	var s := _sheet()
++	var c := _creature()
++	var st := _state(c)
++	_hit(st, 300.0) # 303.15 > 300
++	assert_str(c.physical_state).is_equal(AlchemonSheet.LIQUIDO)
++	assert_str(c.previous_physical_state).is_equal(AlchemonSheet.SOLIDO)
++	assert_int(c.hp).is_equal(200 - (20 + 15))
++
++
++func test_boiling_damage_matches_spec_example() -> void:
++	assert_int(ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 200, 15)).is_equal(70)
++
++
++func test_condensation_and_solidification_damage() -> void:
++	assert_int(ThermalRules.transition_damage(AlchemonSheet.GASOSO, AlchemonSheet.LIQUIDO, 200, 15)).is_equal(30 + 22) # 22,5 -> 22
++	assert_int(ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.SOLIDO, 200, 15)).is_equal(20 + 15)
++
++
++func test_liquid_to_gas_then_back() -> void:
++	var s := _sheet()
++	var c := _creature(200, 15, 350.0)
++	c.physical_state = AlchemonSheet.LIQUIDO
++	var st := _state(c)
++	_hit(st, 600.0) # 410 K > 400
++	assert_str(c.physical_state).is_equal(AlchemonSheet.GASOSO)
++	assert_int(c.hp).is_equal(200 - 70)
++	_hit(st, -200.0) # 390 K
++	assert_str(c.physical_state).is_equal(AlchemonSheet.LIQUIDO)
++	assert_int(c.hp).is_equal(200 - 70 - 52)
++	_hit(st, -1000.0) # 290 K
++	assert_str(c.physical_state).is_equal(AlchemonSheet.SOLIDO)
++	assert_int(c.hp).is_equal(200 - 70 - 52 - 35)
++
++
++func test_same_state_does_not_repeat_damage() -> void:
++	var s := _sheet()
++	var c := _creature()
++	var st := _state(c)
++	_hit(st, 300.0)
++	var hp_after := c.hp
++	_hit(st, 100.0)
++	_hit(st, 100.0)
++	assert_int(c.hp).is_equal(hp_after)
++
++
++func test_jump_solid_to_gas_applies_fusion_then_boiling() -> void:
++	var s := _sheet()
++	var c := _creature()
++	var st := _state(c)
++	_hit(st, 1500.0) # 423 K
++	assert_str(c.physical_state).is_equal(AlchemonSheet.GASOSO)
++	assert_int(c.hp).is_equal(200 - (20 + 15) - 70)
++
++
++func test_hp_never_below_zero_and_dies() -> void:
++	var s := _sheet()
++	var c := _creature(20, 15)
++	var st := _state(c)
++	_hit(st, 1500.0)
++	assert_int(c.hp).is_equal(0)
++	assert_bool(c.alive).is_false()
++
++
++func test_compound_member_skips_individual_heat() -> void:
++	var s := _sheet()
++	var c := _creature()
++	c.bond_kind = BondRules.COMPOUND
++	var st := _state(c)
++	_hit(st, 5000.0)
++	assert_float(c.temperature).is_equal_approx(273.15, 0.001)
++	assert_int(c.hp).is_equal(200)
++
++
++func test_base_stats_untouched_after_transitions() -> void:
++	var s := _sheet()
++	var c := _creature()
++	var st := _state(c)
++	_hit(st, 300.0)
++	_hit(st, 1500.0)
++	_hit(st, -3000.0)
++	assert_int(c.mechanical_speed).is_equal(100)
++	assert_int(c.defense).is_equal(100)
++	assert_int(c.max_hp).is_equal(200)

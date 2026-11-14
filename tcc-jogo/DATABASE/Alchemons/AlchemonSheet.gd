@@ -74,6 +74,8 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
 
 
 @export_group("Propriedades físicas")
+## Calor específico (parâmetro de jogo). Maior = esquenta/esfria mais devagar.
+@export_range(0.001, 100.0) var specific_heat: float = 1.0
 ## Ponto de fusão em kelvin. Em temperaturas até ele, a criatura é sólida.
 @export var melting_point: float = 298.15
 ## Ponto de ebulição em kelvin. Acima dele, a criatura é gasosa.

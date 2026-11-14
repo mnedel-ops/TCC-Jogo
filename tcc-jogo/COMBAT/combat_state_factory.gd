@@ -67,7 +67,9 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 		var c := state.get_combatant(id)
 		var t := database.get_by_id(c.species_id)
 		if t != null:
-			c.physical_state = t.state_at(state.arena_temperature)
+			c.temperature = state.arena_temperature
+			c.physical_state = t.state_at(c.temperature)
+			c.previous_physical_state = c.physical_state
 	
 	return state
 	
@@ -143,7 +145,6 @@ static func _combatant_from(id: int, instance: AlchemonInstance, template: Alche
 	c.defense = stats.defense
 	c.mechanical_speed = stats.mechanical_speed
 	c.action_energy = stats.action_energy
-	c.temperature = template.melting_point
 	AttackLearning.sanitize_instance(instance, template)
 	c.attack_ids.assign(instance.attack_ids)
 	if CreatureSync.PERSIST_ENERGY and instance.current_energy != AlchemonInstance.UNSET:

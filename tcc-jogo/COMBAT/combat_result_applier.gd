@@ -10,6 +10,8 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
 			state.arena_temperature += result.temperature_delta
 			_apply_arena_heat(state, database)
 			var died := _apply_damage(state, result.target_id, result.damage)
+			if not died:
+				died = _apply_thermal_hit(state, database, result.target_id, result.thermal_energy)
 			if died:
 				_grant_xp(state, database, result.actor_id, result.target_id)
 		CombatResult.Outcome.ITEM_USED:
@@ -69,6 +71,24 @@ static func _kill(state: CombatState, target: CombatantState) -> void:
 	state.battlefield.free_slot(target.slot)
 	BondRules.release_compound_partners(state, target)
 
+## Calor individual do alvo (só fora de Composto). Dano de transição ocorre uma vez
+## por transição; HP não passa de zero (_apply_damage). Devolve true se o alvo morreu.
+static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, target_id: int, q: float) -> bool:
+	var target := state.get_combatant(target_id)
+	if target == null or not target.alive or not ThermalRules.applies_to(target):
+		return false
+	var sheet := database.get_by_id(target.species_id)
+	if sheet == null:
+		return false
+	var previous := target.physical_state
+	var damage := ThermalRules.heat(target, sheet, q)
+	if target.physical_state != previous:
+		target.arena_hotter_than_myself.emit(target.slot)
+	if damage <= 0:
+		return false
+	return _apply_damage(state, target_id, damage)
+
+
 static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
 	var all_ids: Array[int] = state.player_ids + state.enemy_ids
 	var exceeded: Dictionary = {}
@@ -76,6 +96,8 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 
 	for id in state.get_alive_ids(all_ids):
 		var c := state.get_combatant(id)
+		if ThermalRules.applies_to(c):
+			continue
 		var template := database.get_by_id(c.species_id)
 		if template == null:
 			continue

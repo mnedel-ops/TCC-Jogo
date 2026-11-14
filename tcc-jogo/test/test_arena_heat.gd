@@ -38,28 +38,6 @@ func _heat_to(st: CombatState, temp: float) -> void:
 	CombatResultApplier._apply_arena_heat(st, db)
 
 
-func test_damages_every_creature_whose_point_was_exceeded() -> void:
-	var a := _sheet(1, 300.0, 400.0)
-	var b := _sheet(2, 350.0, 500.0)
-	var c := _sheet(3, 500.0, 600.0)
-	var st := _state_with([a, b, c])
-	_heat_to(st, 320.0)
-	assert_int(st.get_combatant(1).hp).is_equal(100 - CombatResultApplier.STATE_CHANGE_DAMAGE)
-	assert_int(st.get_combatant(2).hp).is_equal(100)
-	assert_int(st.get_combatant(3).hp).is_equal(100)
-	_heat_to(st, 360.0)
-	assert_int(st.get_combatant(1).hp).is_equal(100 - CombatResultApplier.STATE_CHANGE_DAMAGE)
-	assert_int(st.get_combatant(2).hp).is_equal(100 - CombatResultApplier.STATE_CHANGE_DAMAGE)
-
-
-func test_skipping_two_points_damages_twice() -> void:
-	var a := _sheet(1, 300.0, 400.0)
-	var st := _state_with([a])
-	_heat_to(st, 450.0)
-	assert_int(st.get_combatant(1).hp).is_equal(100 - 2 * CombatResultApplier.STATE_CHANGE_DAMAGE)
-	assert_str(st.get_combatant(1).physical_state).is_equal(AlchemonSheet.GASOSO)
-
-
 func test_compound_breaks_and_cation_takes_damage() -> void:
 	var anion := _sheet(1, 500.0, 600.0)
 	var cation := _sheet(2, 300.0, 400.0)

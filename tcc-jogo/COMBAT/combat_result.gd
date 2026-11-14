@@ -24,6 +24,8 @@ var amount: int
 var critical: bool
 var reason: String
 var temperature_delta: float
+## Energia térmica Q entregue ao alvo (Alchemon fora de Composto).
+var thermal_energy: float = 0.0
 var effectiveness: float
 var energy_cost: int
 
