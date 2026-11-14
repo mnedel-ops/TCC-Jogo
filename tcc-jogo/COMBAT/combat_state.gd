@@ -13,6 +13,10 @@ extends Resource
 @export var player_won: bool = false
 
 @export var arena_temperature: float = 273.15
+## Dados térmicos dos Compostos ativos: id do participante ativo -> CompoundThermal.
+var compound_thermals: Dictionary = {}
+## Mensagens térmicas (transição, cisão, choque) para a interface consumir.
+var thermal_notes: Array[String] = []
 var is_trainer_battle: bool = false
 var enemy_instances: Dictionary = {}
 var captured_instances: Array[AlchemonInstance] = []
@@ -64,6 +68,19 @@ func get_valid_targets(actor_id: int) -> Array[int]:
 	if actor == null:
 		return []
 	return get_alive_opposing_combatants(actor.is_player)
+
+## Dados térmicos do Composto de que c faz parte (null se c não está em Composto).
+func get_compound_thermal(c: CombatantState) -> CompoundThermal:
+	if c == null or c.bond_kind != BondRules.COMPOUND:
+		return null
+	return compound_thermals.get(c.bond_partner_id) as CompoundThermal
+
+
+func pop_thermal_notes() -> Array[String]:
+	var out := thermal_notes.duplicate()
+	thermal_notes.clear()
+	return out
+
 
 func get_temperature(id: int):
 	var actor := get_combatant(id)

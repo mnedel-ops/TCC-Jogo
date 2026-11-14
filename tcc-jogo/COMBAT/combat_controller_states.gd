@@ -95,7 +95,10 @@ func _bond_tag(c: CombatantState) -> String:
 			elif c.is_bond_inactive:
 				return " [Ânion → %s]" % _name_of(c.bond_partner_id)
 			else:
-				return " [Composto ativo]"
+				var th := state.get_compound_thermal(c)
+				if th == null:
+					return " [Composto ativo]"
+				return " [Composto ativo %.0fK %s]" % [th.temperature, ThermalRules.state_label(th.physical_state)]
 		_:
 			return ""
 
@@ -315,6 +318,7 @@ func _resolve_round() -> void:
 			inventory.remove_item(command.item_index)
 		CombatResultApplier.apply(state, result, database)
 		_log_event(CombatEvent.from_result(result))
+		_flush_thermal_notes()
 		_refresh_hp_display()
 
 		if not state.combat_over:
@@ -323,6 +327,7 @@ func _resolve_round() -> void:
 	if state.combat_over:
 		_show_combat_end()
 	else:
+		ThermalRules.tick_overload(state)
 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
 		_start_action_selection()
 
@@ -368,6 +373,7 @@ func _resolve_flee() -> void:
 		var result := CombatRules.resolve_action(state, command, database)
 		CombatResultApplier.apply(state, result, database)
 		_log_event(CombatEvent.from_result(result))
+		_flush_thermal_notes()
 		_refresh_hp_display()
 		if state.combat_over:
 			break
@@ -377,6 +383,7 @@ func _resolve_flee() -> void:
 		_show_combat_end()
 
 	else:
+		ThermalRules.tick_overload(state)
 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
 		_start_action_selection()
 
@@ -442,6 +449,11 @@ func _resolve_pending_attacks() -> void:
 func _say(text: String) -> void:
 	ui.log_message(text)
 	log_box.add_line(text)
+
+
+func _flush_thermal_notes() -> void:
+	for note in state.pop_thermal_notes():
+		_say(note)
 
 
 func _log_event(event: CombatEvent) -> void:

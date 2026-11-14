@@ -1,0 +1,1114 @@
+diff --git a/docs/ARQUITETURA_E_TESTES.md b/docs/ARQUITETURA_E_TESTES.md
+index 0e54dff..596bddf 100644
+--- a/docs/ARQUITETURA_E_TESTES.md
++++ b/docs/ARQUITETURA_E_TESTES.md
+@@ -212,6 +212,25 @@ limiar é `CompoundRules.IONIC_THRESHOLD = 2,0`.
+ Um composto aceita de 2 a `AlchemyStation.MAX_BOND_SIZE` (4) Alchemons; os
+ membros além dos 2 slots do campo ficam sem slot e o ativo sempre ocupa um slot.
+ 
++### 2.3.1 Mecânica térmica de Alchemons em Composto
++
++O Composto tem temperatura interna e resistência térmica próprias
++(`CompoundThermal`, guardado em `CombatState.compound_thermals`, indexado pelo
++participante ativo). Os participantes não têm temperatura individual enquanto o
++vínculo existe, e a arena não influencia o Composto.
++
++- `dT = Q / (m_composto · cp_composto)`; `cp` por tipo de ligação (iônico > covalente).
++- Transição de estado (fusão, ebulição, condensação, solidificação) causa dano ao
++  participante ativo, uma vez por transição, e **não altera atributos**.
++- Cisão por `T ≥ T_cisão` ou por surto (`|dT| > dT_máx` em um ataque), executada
++  uma única vez por ataque, depois dos danos de transição.
++- Na cisão: vínculo e transferência de atributos desfeitos, slots restaurados,
++  cada sobrevivente herda a temperatura do Composto, choque térmico (dano fixo,
++  uma vez por Alchemon por combate, flag em `CombatantState`) e Sobrecarga
++  Térmica por duas rodadas completas (bloqueia formar novo Composto).
++
++Suíte: `test_compound_thermal.gd` (24 testes).
++
+ ### 2.4 Progressão e condições de vitória/derrota
+ 
+ Quando um ataque derrota um inimigo ou uma captura é concluída,
+diff --git a/tcc-jogo/COMBAT/alchemon_formulas.gd b/tcc-jogo/COMBAT/alchemon_formulas.gd
+index 0d09330..49e73f9 100644
+--- a/tcc-jogo/COMBAT/alchemon_formulas.gd
++++ b/tcc-jogo/COMBAT/alchemon_formulas.gd
+@@ -18,6 +18,21 @@ static func compute_temperature_delta(level: int, power: int, attack: int) -> fl
+ 	var raw :float = (float(level) / 10.0 + 1.0) * (float(power) / 10.0) * (float(attack) / 100.0)
+ 	return raw
+ 
++## Composto: dT = Q / (m_composto * cp_composto).
++static func compound_delta_temperature(q: float, total_mass: float, specific_heat: float) -> float:
++	return ThermalRules.delta_temperature(q, total_mass, specific_heat)
++
++
++## Iônico (metal + ametal): T_ebulição_ânion + ΔE*250 + |Z_cátion|*100.
++static func scission_temperature_ionic(anion_boiling: float, delta_electronegativity: float, cation_charge: int) -> float:
++	return anion_boiling + absf(delta_electronegativity) * 250.0 + absi(cation_charge) * 100.0
++
++
++## Covalente (ametal + ametal): max(T_ebulição) + pares_compartilhados*150.
++static func scission_temperature_covalent(boiling_a: float, boiling_b: float, shared_pairs: int) -> float:
++	return maxf(boiling_a, boiling_b) + shared_pairs * 150.0
++
++
+ const CAPTURE_VALUE_MAX := 255
+ 
+ static func compute_capture_value(hp_max: int, hp_current: int, tool_multiplier: float) -> int:
+diff --git a/tcc-jogo/COMBAT/bond_rules.gd b/tcc-jogo/COMBAT/bond_rules.gd
+index 512c088..60ccae6 100644
+--- a/tcc-jogo/COMBAT/bond_rules.gd
++++ b/tcc-jogo/COMBAT/bond_rules.gd
+@@ -11,7 +11,9 @@ const COMPOUND_TRANSFER_RATIO := 0.7
+ const COMPOUND_RELEASE_HP_RATIO := 0.3
+ const COMPOUND_RELEASE_FALLBACK_ENERGY := 11
+ 
+-static func apply_bond(kind: String, participants: Array[CombatantState], sheets: Array[AlchemonSheet]) -> Dictionary:
++## Se `state` vier preenchido, os dados térmicos do Composto são guardados nele
++## (state.compound_thermals). O resultado traz sempre a chave "thermal" no Composto.
++static func apply_bond(kind: String, participants: Array[CombatantState], sheets: Array[AlchemonSheet], state: CombatState = null) -> Dictionary:
+ 	if participants.size() != sheets.size() or participants.size() < 2:
+ 		return {"kind": "cancelled", "reason": "invalid_bond_group"}
+ 	for c in participants:
+@@ -19,6 +21,8 @@ static func apply_bond(kind: String, participants: Array[CombatantState], sheets
+ 			return {"kind": "cancelled", "reason": "invalid_bond_target"}
+ 		if c.bond_kind != NONE:
+ 			return {"kind": "cancelled", "reason": "already_bonded"}
++		if kind == COMPOUND and ThermalRules.is_overloaded(c):
++			return {"kind": "cancelled", "reason": "thermal_overload"}
+ 
+ 	match kind:
+ 		MIXTURE:
+@@ -27,7 +31,18 @@ static func apply_bond(kind: String, participants: Array[CombatantState], sheets
+ 			_apply_mixture(participants[0], participants[1])
+ 			return {"kind": "mixture_formed", "member_ids": [participants[0].id, participants[1].id]}
+ 		COMPOUND:
+-			return _apply_compound_group(participants, sheets)
++			var result := _apply_compound_group(participants, sheets)
++			if result.get("kind", "") == "compound_formed":
++				var active: CombatantState = null
++				for c in participants:
++					if c.id == int(result["active_id"]):
++						active = c
++				var start_temperature := state.arena_temperature if state != null else active.temperature
++				var thermal := build_compound_thermal(participants, sheets, active, start_temperature)
++				result["thermal"] = thermal
++				if state != null:
++					state.compound_thermals[active.id] = thermal
++			return result
+ 		_:
+ 			return {"kind": "cancelled", "reason": "unsupported_bond_kind"}
+ 
+@@ -97,6 +112,7 @@ static func _pick_active_index(participants: Array[CombatantState], sheets: Arra
+ static func release_compound_partners(state: CombatState, fallen: CombatantState) -> void:
+ 	if fallen.bond_kind != COMPOUND or fallen.is_bond_inactive or fallen.is_bond_cation:
+ 		return
++	state.compound_thermals.erase(fallen.id)
+ 	var energy := fallen.valence_electrons
+ 	if energy <= 0:
+ 		energy = COMPOUND_RELEASE_FALLBACK_ENERGY
+@@ -127,6 +143,7 @@ static func break_compound(state: CombatState, member: CombatantState) -> bool:
+ 			group.append(c)
+ 	if group.is_empty():
+ 		return false
++	state.compound_thermals.erase(active_id)
+ 
+ 	if active != null and active.bond_kind == COMPOUND and active.bond_partner_id == active_id:
+ 		for c in group:
+@@ -154,3 +171,138 @@ static func break_compound(state: CombatState, member: CombatantState) -> bool:
+ 		c.max_valence_electrons = maxi(c.max_valence_electrons, energy)
+ 		c.valence_electrons = energy
+ 	return true
++
++
++# ---------------------------------------------------------------------------
++# Térmica do Composto
++# ---------------------------------------------------------------------------
++
++## Calcula e devolve as propriedades térmicas do vínculo recém-formado.
++## Massa = soma das massas. Calor específico e limite de surto vêm do tipo de
++## ligação. Fusão/ebulição = média ponderada pela massa (o Composto não herda de
++## um só participante). Cisão: fórmula iônica ou covalente do GDD.
++static func build_compound_thermal(participants: Array[CombatantState], sheets: Array[AlchemonSheet], active: CombatantState, start_temperature: float) -> CompoundThermal:
++	var th := CompoundThermal.new()
++	th.active_id = active.id
++	for c in participants:
++		th.member_ids.append(c.id)
++
++	var metals: Array[AlchemonSheet] = []
++	var nonmetals: Array[AlchemonSheet] = []
++	var mass := 0.0
++	var melt_weighted := 0.0
++	var boil_weighted := 0.0
++	for sh in sheets:
++		var m := float(sh.atomic_mass)
++		mass += m
++		melt_weighted += m * sh.melting_point
++		boil_weighted += m * sh.boiling_point
++		if sh.is_metal():
++			metals.append(sh)
++		else:
++			nonmetals.append(sh)
++
++	th.total_mass = maxf(mass, 0.0001)
++	th.melting_point = melt_weighted / th.total_mass
++	th.boiling_point = maxf(boil_weighted / th.total_mass, th.melting_point)
++
++	# Tipo da ligação: o que CompoundRules realmente formou; sem isso, metal+ametal = iônico.
++	var data := CompoundRules.resolve(sheets)
++	th.is_ionic = data.is_ionic() if data != null else (not metals.is_empty() and not nonmetals.is_empty())
++
++	if th.is_ionic and not metals.is_empty() and not nonmetals.is_empty():
++		th.specific_heat = ThermalRules.COMPOUND_CP_IONIC
++		th.max_delta_t = ThermalRules.COMPOUND_MAX_DELTA_T_IONIC
++		var anion_boil := 0.0
++		var anion_en := INF
++		for n in nonmetals:
++			anion_boil = maxf(anion_boil, n.boiling_point)
++			anion_en = minf(anion_en, n.chem_electronegativity())
++		var cation_en := 0.0
++		var charge := 0
++		for mt in metals:
++			cation_en = maxf(cation_en, mt.chem_electronegativity())
++			charge = maxi(charge, _cation_charge(mt))
++		th.scission_temperature = AlchemonFormulas.scission_temperature_ionic(anion_boil, anion_en - cation_en, charge)
++	else:
++		th.is_ionic = false
++		th.specific_heat = ThermalRules.COMPOUND_CP_COVALENT
++		th.max_delta_t = ThermalRules.COMPOUND_MAX_DELTA_T_COVALENT
++		var boil_max := 0.0
++		for sh in sheets:
++			boil_max = maxf(boil_max, sh.boiling_point)
++		th.scission_temperature = AlchemonFormulas.scission_temperature_covalent(boil_max, boil_max, _shared_pairs(data))
++
++	th.reset_temperature(start_temperature)
++	return th
++
++
++## Carga do cátion = primeiro estado de oxidação positivo (o preferido).
++static func _cation_charge(metal: AlchemonSheet) -> int:
++	for q in metal.chem_oxidation_states():
++		if q > 0:
++			return q
++	return maxi(metal.chem_valence(), 1)
++
++
++## Pares compartilhados da ligação efetivamente formada (maior ordem de ligação).
++static func _shared_pairs(data: CompoundData) -> int:
++	var best := 1
++	if data != null:
++		for b in data.bonds:
++			best = maxi(best, int(b.get("order", 1)))
++	return best
++
++
++## Cisão por temperatura. Ordem: registra a temperatura, desfaz o vínculo (e a
++## transferência de atributos), devolve slots, marca choque (uma vez por
++## Alchemon) e inicia a Sobrecarga. Cada sobrevivente herda a temperatura interna
++## do Composto e volta à própria massa/calor específico. O dano do choque é
++## aplicado por quem chama, nos ids de "shocked_ids".
++## Devolve {} se `member` não está num Composto com dados térmicos.
++static func thermal_scission(state: CombatState, database: AlchemonDatabase, member: CombatantState) -> Dictionary:
++	var th := state.get_compound_thermal(member)
++	if th == null:
++		return {}
++	var temperature := th.temperature
++	var active_id := member.bond_partner_id
++	var group_ids: Array[int] = []
++	for id in state.combatants:
++		var c: CombatantState = state.combatants[id]
++		if c.bond_kind == COMPOUND and c.bond_partner_id == active_id:
++			group_ids.append(id)
++	if not break_compound(state, member):
++		return {}
++
++	var survivors: Array[CombatantState] = []
++	var shocked_ids: Array[int] = []
++	for id in group_ids:
++		var c := state.get_combatant(id)
++		if c == null or not c.alive:
++			continue
++		survivors.append(c)
++		c.temperature = temperature
++		var sheet := database.get_by_id(c.species_id)
++		if sheet != null:
++			c.physical_state = sheet.state_at(temperature)
++			c.previous_physical_state = c.physical_state
++		if not c.has_thermal_shock:
++			c.has_thermal_shock = true
++			shocked_ids.append(id)
++	_restore_slots(state, survivors)
++	for c in survivors:
++		c.thermal_overload_turns = ThermalRules.OVERLOAD_TURNS
++		c.thermal_overload_fresh = true
++	return {"member_ids": group_ids, "shocked_ids": shocked_ids, "temperature": temperature}
++
++
++## Quem ficou sem slot (inativo do Composto) volta para um slot livre do seu lado.
++static func _restore_slots(state: CombatState, members: Array[CombatantState]) -> void:
++	for c in members:
++		if c.slot >= 0:
++			continue
++		for s in BattlefieldSlot.get_side_slots(c.is_player):
++			if state.battlefield.is_available(s):
++				state.battlefield.assign_combatant(c.id, s)
++				c.slot = s
++				break
+diff --git a/tcc-jogo/COMBAT/combat_controller_states.gd b/tcc-jogo/COMBAT/combat_controller_states.gd
+index 9e2956f..00d5a8c 100644
+--- a/tcc-jogo/COMBAT/combat_controller_states.gd
++++ b/tcc-jogo/COMBAT/combat_controller_states.gd
+@@ -95,7 +95,10 @@ func _bond_tag(c: CombatantState) -> String:
+ 			elif c.is_bond_inactive:
+ 				return " [Ânion → %s]" % _name_of(c.bond_partner_id)
+ 			else:
+-				return " [Composto ativo]"
++				var th := state.get_compound_thermal(c)
++				if th == null:
++					return " [Composto ativo]"
++				return " [Composto ativo %.0fK %s]" % [th.temperature, ThermalRules.state_label(th.physical_state)]
+ 		_:
+ 			return ""
+ 
+@@ -315,6 +318,7 @@ func _resolve_round() -> void:
+ 			inventory.remove_item(command.item_index)
+ 		CombatResultApplier.apply(state, result, database)
+ 		_log_event(CombatEvent.from_result(result))
++		_flush_thermal_notes()
+ 		_refresh_hp_display()
+ 
+ 		if not state.combat_over:
+@@ -323,6 +327,7 @@ func _resolve_round() -> void:
+ 	if state.combat_over:
+ 		_show_combat_end()
+ 	else:
++		ThermalRules.tick_overload(state)
+ 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
+ 		_start_action_selection()
+ 
+@@ -368,6 +373,7 @@ func _resolve_flee() -> void:
+ 		var result := CombatRules.resolve_action(state, command, database)
+ 		CombatResultApplier.apply(state, result, database)
+ 		_log_event(CombatEvent.from_result(result))
++		_flush_thermal_notes()
+ 		_refresh_hp_display()
+ 		if state.combat_over:
+ 			break
+@@ -377,6 +383,7 @@ func _resolve_flee() -> void:
+ 		_show_combat_end()
+ 
+ 	else:
++		ThermalRules.tick_overload(state)
+ 		_advance_phase(BattlePhaseRules.END_OF_ROUND)
+ 		_start_action_selection()
+ 
+@@ -444,6 +451,11 @@ func _say(text: String) -> void:
+ 	log_box.add_line(text)
+ 
+ 
++func _flush_thermal_notes() -> void:
++	for note in state.pop_thermal_notes():
++		_say(note)
++
++
+ func _log_event(event: CombatEvent) -> void:
+ 	match event.kind:
+ 		CombatEvent.Kind.ATTACK_MISS:
+diff --git a/tcc-jogo/COMBAT/combat_result.gd b/tcc-jogo/COMBAT/combat_result.gd
+index c38f582..0d3d6ef 100644
+--- a/tcc-jogo/COMBAT/combat_result.gd
++++ b/tcc-jogo/COMBAT/combat_result.gd
+@@ -24,7 +24,7 @@ var amount: int
+ var critical: bool
+ var reason: String
+ var temperature_delta: float
+-## Energia térmica Q entregue ao alvo (Alchemon fora de Composto).
++## Energia térmica Q entregue ao alvo (criatura individual ou Composto).
+ var thermal_energy: float = 0.0
+ var effectiveness: float
+ var energy_cost: int
+diff --git a/tcc-jogo/COMBAT/combat_result_applier.gd b/tcc-jogo/COMBAT/combat_result_applier.gd
+index 5c18e07..3dc0112 100644
+--- a/tcc-jogo/COMBAT/combat_result_applier.gd
++++ b/tcc-jogo/COMBAT/combat_result_applier.gd
+@@ -11,7 +11,7 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
+ 			_apply_arena_heat(state, database)
+ 			var died := _apply_damage(state, result.target_id, result.damage)
+ 			if not died:
+-				died = _apply_thermal_hit(state, database, result.target_id, result.thermal_energy)
++				died = _apply_thermal_hit(state, database, result.target_id, result.thermal_energy, result.actor_id)
+ 			if died:
+ 				_grant_xp(state, database, result.actor_id, result.target_id)
+ 		CombatResult.Outcome.ITEM_USED:
+@@ -71,11 +71,15 @@ static func _kill(state: CombatState, target: CombatantState) -> void:
+ 	state.battlefield.free_slot(target.slot)
+ 	BondRules.release_compound_partners(state, target)
+ 
+-## Calor individual do alvo (só fora de Composto). Dano de transição ocorre uma vez
+-## por transição; HP não passa de zero (_apply_damage). Devolve true se o alvo morreu.
+-static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, target_id: int, q: float) -> bool:
++## Calor do alvo. Fora de Composto: temperatura individual. Em Composto: temperatura
++## do vínculo (_apply_compound_thermal_hit). Devolve true se o alvo morreu.
++static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, target_id: int, q: float, actor_id: int = -1) -> bool:
+ 	var target := state.get_combatant(target_id)
+-	if target == null or not target.alive or not ThermalRules.applies_to(target):
++	if target == null or not target.alive:
++		return false
++	if target.bond_kind == BondRules.COMPOUND:
++		return _apply_compound_thermal_hit(state, database, target, q, actor_id)
++	if not ThermalRules.applies_to(target):
+ 		return false
+ 	var sheet := database.get_by_id(target.species_id)
+ 	if sheet == null:
+@@ -89,6 +93,71 @@ static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, t
+ 	return _apply_damage(state, target_id, damage)
+ 
+ 
++## Calor num Composto: aquece o vínculo, aplica o dano de cada transição cruzada ao
++## participante ATIVO (uma vez por transição, sem duplicar nos demais) e, por
++## último, executa a cisão uma única vez se T >= T_cisão ou houve surto térmico.
++## Mudança de estado físico não altera atributo algum nem chama break_compound.
++## Devolve true se o alvo do ataque morreu.
++static func _apply_compound_thermal_hit(state: CombatState, database: AlchemonDatabase, target: CombatantState, q: float, actor_id: int) -> bool:
++	var th := state.get_compound_thermal(target)
++	if th == null or q == 0.0:
++		return false
++	var active := state.get_combatant(th.active_id)
++	if active == null or not active.alive:
++		return false
++
++	var info := ThermalRules.compound_heat(th, q)
++	var steps: Array = info["steps"]
++	var i := 0
++	while i < steps.size():
++		var dmg := ThermalRules.transition_damage(steps[i], steps[i + 1], active.max_hp, active.level)
++		state.thermal_notes.append("O composto sofreu %s (%d de dano em %s)." % [_transition_name(steps[i], steps[i + 1]), dmg, _name_of(database, active)])
++		if dmg > 0 and _apply_damage(state, active.id, dmg):
++			return active.id == target.id
++		i += 2
++
++	if bool(info["scission"]):
++		return _compound_scission(state, database, active, target.id, actor_id)
++	return false
++
++
++## Executa a cisão (uma vez) e o choque térmico dos elegíveis. Devolve true se o alvo
++## original (target_id) morreu. Mortes de outros participantes dão XP aqui mesmo.
++static func _compound_scission(state: CombatState, database: AlchemonDatabase, member: CombatantState, target_id: int, actor_id: int) -> bool:
++	var info := BondRules.thermal_scission(state, database, member)
++	if info.is_empty():
++		return false
++	state.thermal_notes.append("O composto rompeu a %.0fK! Sobrecarga Térmica por %d turnos." % [float(info["temperature"]), ThermalRules.OVERLOAD_TURNS])
++	var target_died := false
++	for id in info["shocked_ids"]:
++		var c := state.get_combatant(id)
++		state.thermal_notes.append("Choque térmico em %s (%d de dano)." % [_name_of(database, c), ThermalRules.THERMAL_SHOCK_DAMAGE])
++		if _apply_damage(state, id, ThermalRules.THERMAL_SHOCK_DAMAGE):
++			if id == target_id:
++				target_died = true
++			elif actor_id >= 0:
++				_grant_xp(state, database, actor_id, id)
++	return target_died
++
++
++static func _transition_name(from_state: String, to_state: String) -> String:
++	match "%s>%s" % [from_state, to_state]:
++		"solido>liquido":
++			return "fusão"
++		"liquido>gasoso":
++			return "ebulição"
++		"gasoso>liquido":
++			return "condensação"
++		"liquido>solido":
++			return "solidificação"
++	return "mudança de estado"
++
++
++static func _name_of(database: AlchemonDatabase, c: CombatantState) -> String:
++	var sheet := database.get_by_id(c.species_id) if c != null else null
++	return sheet.creature_name if sheet != null else "?"
++
++
+ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
+ 	var all_ids: Array[int] = state.player_ids + state.enemy_ids
+ 	var exceeded: Dictionary = {}
+@@ -96,7 +165,9 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
+ 
+ 	for id in state.get_alive_ids(all_ids):
+ 		var c := state.get_combatant(id)
+-		if ThermalRules.applies_to(c):
++		# Individuais usam ThermalRules.heat; Compostos têm temperatura própria,
++		# independente da arena. Nada a fazer aqui por enquanto.
++		if ThermalRules.applies_to(c) or c.bond_kind == BondRules.COMPOUND:
+ 			continue
+ 		var template := database.get_by_id(c.species_id)
+ 		if template == null:
+diff --git a/tcc-jogo/COMBAT/combat_rules.gd b/tcc-jogo/COMBAT/combat_rules.gd
+index 8929a24..0270472 100644
+--- a/tcc-jogo/COMBAT/combat_rules.gd
++++ b/tcc-jogo/COMBAT/combat_rules.gd
+@@ -116,6 +116,7 @@ static func _resolve_attack(state: CombatState, command: ActionCommand, database
+ 	var base_damage := SLAP_DAMAGE if is_slap else AlchemonFormulas.compute_damage(actor.level, power, actor.attack, target.defense, effectiveness)
+ 	var temperature_delta :float= 0 if is_slap else AlchemonFormulas.compute_temperature_delta(actor.level, power, actor.attack)
+ 	var hit := CombatResult.attack_hit(actor.id, target.id, attack_name, compute_damage(base_damage, critical), critical, temperature_delta, effectiveness, cost)
++	# Energia térmica Q: vale para criatura individual e para Composto.
+ 	hit.thermal_energy = temperature_delta * ThermalRules.ENERGY_SCALE
+ 	return hit
+ 
+diff --git a/tcc-jogo/COMBAT/combat_state.gd b/tcc-jogo/COMBAT/combat_state.gd
+index b5332c7..5b58605 100644
+--- a/tcc-jogo/COMBAT/combat_state.gd
++++ b/tcc-jogo/COMBAT/combat_state.gd
+@@ -13,6 +13,10 @@ extends Resource
+ @export var player_won: bool = false
+ 
+ @export var arena_temperature: float = 273.15
++## Dados térmicos dos Compostos ativos: id do participante ativo -> CompoundThermal.
++var compound_thermals: Dictionary = {}
++## Mensagens térmicas (transição, cisão, choque) para a interface consumir.
++var thermal_notes: Array[String] = []
+ var is_trainer_battle: bool = false
+ var enemy_instances: Dictionary = {}
+ var captured_instances: Array[AlchemonInstance] = []
+@@ -65,6 +69,19 @@ func get_valid_targets(actor_id: int) -> Array[int]:
+ 		return []
+ 	return get_alive_opposing_combatants(actor.is_player)
+ 
++## Dados térmicos do Composto de que c faz parte (null se c não está em Composto).
++func get_compound_thermal(c: CombatantState) -> CompoundThermal:
++	if c == null or c.bond_kind != BondRules.COMPOUND:
++		return null
++	return compound_thermals.get(c.bond_partner_id) as CompoundThermal
++
++
++func pop_thermal_notes() -> Array[String]:
++	var out := thermal_notes.duplicate()
++	thermal_notes.clear()
++	return out
++
++
+ func get_temperature(id: int):
+ 	var actor := get_combatant(id)
+ 	if arena_temperature > actor.temperature:
+diff --git a/tcc-jogo/COMBAT/combat_state_factory.gd b/tcc-jogo/COMBAT/combat_state_factory.gd
+index eb37d47..0276a20 100644
+--- a/tcc-jogo/COMBAT/combat_state_factory.gd
++++ b/tcc-jogo/COMBAT/combat_state_factory.gd
+@@ -70,7 +70,11 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
+ 			c.temperature = state.arena_temperature
+ 			c.physical_state = t.state_at(c.temperature)
+ 			c.previous_physical_state = c.physical_state
+-	
++
++	# Compostos: temperatura interna começa na da arena.
++	for key in state.compound_thermals:
++		(state.compound_thermals[key] as CompoundThermal).reset_temperature(state.arena_temperature)
++
+ 	return state
+ 	
+ 
+@@ -91,7 +95,7 @@ static func _apply_player_bond(state: CombatState, database: AlchemonDatabase, b
+ 	if AlchemyStation.determine_bond_kind(sheets) != bond.kind:
+ 		push_warning("PlayerBondData out of date (kind no longer valid). Bond skipped.")
+ 		return
+-	var result := BondRules.apply_bond(bond.kind, parts, sheets)
++	var result := BondRules.apply_bond(bond.kind, parts, sheets, state)
+ 	if result.get("kind", "") == "compound_formed":
+ 		_ensure_active_has_slot(state, int(result["active_id"]))
+ 
+@@ -128,7 +132,7 @@ static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array
+ 	var sheets: Array[AlchemonSheet] = [database.get_by_id(c0.species_id), database.get_by_id(c1.species_id)]
+ 	var kind := AlchemyStation.determine_bond_kind(sheets)
+ 	if kind != BondRules.NONE:
+-		BondRules.apply_bond(kind, [c0, c1], sheets)
++		BondRules.apply_bond(kind, [c0, c1], sheets, state)
+ 
+ static func _combatant_from(id: int, instance: AlchemonInstance, template: AlchemonSheet, is_player: bool, slot: int) -> CombatantState:
+ 	var stats := instance.compute_stats(template)
+diff --git a/tcc-jogo/COMBAT/combatant_state.gd b/tcc-jogo/COMBAT/combatant_state.gd
+index 8cc1b1e..a8ff102 100644
+--- a/tcc-jogo/COMBAT/combatant_state.gd
++++ b/tcc-jogo/COMBAT/combatant_state.gd
+@@ -33,6 +33,12 @@ signal arena_hotter_than_myself(slot: int)
+ @export var temperature: float = 0.00
+ ## Estado físico anterior (identifica a transição).
+ @export var previous_physical_state: String = AlchemonSheet.SOLIDO
++## Choque térmico já sofrido neste combate (individual; nunca zera no combate).
++@export var has_thermal_shock: bool = false
++## Turnos que faltam de Sobrecarga Térmica (bloqueia formar Composto).
++@export var thermal_overload_turns: int = 0
++## true na rodada em que a Sobrecarga começou (essa rodada não conta).
++var thermal_overload_fresh: bool = false
+ @export var attack_ids: Array[int] = []
+ @export var pending_attack_ids: Array[int] = []
+ @export var learned_attack_ids: Array[int] = []
+diff --git a/tcc-jogo/COMBAT/compound_thermal.gd b/tcc-jogo/COMBAT/compound_thermal.gd
+new file mode 100644
+index 0000000..18311ff
+--- /dev/null
++++ b/tcc-jogo/COMBAT/compound_thermal.gd
+@@ -0,0 +1,48 @@
++class_name CompoundThermal
++extends Resource
++## Dados térmicos de UM Composto (vínculo iônico ou covalente).
++## Pertencem ao vínculo, não às criaturas: ficam em CombatState.compound_thermals,
++## indexados pelo id do participante ativo. Os participantes não têm temperatura
++## individual enquanto o vínculo existe.
++
++@export var active_id: int = -1
++@export var member_ids: Array[int] = []
++@export var is_ionic: bool = false
++## Soma das massas atômicas dos participantes.
++@export var total_mass: float = 1.0
++## Resistência térmica (parâmetro de jogo por tipo de ligação).
++@export var specific_heat: float = 1.0
++## Temperatura interna compartilhada (K). Independe da temperatura da arena.
++@export var temperature: float = 0.0
++@export var melting_point: float = 0.0
++@export var boiling_point: float = 0.0
++## Limite absoluto: temperature >= scission_temperature rompe o vínculo.
++@export var scission_temperature: float = 0.0
++## Surto térmico: |dT| de um único ataque acima disto rompe o vínculo.
++@export var max_delta_t: float = 0.0
++@export var physical_state: String = AlchemonSheet.SOLIDO
++@export var previous_physical_state: String = AlchemonSheet.SOLIDO
++
++
++## Sólido: T < fusão. Líquido: fusão <= T < ebulição. Gasoso: T >= ebulição.
++func state_at(t: float) -> String:
++	if t < melting_point:
++		return AlchemonSheet.SOLIDO
++	if t < boiling_point:
++		return AlchemonSheet.LIQUIDO
++	return AlchemonSheet.GASOSO
++
++
++## Põe a temperatura interna em t e alinha estado atual/anterior (sem dano).
++func reset_temperature(t: float) -> void:
++	temperature = t
++	physical_state = state_at(t)
++	previous_physical_state = physical_state
++
++
++func reached_scission_temperature() -> bool:
++	return temperature >= scission_temperature
++
++
++func is_thermal_surge(delta_t: float) -> bool:
++	return absf(delta_t) > max_delta_t
+diff --git a/tcc-jogo/COMBAT/thermal_rules.gd b/tcc-jogo/COMBAT/thermal_rules.gd
+index 47d243d..461e430 100644
+--- a/tcc-jogo/COMBAT/thermal_rules.gd
++++ b/tcc-jogo/COMBAT/thermal_rules.gd
+@@ -1,7 +1,10 @@
+ class_name ThermalRules
+ extends RefCounted
+-## Mecânica térmica de Alchemons FORA de Composto.
+-## Cada criatura tem temperatura e estado físico próprios. Ataque que acerta
++## Mecânica térmica.
++## Fora de Composto: cada criatura tem temperatura e estado físico próprios.
++## Dentro de Composto: a temperatura é do vínculo (ver CompoundThermal e
++## compound_heat); só dano de transição, cisão, choque térmico e Sobrecarga.
++## Ataque que acerta
+ ## injeta energia térmica Q no alvo: dT = Q / (m * cp). Cruzar um ponto de
+ ## transição causa dano direto uma única vez. Não há bônus/penalidade de
+ ## atributos por estado físico: só o dano de transição.
+@@ -10,6 +13,18 @@ extends RefCounted
+ ## Parâmetro de balanceamento (sem ele dT seria desprezível frente a pontos em K).
+ const ENERGY_SCALE := 1000.0
+ 
++# --- Composto (parâmetros de balanceamento) -------------------------------
++## Calor específico do Composto por tipo de ligação. Iônico resiste mais.
++const COMPOUND_CP_IONIC := 2.0
++const COMPOUND_CP_COVALENT := 1.0
++## Limite de surto térmico (|dT| máx. por ataque) por tipo de ligação.
++const COMPOUND_MAX_DELTA_T_IONIC := 200.0
++const COMPOUND_MAX_DELTA_T_COVALENT := 150.0
++## Dano fixo de choque térmico (uma vez por Alchemon por combate).
++const THERMAL_SHOCK_DAMAGE := 20
++## Turnos completos de Sobrecarga Térmica após a cisão.
++const OVERLOAD_TURNS := 2
++
+ ## [percentual de HP máx (inteiro), fator por nível x10 (inteiro)] por transição.
+ ## Inteiros evitam erro de ponto flutuante no arredondamento para baixo.
+ const TRANSITIONS := {
+@@ -20,6 +35,16 @@ const TRANSITIONS := {
+ }
+ 
+ 
++## Rótulo em português do estado físico.
++static func state_label(physical_state: String) -> String:
++	match physical_state:
++		AlchemonSheet.LIQUIDO:
++			return "líquido"
++		AlchemonSheet.GASOSO:
++			return "gasoso"
++	return "sólido"
++
++
+ ## Conta se a criatura está fora de Composto (única que usa esta rotina).
+ static func applies_to(c: CombatantState) -> bool:
+ 	return c != null and c.bond_kind != BondRules.COMPOUND
+@@ -76,3 +101,45 @@ static func heat(c: CombatantState, sheet: AlchemonSheet, q: float) -> int:
+ 		i += 2
+ 	c.physical_state = new_state
+ 	return total
++
++
++# ---------------------------------------------------------------------------
++# Composto
++# ---------------------------------------------------------------------------
++
++## Aquece/esfria o Composto em Q. Atualiza temperatura e estados do vínculo
++## (sem tocar em HP nem atributos). Devolve:
++##   delta:   dT aplicado;
++##   steps:   pares planos [de, para, de, para...] das transições cruzadas, em ordem;
++##   scission: true se T >= T_cisão ou |dT| > dT_máx (cisão é decidida por quem chama).
++static func compound_heat(th: CompoundThermal, q: float) -> Dictionary:
++	var out := {"delta": 0.0, "steps": [] as Array[String], "scission": false}
++	if th == null or q == 0.0:
++		return out
++	var dt := AlchemonFormulas.compound_delta_temperature(q, th.total_mass, th.specific_heat)
++	th.temperature += dt
++	out["delta"] = dt
++	var new_state := th.state_at(th.temperature)
++	if new_state != th.physical_state:
++		th.previous_physical_state = th.physical_state
++		out["steps"] = transition_path(th.physical_state, new_state)
++		th.physical_state = new_state
++	out["scission"] = th.reached_scission_temperature() or th.is_thermal_surge(dt)
++	return out
++
++
++static func is_overloaded(c: CombatantState) -> bool:
++	return c != null and c.thermal_overload_turns > 0
++
++
++## Chamar ao fim de cada rodada. A rodada em que a Sobrecarga começou não conta:
++## assim ela dura duas rodadas completas.
++static func tick_overload(state: CombatState) -> void:
++	for id in state.combatants:
++		var c: CombatantState = state.combatants[id]
++		if c.thermal_overload_turns <= 0:
++			continue
++		if c.thermal_overload_fresh:
++			c.thermal_overload_fresh = false
++		else:
++			c.thermal_overload_turns -= 1
+diff --git a/tcc-jogo/test/test_arena_heat.gd b/tcc-jogo/test/test_arena_heat.gd
+index b7dc9ac..4de0be4 100644
+--- a/tcc-jogo/test/test_arena_heat.gd
++++ b/tcc-jogo/test/test_arena_heat.gd
+@@ -38,7 +38,9 @@ func _heat_to(st: CombatState, temp: float) -> void:
+ 	CombatResultApplier._apply_arena_heat(st, db)
+ 
+ 
+-func test_compound_breaks_and_cation_takes_damage() -> void:
++## Composto tem temperatura própria: a arena não o rompe nem o fere
++## (ver test_compound_thermal.gd).
++func test_arena_heat_does_not_break_compound() -> void:
+ 	var anion := _sheet(1, 500.0, 600.0)
+ 	var cation := _sheet(2, 300.0, 400.0)
+ 	var st := _state_with([anion, cation])
+@@ -53,10 +55,8 @@ func test_compound_breaks_and_cation_takes_damage() -> void:
+ 	a.max_hp += 70
+ 	a.hp += 70
+ 	_heat_to(st, 320.0)
+-	assert_str(a.bond_kind).is_equal(BondRules.NONE)
+-	assert_str(k.bond_kind).is_equal(BondRules.NONE)
+-	assert_bool(k.is_bond_cation).is_false()
+-	assert_bool(k.is_bond_inactive).is_false()
+-	assert_int(a.max_hp).is_equal(100)
+-	assert_int(a.hp).is_equal(100)
+-	assert_int(k.hp).is_less(30)
++	assert_str(a.bond_kind).is_equal(BondRules.COMPOUND)
++	assert_str(k.bond_kind).is_equal(BondRules.COMPOUND)
++	assert_bool(k.is_bond_cation).is_true()
++	assert_int(a.max_hp).is_equal(170)
++	assert_int(k.hp).is_equal(100)
+diff --git a/tcc-jogo/test/test_compound_thermal.gd b/tcc-jogo/test/test_compound_thermal.gd
+new file mode 100644
+index 0000000..78b557b
+--- /dev/null
++++ b/tcc-jogo/test/test_compound_thermal.gd
+@@ -0,0 +1,381 @@
++extends GdUnitTestSuite
++## Mecânica térmica de Alchemons em Composto (temperatura do vínculo, transição,
++## cisão, choque térmico uma vez por Alchemon, Sobrecarga Térmica).
++
++var db: AlchemonDatabase
++
++
++func before_test() -> void:
++	db = AlchemonDatabase.new()
++
++
++func _sheet(id: int, number: int, mass: int, etype: AlchemonType.Type, valence: int, en: float, melt: float, boil: float) -> AlchemonSheet:
++	var s := AlchemonSheet.new("E%d" % id, 100, id)
++	s.atomic_number = number
++	s.atomic_mass = mass
++	s.element_type = etype
++	s.valence_electrons = valence
++	s.electronegativity = en
++	s.melting_point = melt
++	s.boiling_point = boil
++	db.alchemons.append(s)
++	return s
++
++
++func _li() -> AlchemonSheet:
++	return _sheet(1, 3, 7, AlchemonType.Type.METAL, 1, 0.98, 454.0, 1615.0)
++
++
++func _f() -> AlchemonSheet:
++	return _sheet(2, 9, 19, AlchemonType.Type.AMETAL, 7, 3.98, 54.0, 85.0)
++
++
++func _o() -> AlchemonSheet:
++	return _sheet(3, 8, 16, AlchemonType.Type.AMETAL, 6, 3.44, 54.0, 90.0)
++
++
++func _cl() -> AlchemonSheet:
++	return _sheet(4, 17, 35, AlchemonType.Type.AMETAL, 7, 3.16, 172.0, 239.0)
++
++
++func _c(id: int, sheet: AlchemonSheet, level: int, max_hp: int, slot: int, is_player: bool = true) -> CombatantState:
++	var c := CombatantState.new(id, sheet.id, max_hp, is_player, slot, 8, 273.15)
++	c.level = level
++	c.attack = 50
++	c.defense = 60
++	c.mechanical_speed = 70
++	return c
++
++
++func _state(list: Array[CombatantState]) -> CombatState:
++	var st := CombatState.new()
++	for c in list:
++		st.combatants[c.id] = c
++		if c.is_player:
++			st.player_ids.append(c.id)
++		else:
++			st.enemy_ids.append(c.id)
++		if c.slot >= 0:
++			st.battlefield.assign_combatant(c.id, c.slot)
++	return st
++
++
++## Li (id 1, cátion, inativo) + F (id 2, ativo, nível maior). Parâmetros térmicos
++## ajustados para contas simples: m*cp = 10 => dT = Q/10.
++func _ionic_pair() -> CombatState:
++	var li := _c(1, _li(), 5, 50, 0)
++	var f := _c(2, _f(), 10, 100, 1)
++	var st := _state([li, f])
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [li, f], [db.get_by_id(1), db.get_by_id(2)], st)
++	assert_str(res["kind"]).is_equal("compound_formed")
++	var th := st.compound_thermals[2] as CompoundThermal
++	th.total_mass = 10.0
++	th.specific_heat = 1.0
++	th.melting_point = 300.0
++	th.boiling_point = 400.0
++	th.scission_temperature = 1000.0
++	th.max_delta_t = 100000.0
++	th.reset_temperature(250.0)
++	return st
++
++
++func _th(st: CombatState) -> CompoundThermal:
++	return st.compound_thermals[2] as CompoundThermal
++
++
++func _hit(st: CombatState, q: float, target_id: int = 2) -> void:
++	var r := CombatResult.attack_hit(99, target_id, "x", 0, false)
++	r.thermal_energy = q
++	CombatResultApplier.apply(st, r, db)
++
++
++# --- fórmulas ----------------------------------------------------------------
++
++func test_scission_ionic_li_f() -> void:
++	assert_float(AlchemonFormulas.scission_temperature_ionic(85.0, 3.0, 1)).is_equal_approx(935.0, 0.001)
++
++
++func test_scission_covalent_o_o() -> void:
++	assert_float(AlchemonFormulas.scission_temperature_covalent(90.0, 90.0, 2)).is_equal_approx(390.0, 0.001)
++
++
++func test_formation_computes_thermal_properties_ionic() -> void:
++	var li := _c(1, _li(), 5, 50, 0)
++	var f := _c(2, _f(), 10, 100, 1)
++	var st := _state([li, f])
++	BondRules.apply_bond(BondRules.COMPOUND, [li, f], [db.get_by_id(1), db.get_by_id(2)], st)
++	var th := _th(st)
++	assert_bool(th.is_ionic).is_true()
++	assert_float(th.total_mass).is_equal(26.0)
++	assert_float(th.specific_heat).is_equal(ThermalRules.COMPOUND_CP_IONIC)
++	assert_float(th.scission_temperature).is_equal_approx(935.0, 0.001)
++	assert_float(th.temperature).is_equal_approx(273.15, 0.001)
++	assert_array(th.member_ids).contains_exactly([1, 2])
++
++
++func test_formation_computes_thermal_properties_covalent() -> void:
++	var o := _o()
++	var a := _c(1, o, 5, 50, 0)
++	var b := _c(2, o, 10, 100, 1)
++	var st := _state([a, b])
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [a, b], [o, o], st)
++	assert_str(res["kind"]).is_equal("compound_formed")
++	var th := st.compound_thermals[res["active_id"]] as CompoundThermal
++	assert_bool(th.is_ionic).is_false()
++	assert_float(th.specific_heat).is_equal(ThermalRules.COMPOUND_CP_COVALENT)
++	assert_float(th.scission_temperature).is_equal_approx(390.0, 0.001)
++	assert_float(th.total_mass).is_equal(32.0)
++
++
++func test_ionic_resists_heat_more_than_covalent() -> void:
++	var q := 1000.0
++	var ionic := AlchemonFormulas.compound_delta_temperature(q, 30.0, ThermalRules.COMPOUND_CP_IONIC)
++	var covalent := AlchemonFormulas.compound_delta_temperature(q, 30.0, ThermalRules.COMPOUND_CP_COVALENT)
++	assert_float(ionic).is_less(covalent)
++
++
++# --- aquecimento e transição -------------------------------------------------
++
++func test_attack_changes_compound_temperature_not_members() -> void:
++	var st := _ionic_pair()
++	_hit(st, 100.0) # +10 K
++	assert_float(_th(st).temperature).is_equal_approx(260.0, 0.001)
++	assert_float(st.get_combatant(1).temperature).is_equal_approx(273.15, 0.001)
++	assert_float(st.get_combatant(2).temperature).is_equal_approx(273.15, 0.001)
++
++
++func test_below_melting_stays_solid_without_damage() -> void:
++	var st := _ionic_pair()
++	_hit(st, 100.0)
++	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.SOLIDO)
++	assert_int(st.get_combatant(2).hp).is_equal(135)
++
++
++func test_fusion_damages_active_only_and_keeps_bond_and_stats() -> void:
++	var st := _ionic_pair()
++	var active := st.get_combatant(2)
++	var cation := st.get_combatant(1)
++	var max_hp := active.max_hp
++	var cation_hp := cation.hp
++	_hit(st, 600.0) # 310 K > 300
++	var expected := ThermalRules.transition_damage(AlchemonSheet.SOLIDO, AlchemonSheet.LIQUIDO, max_hp, 10)
++	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.LIQUIDO)
++	assert_str(_th(st).previous_physical_state).is_equal(AlchemonSheet.SOLIDO)
++	assert_int(active.hp).is_equal(135 - expected)
++	assert_int(cation.hp).is_equal(cation_hp)
++	assert_str(active.bond_kind).is_equal(BondRules.COMPOUND)
++	assert_int(active.max_hp).is_equal(max_hp)
++	assert_int(active.attack).is_equal(50)
++	assert_int(active.defense).is_equal(60)
++	assert_int(active.mechanical_speed).is_equal(70)
++
++
++func test_boiling_condensation_solidification() -> void:
++	var st := _ionic_pair()
++	var active := st.get_combatant(2)
++	_th(st).reset_temperature(350.0) # líquido
++	_hit(st, 600.0) # 410 K => ebulição
++	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.GASOSO)
++	assert_int(active.hp).is_equal(135 - ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 135, 10))
++	var hp := active.hp
++	_hit(st, -200.0) # 390 K => condensação
++	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.LIQUIDO)
++	assert_int(active.hp).is_equal(hp - ThermalRules.transition_damage(AlchemonSheet.GASOSO, AlchemonSheet.LIQUIDO, 135, 10))
++	hp = active.hp
++	_hit(st, -1000.0) # 290 K => solidificação
++	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.SOLIDO)
++	assert_int(active.hp).is_equal(hp - ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.SOLIDO, 135, 10))
++
++
++func test_one_attack_crossing_two_phases_applies_both_transitions() -> void:
++	var st := _ionic_pair()
++	_hit(st, 1500.0) # 250 -> 400 K: fusão + ebulição
++	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.GASOSO)
++	var total := ThermalRules.transition_damage(AlchemonSheet.SOLIDO, AlchemonSheet.LIQUIDO, 135, 10) \
++		+ ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 135, 10)
++	assert_int(st.get_combatant(2).hp).is_equal(135 - total)
++
++
++func test_arena_temperature_does_not_affect_compound() -> void:
++	var st := _ionic_pair()
++	st.arena_temperature = 5000.0
++	CombatResultApplier._apply_arena_heat(st, db)
++	assert_str(st.get_combatant(2).bond_kind).is_equal(BondRules.COMPOUND)
++	assert_float(_th(st).temperature).is_equal_approx(250.0, 0.001)
++	assert_int(st.get_combatant(2).hp).is_equal(135)
++
++
++# --- cisão -------------------------------------------------------------------
++
++func test_scission_by_absolute_temperature() -> void:
++	var st := _ionic_pair()
++	_th(st).reset_temperature(900.0)
++	_hit(st, 1000.0) # +100 => 1000 K
++	assert_str(st.get_combatant(1).bond_kind).is_equal(BondRules.NONE)
++	assert_str(st.get_combatant(2).bond_kind).is_equal(BondRules.NONE)
++	assert_bool(st.compound_thermals.is_empty()).is_true()
++
++
++func test_scission_by_thermal_surge_below_absolute_limit() -> void:
++	var st := _ionic_pair()
++	_th(st).max_delta_t = 20.0
++	_hit(st, 300.0) # +30 K > 20, T=280 << 1000
++	assert_str(st.get_combatant(2).bond_kind).is_equal(BondRules.NONE)
++
++
++func test_no_scission_when_within_limits() -> void:
++	var st := _ionic_pair()
++	_th(st).max_delta_t = 20.0
++	_hit(st, 150.0) # +15 K
++	assert_str(st.get_combatant(2).bond_kind).is_equal(BondRules.COMPOUND)
++
++
++func test_scission_removes_attribute_transfer_and_restores_slots() -> void:
++	var st := _ionic_pair()
++	var li := st.get_combatant(1)
++	var f := st.get_combatant(2)
++	# Como na fábrica: o inativo perde o slot e o ativo o assume.
++	st.battlefield.free_slot(0)
++	li.slot = -1
++	li.has_thermal_shock = true # sem choque novo: Li sobrevive (morrer libera o slot)
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0) # surto
++	assert_int(f.max_hp).is_equal(100)
++	assert_int(li.max_hp).is_equal(50)
++	assert_int(li.slot).is_not_equal(-1)
++	assert_int(st.battlefield.get_occupant(li.slot)).is_equal(li.id)
++
++
++func test_survivors_inherit_compound_temperature() -> void:
++	var st := _ionic_pair()
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0) # 260 K
++	assert_float(st.get_combatant(1).temperature).is_equal_approx(260.0, 0.001)
++	assert_float(st.get_combatant(2).temperature).is_equal_approx(260.0, 0.001)
++
++
++# --- choque térmico (uma vez por Alchemon) -----------------------------------
++
++func test_first_scission_shocks_both_members() -> void:
++	var st := _ionic_pair()
++	var li := st.get_combatant(1)
++	var f := st.get_combatant(2)
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0)
++	assert_bool(li.has_thermal_shock).is_true()
++	assert_bool(f.has_thermal_shock).is_true()
++	# Li: 30% de 50 = 15 (liberado) - 20 de choque => morre (HP nunca < 0). F: 135 -> 100 clamp -> 80.
++	assert_int(f.hp).is_equal(100 - ThermalRules.THERMAL_SHOCK_DAMAGE)
++	assert_int(li.hp).is_equal(maxi(15 - ThermalRules.THERMAL_SHOCK_DAMAGE, 0))
++
++
++func test_member_already_shocked_is_not_shocked_again_and_new_member_is() -> void:
++	var st := _ionic_pair()
++	var li := st.get_combatant(1)
++	var f := st.get_combatant(2)
++	# F já sofreu choque antes; Li não.
++	f.has_thermal_shock = true
++	_th(st).max_delta_t = 5.0
++	var hp_before := f.hp
++	_hit(st, 100.0)
++	var f_hp_after_break := mini(hp_before, 100) # clamp ao max_hp restaurado
++	assert_int(f.hp).is_equal(f_hp_after_break)
++	assert_bool(li.has_thermal_shock).is_true()
++
++
++func test_shock_flag_survives_new_compound_with_other_partner() -> void:
++	# A+B rompe; depois A+C: A não leva choque de novo, C leva.
++	var f_sheet := _f()
++	var li_sheet := _li()
++	var cl_sheet := _sheet(5, 11, 23, AlchemonType.Type.METAL, 1, 0.93, 371.0, 1156.0)
++	var a := _c(2, f_sheet, 10, 100, 1)
++	var b := _c(1, li_sheet, 5, 50, 0)
++	var st := _state([b, a])
++	BondRules.apply_bond(BondRules.COMPOUND, [b, a], [li_sheet, f_sheet], st)
++	_th(st).max_delta_t = 1.0
++	_hit(st, 100.0)
++	assert_bool(a.has_thermal_shock).is_true()
++	assert_bool(b.has_thermal_shock).is_true()
++
++	var c := _c(7, cl_sheet, 3, 60, -1)
++	st.combatants[c.id] = c
++	st.player_ids.append(c.id)
++	a.thermal_overload_turns = 0
++	c.thermal_overload_turns = 0
++	a.hp = a.max_hp
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [c, a], [cl_sheet, f_sheet], st)
++	assert_str(res["kind"]).is_equal("compound_formed")
++	var th2 := st.compound_thermals[a.id] as CompoundThermal
++	th2.max_delta_t = 1.0
++	th2.total_mass = 10.0
++	th2.specific_heat = 1.0
++	var a_hp := a.hp
++	_hit(st, 100.0)
++	assert_str(a.bond_kind).is_equal(BondRules.NONE)
++	assert_bool(c.has_thermal_shock).is_true()
++	# A não foi chocado de novo: só perdeu o excedente do max_hp restaurado, sem -20.
++	assert_int(a.hp).is_equal(mini(a_hp, a.max_hp))
++
++
++func test_scission_runs_only_once_per_attack() -> void:
++	var st := _ionic_pair()
++	_th(st).max_delta_t = 5.0
++	_th(st).reset_temperature(950.0) # também acima de T_cisão
++	_hit(st, 100.0)
++	var f := st.get_combatant(2)
++	# Um único choque por Alchemon: nunca dois descontos de 20.
++	assert_int(f.hp).is_equal(100 - ThermalRules.THERMAL_SHOCK_DAMAGE)
++
++
++# --- Sobrecarga Térmica ------------------------------------------------------
++
++func test_overload_starts_after_scission_and_blocks_new_compound() -> void:
++	var st := _ionic_pair()
++	var li := st.get_combatant(1)
++	var f := st.get_combatant(2)
++	li.hp = 200 # sobrevive ao choque
++	li.max_hp = 200
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0)
++	assert_int(f.thermal_overload_turns).is_equal(ThermalRules.OVERLOAD_TURNS)
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [li, f], [db.get_by_id(1), db.get_by_id(2)], st)
++	assert_str(res["kind"]).is_equal("cancelled")
++	assert_str(res["reason"]).is_equal("thermal_overload")
++
++
++func test_overload_lasts_two_full_rounds_after_the_scission_round() -> void:
++	var st := _ionic_pair()
++	var f := st.get_combatant(2)
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0)
++	ThermalRules.tick_overload(st) # fim da rodada da cisão: não conta
++	assert_int(f.thermal_overload_turns).is_equal(2)
++	ThermalRules.tick_overload(st)
++	assert_int(f.thermal_overload_turns).is_equal(1)
++	ThermalRules.tick_overload(st)
++	assert_int(f.thermal_overload_turns).is_equal(0)
++
++
++func test_overload_and_shock_flag_are_independent() -> void:
++	var st := _ionic_pair()
++	var f := st.get_combatant(2)
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0)
++	for i in 4:
++		ThermalRules.tick_overload(st)
++	assert_int(f.thermal_overload_turns).is_equal(0)
++	assert_bool(f.has_thermal_shock).is_true()
++
++
++func test_overload_does_not_modify_attributes_or_block_attack_damage() -> void:
++	var st := _ionic_pair()
++	var f := st.get_combatant(2)
++	_th(st).max_delta_t = 5.0
++	_hit(st, 100.0)
++	assert_int(f.attack).is_equal(50)
++	assert_int(f.defense).is_equal(60)
++	assert_int(f.mechanical_speed).is_equal(70)
++	var hp := f.hp
++	var r := CombatResult.attack_hit(99, 2, "x", 5, false)
++	CombatResultApplier.apply(st, r, db)
++	assert_int(f.hp).is_equal(hp - 5)

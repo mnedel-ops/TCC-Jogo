@@ -18,6 +18,21 @@ static func compute_temperature_delta(level: int, power: int, attack: int) -> fl
 	var raw :float = (float(level) / 10.0 + 1.0) * (float(power) / 10.0) * (float(attack) / 100.0)
 	return raw
 
+## Composto: dT = Q / (m_composto * cp_composto).
+static func compound_delta_temperature(q: float, total_mass: float, specific_heat: float) -> float:
+	return ThermalRules.delta_temperature(q, total_mass, specific_heat)
+
+
+## Iônico (metal + ametal): T_ebulição_ânion + ΔE*250 + |Z_cátion|*100.
+static func scission_temperature_ionic(anion_boiling: float, delta_electronegativity: float, cation_charge: int) -> float:
+	return anion_boiling + absf(delta_electronegativity) * 250.0 + absi(cation_charge) * 100.0
+
+
+## Covalente (ametal + ametal): max(T_ebulição) + pares_compartilhados*150.
+static func scission_temperature_covalent(boiling_a: float, boiling_b: float, shared_pairs: int) -> float:
+	return maxf(boiling_a, boiling_b) + shared_pairs * 150.0
+
+
 const CAPTURE_VALUE_MAX := 255
 
 static func compute_capture_value(hp_max: int, hp_current: int, tool_multiplier: float) -> int:

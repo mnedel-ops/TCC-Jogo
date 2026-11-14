@@ -70,7 +70,11 @@ static func build(database: AlchemonDatabase, player_party: Array[AlchemonInstan
 			c.temperature = state.arena_temperature
 			c.physical_state = t.state_at(c.temperature)
 			c.previous_physical_state = c.physical_state
-	
+
+	# Compostos: temperatura interna começa na da arena.
+	for key in state.compound_thermals:
+		(state.compound_thermals[key] as CompoundThermal).reset_temperature(state.arena_temperature)
+
 	return state
 	
 
@@ -91,7 +95,7 @@ static func _apply_player_bond(state: CombatState, database: AlchemonDatabase, b
 	if AlchemyStation.determine_bond_kind(sheets) != bond.kind:
 		push_warning("PlayerBondData out of date (kind no longer valid). Bond skipped.")
 		return
-	var result := BondRules.apply_bond(bond.kind, parts, sheets)
+	var result := BondRules.apply_bond(bond.kind, parts, sheets, state)
 	if result.get("kind", "") == "compound_formed":
 		_ensure_active_has_slot(state, int(result["active_id"]))
 
@@ -128,7 +132,7 @@ static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array
 	var sheets: Array[AlchemonSheet] = [database.get_by_id(c0.species_id), database.get_by_id(c1.species_id)]
 	var kind := AlchemyStation.determine_bond_kind(sheets)
 	if kind != BondRules.NONE:
-		BondRules.apply_bond(kind, [c0, c1], sheets)
+		BondRules.apply_bond(kind, [c0, c1], sheets, state)
 
 static func _combatant_from(id: int, instance: AlchemonInstance, template: AlchemonSheet, is_player: bool, slot: int) -> CombatantState:
 	var stats := instance.compute_stats(template)

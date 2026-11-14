@@ -11,7 +11,7 @@ static func apply(state: CombatState, result: CombatResult, database: AlchemonDa
 			_apply_arena_heat(state, database)
 			var died := _apply_damage(state, result.target_id, result.damage)
 			if not died:
-				died = _apply_thermal_hit(state, database, result.target_id, result.thermal_energy)
+				died = _apply_thermal_hit(state, database, result.target_id, result.thermal_energy, result.actor_id)
 			if died:
 				_grant_xp(state, database, result.actor_id, result.target_id)
 		CombatResult.Outcome.ITEM_USED:
@@ -71,11 +71,15 @@ static func _kill(state: CombatState, target: CombatantState) -> void:
 	state.battlefield.free_slot(target.slot)
 	BondRules.release_compound_partners(state, target)
 
-## Calor individual do alvo (só fora de Composto). Dano de transição ocorre uma vez
-## por transição; HP não passa de zero (_apply_damage). Devolve true se o alvo morreu.
-static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, target_id: int, q: float) -> bool:
+## Calor do alvo. Fora de Composto: temperatura individual. Em Composto: temperatura
+## do vínculo (_apply_compound_thermal_hit). Devolve true se o alvo morreu.
+static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, target_id: int, q: float, actor_id: int = -1) -> bool:
 	var target := state.get_combatant(target_id)
-	if target == null or not target.alive or not ThermalRules.applies_to(target):
+	if target == null or not target.alive:
+		return false
+	if target.bond_kind == BondRules.COMPOUND:
+		return _apply_compound_thermal_hit(state, database, target, q, actor_id)
+	if not ThermalRules.applies_to(target):
 		return false
 	var sheet := database.get_by_id(target.species_id)
 	if sheet == null:
@@ -89,6 +93,71 @@ static func _apply_thermal_hit(state: CombatState, database: AlchemonDatabase, t
 	return _apply_damage(state, target_id, damage)
 
 
+## Calor num Composto: aquece o vínculo, aplica o dano de cada transição cruzada ao
+## participante ATIVO (uma vez por transição, sem duplicar nos demais) e, por
+## último, executa a cisão uma única vez se T >= T_cisão ou houve surto térmico.
+## Mudança de estado físico não altera atributo algum nem chama break_compound.
+## Devolve true se o alvo do ataque morreu.
+static func _apply_compound_thermal_hit(state: CombatState, database: AlchemonDatabase, target: CombatantState, q: float, actor_id: int) -> bool:
+	var th := state.get_compound_thermal(target)
+	if th == null or q == 0.0:
+		return false
+	var active := state.get_combatant(th.active_id)
+	if active == null or not active.alive:
+		return false
+
+	var info := ThermalRules.compound_heat(th, q)
+	var steps: Array = info["steps"]
+	var i := 0
+	while i < steps.size():
+		var dmg := ThermalRules.transition_damage(steps[i], steps[i + 1], active.max_hp, active.level)
+		state.thermal_notes.append("O composto sofreu %s (%d de dano em %s)." % [_transition_name(steps[i], steps[i + 1]), dmg, _name_of(database, active)])
+		if dmg > 0 and _apply_damage(state, active.id, dmg):
+			return active.id == target.id
+		i += 2
+
+	if bool(info["scission"]):
+		return _compound_scission(state, database, active, target.id, actor_id)
+	return false
+
+
+## Executa a cisão (uma vez) e o choque térmico dos elegíveis. Devolve true se o alvo
+## original (target_id) morreu. Mortes de outros participantes dão XP aqui mesmo.
+static func _compound_scission(state: CombatState, database: AlchemonDatabase, member: CombatantState, target_id: int, actor_id: int) -> bool:
+	var info := BondRules.thermal_scission(state, database, member)
+	if info.is_empty():
+		return false
+	state.thermal_notes.append("O composto rompeu a %.0fK! Sobrecarga Térmica por %d turnos." % [float(info["temperature"]), ThermalRules.OVERLOAD_TURNS])
+	var target_died := false
+	for id in info["shocked_ids"]:
+		var c := state.get_combatant(id)
+		state.thermal_notes.append("Choque térmico em %s (%d de dano)." % [_name_of(database, c), ThermalRules.THERMAL_SHOCK_DAMAGE])
+		if _apply_damage(state, id, ThermalRules.THERMAL_SHOCK_DAMAGE):
+			if id == target_id:
+				target_died = true
+			elif actor_id >= 0:
+				_grant_xp(state, database, actor_id, id)
+	return target_died
+
+
+static func _transition_name(from_state: String, to_state: String) -> String:
+	match "%s>%s" % [from_state, to_state]:
+		"solido>liquido":
+			return "fusão"
+		"liquido>gasoso":
+			return "ebulição"
+		"gasoso>liquido":
+			return "condensação"
+		"liquido>solido":
+			return "solidificação"
+	return "mudança de estado"
+
+
+static func _name_of(database: AlchemonDatabase, c: CombatantState) -> String:
+	var sheet := database.get_by_id(c.species_id) if c != null else null
+	return sheet.creature_name if sheet != null else "?"
+
+
 static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) -> void:
 	var all_ids: Array[int] = state.player_ids + state.enemy_ids
 	var exceeded: Dictionary = {}
@@ -96,7 +165,9 @@ static func _apply_arena_heat(state: CombatState, database: AlchemonDatabase) ->
 
 	for id in state.get_alive_ids(all_ids):
 		var c := state.get_combatant(id)
-		if ThermalRules.applies_to(c):
+		# Individuais usam ThermalRules.heat; Compostos têm temperatura própria,
+		# independente da arena. Nada a fazer aqui por enquanto.
+		if ThermalRules.applies_to(c) or c.bond_kind == BondRules.COMPOUND:
 			continue
 		var template := database.get_by_id(c.species_id)
 		if template == null:

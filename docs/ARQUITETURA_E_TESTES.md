@@ -212,6 +212,25 @@ limiar é `CompoundRules.IONIC_THRESHOLD = 2,0`.
 Um composto aceita de 2 a `AlchemyStation.MAX_BOND_SIZE` (4) Alchemons; os
 membros além dos 2 slots do campo ficam sem slot e o ativo sempre ocupa um slot.
 
+### 2.3.1 Mecânica térmica de Alchemons em Composto
+
+O Composto tem temperatura interna e resistência térmica próprias
+(`CompoundThermal`, guardado em `CombatState.compound_thermals`, indexado pelo
+participante ativo). Os participantes não têm temperatura individual enquanto o
+vínculo existe, e a arena não influencia o Composto.
+
+- `dT = Q / (m_composto · cp_composto)`; `cp` por tipo de ligação (iônico > covalente).
+- Transição de estado (fusão, ebulição, condensação, solidificação) causa dano ao
+  participante ativo, uma vez por transição, e **não altera atributos**.
+- Cisão por `T ≥ T_cisão` ou por surto (`|dT| > dT_máx` em um ataque), executada
+  uma única vez por ataque, depois dos danos de transição.
+- Na cisão: vínculo e transferência de atributos desfeitos, slots restaurados,
+  cada sobrevivente herda a temperatura do Composto, choque térmico (dano fixo,
+  uma vez por Alchemon por combate, flag em `CombatantState`) e Sobrecarga
+  Térmica por duas rodadas completas (bloqueia formar novo Composto).
+
+Suíte: `test_compound_thermal.gd` (24 testes).
+
 ### 2.4 Progressão e condições de vitória/derrota
 
 Quando um ataque derrota um inimigo ou uma captura é concluída,

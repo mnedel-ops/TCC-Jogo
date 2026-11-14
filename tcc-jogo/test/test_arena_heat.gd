@@ -38,7 +38,9 @@ func _heat_to(st: CombatState, temp: float) -> void:
 	CombatResultApplier._apply_arena_heat(st, db)
 
 
-func test_compound_breaks_and_cation_takes_damage() -> void:
+## Composto tem temperatura própria: a arena não o rompe nem o fere
+## (ver test_compound_thermal.gd).
+func test_arena_heat_does_not_break_compound() -> void:
 	var anion := _sheet(1, 500.0, 600.0)
 	var cation := _sheet(2, 300.0, 400.0)
 	var st := _state_with([anion, cation])
@@ -53,10 +55,8 @@ func test_compound_breaks_and_cation_takes_damage() -> void:
 	a.max_hp += 70
 	a.hp += 70
 	_heat_to(st, 320.0)
-	assert_str(a.bond_kind).is_equal(BondRules.NONE)
-	assert_str(k.bond_kind).is_equal(BondRules.NONE)
-	assert_bool(k.is_bond_cation).is_false()
-	assert_bool(k.is_bond_inactive).is_false()
-	assert_int(a.max_hp).is_equal(100)
-	assert_int(a.hp).is_equal(100)
-	assert_int(k.hp).is_less(30)
+	assert_str(a.bond_kind).is_equal(BondRules.COMPOUND)
+	assert_str(k.bond_kind).is_equal(BondRules.COMPOUND)
+	assert_bool(k.is_bond_cation).is_true()
+	assert_int(a.max_hp).is_equal(170)
+	assert_int(k.hp).is_equal(100)

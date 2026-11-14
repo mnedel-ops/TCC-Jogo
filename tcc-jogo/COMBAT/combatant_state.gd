@@ -33,6 +33,12 @@ signal arena_hotter_than_myself(slot: int)
 @export var temperature: float = 0.00
 ## Estado físico anterior (identifica a transição).
 @export var previous_physical_state: String = AlchemonSheet.SOLIDO
+## Choque térmico já sofrido neste combate (individual; nunca zera no combate).
+@export var has_thermal_shock: bool = false
+## Turnos que faltam de Sobrecarga Térmica (bloqueia formar Composto).
+@export var thermal_overload_turns: int = 0
+## true na rodada em que a Sobrecarga começou (essa rodada não conta).
+var thermal_overload_fresh: bool = false
 @export var attack_ids: Array[int] = []
 @export var pending_attack_ids: Array[int] = []
 @export var learned_attack_ids: Array[int] = []

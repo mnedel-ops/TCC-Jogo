@@ -116,6 +116,7 @@ static func _resolve_attack(state: CombatState, command: ActionCommand, database
 	var base_damage := SLAP_DAMAGE if is_slap else AlchemonFormulas.compute_damage(actor.level, power, actor.attack, target.defense, effectiveness)
 	var temperature_delta :float= 0 if is_slap else AlchemonFormulas.compute_temperature_delta(actor.level, power, actor.attack)
 	var hit := CombatResult.attack_hit(actor.id, target.id, attack_name, compute_damage(base_damage, critical), critical, temperature_delta, effectiveness, cost)
+	# Energia térmica Q: vale para criatura individual e para Composto.
 	hit.thermal_energy = temperature_delta * ThermalRules.ENERGY_SCALE
 	return hit
 

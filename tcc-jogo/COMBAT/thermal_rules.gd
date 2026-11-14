@@ -1,7 +1,10 @@
 class_name ThermalRules
 extends RefCounted
-## Mecânica térmica de Alchemons FORA de Composto.
-## Cada criatura tem temperatura e estado físico próprios. Ataque que acerta
+## Mecânica térmica.
+## Fora de Composto: cada criatura tem temperatura e estado físico próprios.
+## Dentro de Composto: a temperatura é do vínculo (ver CompoundThermal e
+## compound_heat); só dano de transição, cisão, choque térmico e Sobrecarga.
+## Ataque que acerta
 ## injeta energia térmica Q no alvo: dT = Q / (m * cp). Cruzar um ponto de
 ## transição causa dano direto uma única vez. Não há bônus/penalidade de
 ## atributos por estado físico: só o dano de transição.
@@ -9,6 +12,18 @@ extends RefCounted
 ## Fator de escala jogo: converte o "valor térmico" do golpe em energia Q.
 ## Parâmetro de balanceamento (sem ele dT seria desprezível frente a pontos em K).
 const ENERGY_SCALE := 1000.0
+
+# --- Composto (parâmetros de balanceamento) -------------------------------
+## Calor específico do Composto por tipo de ligação. Iônico resiste mais.
+const COMPOUND_CP_IONIC := 2.0
+const COMPOUND_CP_COVALENT := 1.0
+## Limite de surto térmico (|dT| máx. por ataque) por tipo de ligação.
+const COMPOUND_MAX_DELTA_T_IONIC := 200.0
+const COMPOUND_MAX_DELTA_T_COVALENT := 150.0
+## Dano fixo de choque térmico (uma vez por Alchemon por combate).
+const THERMAL_SHOCK_DAMAGE := 20
+## Turnos completos de Sobrecarga Térmica após a cisão.
+const OVERLOAD_TURNS := 2
 
 ## [percentual de HP máx (inteiro), fator por nível x10 (inteiro)] por transição.
 ## Inteiros evitam erro de ponto flutuante no arredondamento para baixo.
@@ -18,6 +33,16 @@ const TRANSITIONS := {
 	"gasoso>liquido": [15, 15],  # Condensação
 	"liquido>solido": [10, 10],  # Solidificação
 }
+
+
+## Rótulo em português do estado físico.
+static func state_label(physical_state: String) -> String:
+	match physical_state:
+		AlchemonSheet.LIQUIDO:
+			return "líquido"
+		AlchemonSheet.GASOSO:
+			return "gasoso"
+	return "sólido"
 
 
 ## Conta se a criatura está fora de Composto (única que usa esta rotina).
@@ -76,3 +101,45 @@ static func heat(c: CombatantState, sheet: AlchemonSheet, q: float) -> int:
 		i += 2
 	c.physical_state = new_state
 	return total
+
+
+# ---------------------------------------------------------------------------
+# Composto
+# ---------------------------------------------------------------------------
+
+## Aquece/esfria o Composto em Q. Atualiza temperatura e estados do vínculo
+## (sem tocar em HP nem atributos). Devolve:
+##   delta:   dT aplicado;
+##   steps:   pares planos [de, para, de, para...] das transições cruzadas, em ordem;
+##   scission: true se T >= T_cisão ou |dT| > dT_máx (cisão é decidida por quem chama).
+static func compound_heat(th: CompoundThermal, q: float) -> Dictionary:
+	var out := {"delta": 0.0, "steps": [] as Array[String], "scission": false}
+	if th == null or q == 0.0:
+		return out
+	var dt := AlchemonFormulas.compound_delta_temperature(q, th.total_mass, th.specific_heat)
+	th.temperature += dt
+	out["delta"] = dt
+	var new_state := th.state_at(th.temperature)
+	if new_state != th.physical_state:
+		th.previous_physical_state = th.physical_state
+		out["steps"] = transition_path(th.physical_state, new_state)
+		th.physical_state = new_state
+	out["scission"] = th.reached_scission_temperature() or th.is_thermal_surge(dt)
+	return out
+
+
+static func is_overloaded(c: CombatantState) -> bool:
+	return c != null and c.thermal_overload_turns > 0
+
+
+## Chamar ao fim de cada rodada. A rodada em que a Sobrecarga começou não conta:
+## assim ela dura duas rodadas completas.
+static func tick_overload(state: CombatState) -> void:
+	for id in state.combatants:
+		var c: CombatantState = state.combatants[id]
+		if c.thermal_overload_turns <= 0:
+			continue
+		if c.thermal_overload_fresh:
+			c.thermal_overload_fresh = false
+		else:
+			c.thermal_overload_turns -= 1
