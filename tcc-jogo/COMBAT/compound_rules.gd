@@ -84,7 +84,7 @@ static func resolve(sheets: Array[AlchemonSheet]) -> CompoundData:
 ## "" se a combinação forma composto; senão o motivo da rejeição.
 static func failure_reason(sheets: Array[AlchemonSheet]) -> String:
 	var r := _analyze(sheets)
-	return "" if r.get("data") != null else String(r.get("reason", "Impossible bond."))
+	return "" if r.get("data") != null else String(r.get("reason", "Vínculo impossível."))
 
 
 ## Elementos distintos (por element_key), ordenados de forma estável.
@@ -116,35 +116,35 @@ static func _is_ionic_gap(delta: float) -> bool:
 
 static func _analyze(sheets: Array[AlchemonSheet]) -> Dictionary:
 	if sheets.is_empty():
-		return _fail("Select at least one Alchemon.")
+		return _fail("Selecione pelo menos um Alchemon.")
 	for s in sheets:
 		if s == null:
-			return _fail("Unknown species in selection.")
+			return _fail("Espécie desconhecida na seleção.")
 		var problem := s.chemistry_problem()
 		if problem != "":
 			return _fail(problem)
 
 	var elems := unique_elements(sheets)
 	if elems.size() > MAX_ELEMENTS:
-		return _fail("Max %d different elements per Component." % MAX_ELEMENTS)
+		return _fail("Máximo de %d elementos diferentes por Composto." % MAX_ELEMENTS)
 
 	var metals: Array[AlchemonSheet] = []
 	var nonmetals: Array[AlchemonSheet] = []
 	for e in elems:
 		match e.chem_category():
 			AlchemonSheet.Category.GAS_NOBRE:
-				return _fail("%s already has a full octet and cannot bond." % e.creature_name)
+				return _fail("%s já tem o octeto completo e não pode se ligar." % e.creature_name)
 			AlchemonSheet.Category.METAL:
 				metals.append(e)
 			AlchemonSheet.Category.AMETAL:
 				nonmetals.append(e)
 			_:
-				return _fail("%s is neither metal nor nonmetal: no compound." % e.creature_name)
+				return _fail("%s não é metal nem ametal: não forma composto." % e.creature_name)
 
 	if nonmetals.is_empty():
 		if metals.size() == 1:
-			return _fail("A lone metal does not form a compound.")
-		return _fail("Metal + metal never forms a compound (metallic alloy).")
+			return _fail("Um metal sozinho não forma composto.")
+		return _fail("Metal + metal nunca forma composto (liga metálica).")
 
 	if metals.is_empty():
 		# Ametal + ametal: covalente só se ΔE < limiar.
@@ -154,7 +154,7 @@ static func _analyze(sheets: Array[AlchemonSheet]) -> Dictionary:
 			lo = minf(lo, n.chem_electronegativity())
 			hi = maxf(hi, n.chem_electronegativity())
 		if _is_ionic_gap(hi - lo):
-			return _fail("ΔE %.2f >= %.1f: not covalent." % [hi - lo, IONIC_THRESHOLD])
+			return _fail("ΔE %.2f >= %.1f: não é covalente." % [hi - lo, IONIC_THRESHOLD])
 		var copies := 0
 		for sh in sheets:
 			if sh.element_key() == nonmetals[0].element_key():
@@ -169,7 +169,7 @@ static func _analyze(sheets: Array[AlchemonSheet]) -> Dictionary:
 	for n in nonmetals:
 		anion_min = minf(anion_min, n.chem_electronegativity())
 	if not _is_ionic_gap(anion_min - cation_max):
-		return _fail("ΔE %.2f < %.1f: not ionic." % [anion_min - cation_max, IONIC_THRESHOLD])
+		return _fail("ΔE %.2f < %.1f: não é iônico." % [anion_min - cation_max, IONIC_THRESHOLD])
 	return _ionic(metals, nonmetals)
 
 
@@ -197,13 +197,13 @@ static func _ionic(cations: Array[AlchemonSheet], anions: Array[AlchemonSheet]) 
 			if gap > 0:
 				states.append(-gap)
 		if states.is_empty():
-			return _fail("%s has no %s oxidation state." % [e.creature_name, "positive" if want_positive else "negative"])
+			return _fail("%s não tem estado de oxidação %s." % [e.creature_name, "positivo" if want_positive else "negativo"])
 		options.append(states)
 
 	var best: Dictionary = {}
 	_pick_states(options, 0, [], 0, best)
 	if best.is_empty():
-		return _fail("Charges do not balance: no proportion up to %d atoms of each element neutralizes them." % MAX_QTY)
+		return _fail("As cargas não se equilibram: nenhuma proporção de até %d átomos de cada elemento as neutraliza." % MAX_QTY)
 
 	var composition: Dictionary = {}
 	var charge := 0
@@ -211,7 +211,7 @@ static func _ionic(cations: Array[AlchemonSheet], anions: Array[AlchemonSheet]) 
 		composition[elems[i].element_key()] = best.qty[i]
 		charge += int(best.qty[i]) * int(best.charges[i])
 	if charge != 0:
-		return _fail("Charges do not balance.")
+		return _fail("As cargas não se equilibram.")
 
 	var data := CompoundData.new()
 	data.bond_type = CompoundData.BondType.IONIC
@@ -296,7 +296,7 @@ static func _gcd_all(values: Array) -> int:
 static func _covalent(elems_in: Array[AlchemonSheet], copies: int = 1) -> Dictionary:
 	for e in elems_in:
 		if e.chem_capacity() < 1:
-			return _fail("%s already has a full octet and cannot bond." % e.creature_name)
+			return _fail("%s já tem o octeto completo e não pode se ligar." % e.creature_name)
 
 	# Átomo de maior capacidade primeiro (centro da molécula).
 	var elems: Array[AlchemonSheet] = elems_in.duplicate()
@@ -310,7 +310,7 @@ static func _covalent(elems_in: Array[AlchemonSheet], copies: int = 1) -> Dictio
 
 	if elems.size() == 1:
 		if not SUPPORT_ELEMENTAL_MOLECULES:
-			return _fail("%s cannot bond with itself." % elems[0].creature_name)
+			return _fail("%s não consegue se ligar a si mesmo." % elems[0].creature_name)
 		# Elemento sozinho: nº de átomos = nº de criaturas iguais (mínimo 2).
 		var atoms := maxi(copies, 2)
 		if atoms == 2:
@@ -318,14 +318,14 @@ static func _covalent(elems_in: Array[AlchemonSheet], copies: int = 1) -> Dictio
 		else:
 			found = _allotrope(elems[0], atoms)
 		if found.is_empty():
-			return _fail("%s cannot form a stable molecule of %d atoms alone." % [elems[0].creature_name, atoms])
+			return _fail("%s sozinho não forma uma molécula estável de %d átomos." % [elems[0].creature_name, atoms])
 	else:
 		for total in range(elems.size(), MAX_ATOMS + 1):
 			found = _enum_vectors(elems, total, 0, [], ctx)
 			if not found.is_empty() or ctx.budget <= 0:
 				break
 		if found.is_empty():
-			return _fail("No molecule closes every valence (up to %d atoms)." % MAX_ATOMS)
+			return _fail("Nenhuma molécula fecha todas as valências (até %d átomos)." % MAX_ATOMS)
 
 	var composition: Dictionary = {}
 	for i in elems.size():

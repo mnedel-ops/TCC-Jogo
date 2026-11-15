@@ -29,17 +29,17 @@ static func bond_failure_reason(sheets: Array[AlchemonSheet]) -> String:
 		return problem
 	if CompoundRules.resolve(sheets) != null or is_mixture(sheets):
 		return ""
-	return "Not a compound, and a Mixture takes exactly 2 Alchemons. " + CompoundRules.failure_reason(sheets)
+	return "Não é um composto, e uma Mistura leva exatamente 2 Alchemons. " + CompoundRules.failure_reason(sheets)
 
 
 static func _selection_problem(sheets: Array[AlchemonSheet]) -> String:
 	if sheets.size() < MIN_BOND_SIZE:
-		return "Need at least %d Alchemons." % MIN_BOND_SIZE
+		return "São necessários pelo menos %d Alchemons." % MIN_BOND_SIZE
 	if sheets.size() > MAX_BOND_SIZE:
-		return "Max %d Alchemons per Component." % MAX_BOND_SIZE
+		return "Máximo de %d Alchemons por Composto." % MAX_BOND_SIZE
 	for s in sheets:
 		if s == null:
-			return "Unknown species in selection."
+			return "Espécie desconhecida na seleção."
 		var problem := s.chemistry_problem()
 		if problem != "":
 			return problem

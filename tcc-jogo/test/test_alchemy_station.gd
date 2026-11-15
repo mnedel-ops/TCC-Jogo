@@ -93,7 +93,7 @@ func test_failure_reason_explains_rejection() -> void:
 	var sheets: Array[AlchemonSheet] = [_sheet(5, AlchemonType.Type.METAL, 7), ametal]
 	# Não fecha composto (cargas não balanceiam) -> mistura, e o motivo explica.
 	assert_str(_kind(sheets)).is_equal(BondRules.MIXTURE)
-	assert_str(CompoundRules.failure_reason(sheets)).contains("balance")
+	assert_str(CompoundRules.failure_reason(sheets)).contains("equilibram")
 	var lone: Array[AlchemonSheet] = [metal, metal]
 	assert_str(AlchemyStation.bond_failure_reason(lone)).is_empty()
 

@@ -12,11 +12,19 @@ signal party_changed
 enum Level { LIST, OPTION }
 
 const OPTIONS := ["Alchemy", "Stored", "Exit"]
+const OPTION_LABELS := {"Alchemy": "Alquimia", "Stored": "Armazenados", "Exit": "Sair"}
 const DESCRIPTIONS := {
-	"Alchemy": "Make the Component (bond).\nPick 2 to 4 Alchemons from party + storage.\nChemistry rules apply: charges must cancel (ionic)\nor every valence must close (covalent).\nThe proportions are worked out for you.\nSeveral copies of one element make molecules (O₂, O₃, P₄).\nThe Component goes into every fight.\nWith an active Component you can only break it.",
-	"Stored": "Stored Alchemons.\nSwap captured Alchemons with your party.",
-	"Exit": "Close the PC.",
+	"Alchemy": "Forme o Composto (vínculo).\nEscolha de 2 a 4 Alchemons entre o time e o armazenamento.\nValem as regras da química: as cargas devem se anular (iônico)\nou todas as valências devem fechar (covalente).\nAs proporções são calculadas para você.\nVárias cópias de um elemento formam moléculas (O₂, O₃, P₄).\nO Composto entra em todas as lutas.\nCom um Composto ativo, só é possível rompê-lo.",
+	"Stored": "Alchemons armazenados.\nTroque Alchemons capturados com o seu time.",
+	"Exit": "Fechar o PC.",
 }
+
+# Estilo igual ao do combate (battle_commands.gd / game_menu.gd)
+const GOLD := Color(1, 0.85, 0.2)
+const TITLE_GOLD := Color(1, 0.85, 0.3)
+const PANEL_BG := Color(0.07, 0.07, 0.11, 0.94)
+const PANEL_BORDER := Color(0.5, 0.5, 0.6)
+const TEXT_COLOR := Color(0.92, 0.92, 0.95)
 
 var _party_data: PlayerPartyData
 var _storage: CapturedStorage
@@ -99,12 +107,12 @@ func _purge_nulls() -> void:
 
 func _label_of(inst: AlchemonInstance) -> String:
 	if inst == null:
-		return "(empty)"
+		return "(vazio)"
 	var n := inst.creature_name
 	if n == "" and _db != null:
 		var sheet := _db.get_by_id(inst.species_id)
 		n = sheet.creature_name if sheet != null else "???"
-	return "%s  Lv.%d" % [n, inst.level]
+	return "%s  Nv.%d" % [n, inst.level]
 
 
 func _short_name(inst: AlchemonInstance) -> String:
@@ -119,21 +127,21 @@ func _short_name(inst: AlchemonInstance) -> String:
 
 func _kind_label(kind: String) -> String:
 	match kind:
-		BondRules.MIXTURE: return "Mixture"
-		BondRules.COMPOUND: return "Compound"
-	return "none"
+		BondRules.MIXTURE: return "Mistura"
+		BondRules.COMPOUND: return "Composto"
+	return "nenhum"
 
 
 func _bond_text() -> String:
 	if _bond == null or not _bond.is_active():
-		return "Current Component: none"
+		return "Composto atual: nenhum"
 	var names: Array[String] = []
 	for i in _bond.member_indices:
 		if i >= 0 and i < _party().size():
 			names.append(_short_name(_party()[i]))
 	var formula := _bond_formula()
 	var tail := "  =  " + formula if formula != "" else ""
-	return "Current Component: %s (%s)%s" % [_kind_label(_bond.kind), " + ".join(names), tail]
+	return "Composto atual: %s (%s)%s" % [_kind_label(_bond.kind), " + ".join(names), tail]
 
 
 func _bond_formula() -> String:
@@ -154,7 +162,7 @@ func _stats_text(inst: AlchemonInstance) -> String:
 	var sheet: AlchemonSheet = _db.get_by_id(inst.species_id) if _db != null else null
 	var n := _short_name(inst)
 	if sheet == null:
-		return "%s\nLv.%d\n(no species data)" % [n, inst.level]
+		return "%s\nNv.%d\n(sem dados da espécie)" % [n, inst.level]
 
 	var iv := inst.individual_value
 	var stats := inst.compute_stats(sheet)
@@ -165,7 +173,7 @@ func _stats_text(inst: AlchemonInstance) -> String:
 	var max_hp: int = stats.max_hp
 	var hp := inst.hp_or_full(max_hp)
 
-	return "%s\nLv.%d   (%s)\n\nHP: %d/%d\nXP: %d/%d\nValence e-: %d\n\nAttack: %d\nDefense: %d\nMech. Speed: %d\nAction Energy: %d\nIV: %d" % [
+	return "%s\nNv.%d   (%s)\n\nPV: %d/%d\nXP: %d/%d\nElétrons de valência: %d\n\nAtaque: %d\nDefesa: %d\nVel. mecânica: %d\nEnergia de ação: %d\nIV: %d" % [
 		n, inst.level, AlchemonType.type_name(sheet.element_type),
 		hp, max_hp,
 		inst.experience, AlchemonGrowth.xp_to_next(inst.level),
@@ -173,15 +181,64 @@ func _stats_text(inst: AlchemonInstance) -> String:
 		atk, def, spd, en, iv]
 
 
+func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = border
+	sb.set_border_width_all(2 if border.a > 0.0 else 0)
+	sb.set_corner_radius_all(radius)
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
+	return sb
+
+
+func _style_panel(pc: PanelContainer) -> void:
+	pc.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
+
+
+func _style_list(list: ItemList) -> void:
+	var empty := _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 4)
+	var on := _box(Color(GOLD, 0.25), Color(0, 0, 0, 0), 4)
+	var on_off := _box(Color(GOLD, 0.10), Color(0, 0, 0, 0), 4)
+	list.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
+	list.add_theme_stylebox_override("focus", empty)
+	list.add_theme_stylebox_override("selected", on_off)
+	list.add_theme_stylebox_override("selected_focus", on)
+	list.add_theme_stylebox_override("cursor", empty)
+	list.add_theme_stylebox_override("cursor_unfocused", empty)
+	list.add_theme_color_override("font_color", TEXT_COLOR)
+	list.add_theme_color_override("font_selected_color", GOLD)
+	list.add_theme_color_override("font_hovered_color", GOLD)
+	list.add_theme_constant_override("v_separation", 6)
+
+
+func _style_button(b: Button) -> void:
+	b.add_theme_stylebox_override("normal", _box(Color(0, 0, 0, 0), PANEL_BORDER, 6))
+	b.add_theme_stylebox_override("hover", _box(Color(GOLD, 0.18), GOLD, 6))
+	b.add_theme_stylebox_override("pressed", _box(Color(GOLD, 0.25), GOLD, 6))
+	b.add_theme_stylebox_override("focus", _box(Color(GOLD, 0.18), GOLD, 6))
+	b.add_theme_color_override("font_color", TEXT_COLOR)
+	b.add_theme_color_override("font_focus_color", GOLD)
+	b.add_theme_color_override("font_hover_color", GOLD)
+
+
+func _gold_label(l: Label) -> void:
+	l.add_theme_color_override("font_color", TITLE_GOLD)
+
+
 func _make_stats_label() -> Label:
 	var l := Label.new()
 	l.custom_minimum_size = Vector2(230, 0)
 	l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	l.add_theme_color_override("font_color", TEXT_COLOR)
 	return l
 
 
 func _stats_panel(l: Label) -> PanelContainer:
 	var pc := PanelContainer.new()
+	_style_panel(pc)
 	pc.add_child(l)
 	return pc
 
@@ -234,6 +291,7 @@ func _build_ui() -> void:
 	panel.custom_minimum_size = Vector2(900, 520)
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_style_panel(panel)
 	add_child(panel)
 
 	var margin := MarginContainer.new()
@@ -253,13 +311,15 @@ func _build_ui() -> void:
 	left.custom_minimum_size = Vector2(200, 0)
 	root.add_child(left)
 	var title := Label.new()
-	title.text = "ALCHEMY PC"
+	title.text = "PC ALCHEMON"
 	title.add_theme_font_size_override("font_size", 22)
+	_gold_label(title)
 	left.add_child(title)
 	_menu = ItemList.new()
 	_menu.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_style_list(_menu)
 	for i in OPTIONS.size():
-		_menu.add_item("%d. %s" % [i + 1, OPTIONS[i]])
+		_menu.add_item("%d. %s" % [i + 1, OPTION_LABELS[OPTIONS[i]]])
 	_menu.item_selected.connect(_on_menu_selected)
 	_menu.item_activated.connect(func(_i): _open_option())
 	left.add_child(_menu)
@@ -278,6 +338,7 @@ func _build_ui() -> void:
 
 	_hint = Label.new()
 	_hint.modulate = Color(1, 1, 1, 0.6)
+	_hint.add_theme_color_override("font_color", TEXT_COLOR)
 	outer.add_child(_hint)
 
 
@@ -285,6 +346,7 @@ func _build_idle_page() -> Control:
 	var page := VBoxContainer.new()
 	_idle_label = Label.new()
 	_idle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_idle_label.add_theme_color_override("font_color", TEXT_COLOR)
 	page.add_child(_idle_label)
 	return page
 
@@ -293,11 +355,14 @@ func _build_alchemy_page() -> Control:
 	var page := VBoxContainer.new()
 	_alch_header = Label.new()
 	_alch_header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_gold_label(_alch_header)
 	page.add_child(_alch_header)
 	var h := Label.new()
-	h.text = "Pick 2-%d Alchemons (party + storage), then Make Component" % AlchemyStation.MAX_BOND_SIZE
+	h.text = "Escolha de 2 a %d Alchemons (time + armazenamento) e depois Formar Composto" % AlchemyStation.MAX_BOND_SIZE
+	h.modulate = Color(1, 1, 1, 0.55)
 	page.add_child(h)
 	_alch_list = ItemList.new()
+	_style_list(_alch_list)
 	_alch_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_alch_list.item_activated.connect(func(_i): _alchemy_select())
 	_alch_list.item_selected.connect(_on_alch_selected)
@@ -311,6 +376,7 @@ func _build_alchemy_page() -> Control:
 	arow.add_child(_stats_panel(_alch_stats))
 	_alch_info = Label.new()
 	_alch_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_alch_info.add_theme_color_override("font_color", GOLD)
 	page.add_child(_alch_info)
 	return page
 
@@ -330,6 +396,7 @@ func _build_stored_page() -> Control:
 
 	_st_info = Label.new()
 	_st_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_st_info.add_theme_color_override("font_color", GOLD)
 	page.add_child(_st_info)
 	return page
 
@@ -342,8 +409,10 @@ func _make_st_column(parent: Control, title: String) -> ItemList:
 	var t := Label.new()
 	t.text = title
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_gold_label(t)
 	col.add_child(t)
 	var list := ItemList.new()
+	_style_list(list)
 	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	list.item_activated.connect(func(_i): _stored_select())
 	list.item_selected.connect(_on_st_selected)
@@ -357,18 +426,22 @@ func _make_st_column(parent: Control, title: String) -> ItemList:
 func _build_exit_page() -> Control:
 	var page := VBoxContainer.new()
 	var l := Label.new()
-	l.text = "Close the PC?"
+	l.text = "Fechar o PC?"
 	l.add_theme_font_size_override("font_size", 20)
+	_gold_label(l)
 	page.add_child(l)
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
 	page.add_child(row)
 	_exit_yes = Button.new()
-	_exit_yes.text = "Yes"
+	_exit_yes.text = "Sim"
 	_exit_yes.pressed.connect(func(): exit_requested.emit())
+	_style_button(_exit_yes)
 	row.add_child(_exit_yes)
 	_exit_no = Button.new()
-	_exit_no.text = "No"
+	_exit_no.text = "Não"
 	_exit_no.pressed.connect(_go_list)
+	_style_button(_exit_no)
 	row.add_child(_exit_no)
 	return page
 
@@ -435,9 +508,9 @@ func _open_option() -> void:
 			_st_party_list.grab_focus()
 		"Exit":
 			_exit_no.grab_focus()
-	_hint.text = "Up/Down: move   [%s]: select   [%s]: back" % [select_action, back_action]
+	_hint.text = "Cima/Baixo: mover   [%s]: selecionar   [%s]: voltar" % [select_action, back_action]
 	if _current_option == "Stored":
-		_hint.text = "Up/Down: move   Left/Right: change column   [%s]: move Alchemon   [%s]: back" % [select_action, back_action]
+		_hint.text = "Cima/Baixo: mover   Esq./Dir.: trocar coluna   [%s]: mover Alchemon   [%s]: voltar" % [select_action, back_action]
 
 
 func _go_list() -> void:
@@ -451,7 +524,7 @@ func _go_list() -> void:
 		sel = [0]
 	_idle_label.text = DESCRIPTIONS[OPTIONS[sel[0]]]
 	_show_page("Idle")
-	_hint.text = "Up/Down: move   [%s]: open option" % select_action
+	_hint.text = "Cima/Baixo: mover   [%s]: abrir opção" % select_action
 
 
 func _show_page(page_name: String) -> void:
@@ -490,12 +563,12 @@ func _refresh_alchemy() -> void:
 		_alch_picked.clear()
 		_alch_rows.append({"kind": "break"})
 		if _alch_info.text == "":
-			_alch_info.text = "A Component is active. Break it to make a new one."
+			_alch_info.text = "Há um Composto ativo. Rompa-o para formar outro."
 	else:
 		for inst in _party():
-			_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Party"})
+			_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Time"})
 		for inst in _stored():
-			_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Stored"})
+			_alch_rows.append({"kind": "mon", "inst": inst, "tag": "Armazenado"})
 		_alch_rows.append({"kind": "make"})
 	_alch_rows.append({"kind": "back"})
 
@@ -505,11 +578,11 @@ func _refresh_alchemy() -> void:
 				var mark := "[x]" if _alch_picked.has(r.inst) else "[ ]"
 				_alch_list.add_item("%s [%s] %s" % [mark, r.tag, _label_of(r.inst)])
 			"make":
-				_alch_list.add_item(">> Make Component (%d selected, 2-%d)" % [_alch_picked.size(), AlchemyStation.MAX_BOND_SIZE])
+				_alch_list.add_item(">> Formar Composto (%d selecionados, 2-%d)" % [_alch_picked.size(), AlchemyStation.MAX_BOND_SIZE])
 			"break":
-				_alch_list.add_item("xx Break Component")
+				_alch_list.add_item("xx Romper Composto")
 			"back":
-				_alch_list.add_item("<< Back")
+				_alch_list.add_item("<< Voltar")
 
 	if _alch_list.item_count > 0:
 		_alch_list.select(mini(keep[0] if not keep.is_empty() else 0, _alch_list.item_count - 1))
@@ -531,7 +604,7 @@ func _refresh_stored() -> void:
 	for inst in _stored():
 		_st_stored_rows.append({"src": "stored", "inst": inst})
 		_st_stored_list.add_item(_label_of(inst))
-	_st_info.text = "Party: %d/%d   Stored: %d" % [_party().size(), max_party_size, _stored().size()]
+	_st_info.text = "Time: %d/%d   Armazenados: %d" % [_party().size(), max_party_size, _stored().size()]
 	_st_party_list.select(mini(keep_p[0] if not keep_p.is_empty() else 0, _st_party_list.item_count - 1))
 	if _st_stored_list.item_count > 0:
 		_st_stored_list.select(mini(keep_s[0] if not keep_s.is_empty() else 0, _st_stored_list.item_count - 1))
@@ -552,7 +625,7 @@ func _alchemy_select() -> void:
 				_alch_picked.erase(row.inst)
 				_alch_info.text = ""
 			elif _alch_picked.size() >= AlchemyStation.MAX_BOND_SIZE:
-				_alch_info.text = "Max %d. Unselect one first." % AlchemyStation.MAX_BOND_SIZE
+				_alch_info.text = "Máximo de %d. Desmarque um antes." % AlchemyStation.MAX_BOND_SIZE
 			else:
 				_alch_picked.append(row.inst)
 				_alch_info.text = ""
@@ -561,7 +634,7 @@ func _alchemy_select() -> void:
 		"break":
 			_bond.clear()
 			_trim_party()
-			_alch_info.text = "Component broken."
+			_alch_info.text = "Composto rompido."
 			party_changed.emit()
 			bond_changed.emit()
 		"back":
@@ -572,25 +645,25 @@ func _alchemy_select() -> void:
 
 func _make_component() -> void:
 	if _has_active_bond():
-		_alch_info.text = "Break the current Component first."
+		_alch_info.text = "Rompa o Composto atual primeiro."
 		return
 	if _alch_picked.size() < AlchemyStation.MIN_BOND_SIZE or _alch_picked.size() > AlchemyStation.MAX_BOND_SIZE:
-		_alch_info.text = "Select 2 to %d Alchemons." % AlchemyStation.MAX_BOND_SIZE
+		_alch_info.text = "Selecione de 2 a %d Alchemons." % AlchemyStation.MAX_BOND_SIZE
 		return
 	if _db == null or _bond == null or _party_data == null or _storage == null:
-		_alch_info.text = "PC data missing (party / storage / bond / database)."
+		_alch_info.text = "Faltam dados do PC (time / armazenamento / vínculo / banco de dados)."
 		return
 
 	var sheets: Array[AlchemonSheet] = []
 	for inst in _alch_picked:
 		sheets.append(_db.get_by_id(inst.species_id))
 	if sheets.has(null):
-		_alch_info.text = "Unknown species in selection."
+		_alch_info.text = "Espécie desconhecida na seleção."
 		return
 
 	var kind := AlchemyStation.determine_bond_kind(sheets)
 	if kind == BondRules.NONE:
-		_alch_info.text = "Impossible bond. " + AlchemyStation.bond_failure_reason(sheets)
+		_alch_info.text = "Vínculo impossível. " + AlchemyStation.bond_failure_reason(sheets)
 		return
 
 	var chosen: Array[AlchemonInstance] = []
@@ -614,7 +687,7 @@ func _make_component() -> void:
 		member_indices.append(i)
 		member_names.append(_short_name(chosen[i]))
 	_bond.set_bond(kind, member_indices)
-	var made := "Made: %s (%s)" % [_kind_label(kind), " + ".join(member_names)]
+	var made := "Formado: %s (%s)" % [_kind_label(kind), " + ".join(member_names)]
 	if kind == BondRules.COMPOUND:
 		var data := AlchemyStation.resolve_compound(sheets)
 		if data != null:
@@ -647,11 +720,7 @@ func _show_popup(text: String) -> void:
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(center)
 	var panel := PanelContainer.new()
-	var box := StyleBoxFlat.new()
-	box.bg_color = Color(0.97, 0.97, 0.94)
-	box.border_color = Color(0.1, 0.1, 0.12)
-	box.set_border_width_all(3)
-	box.set_corner_radius_all(12)
+	var box := _box(PANEL_BG, PANEL_BORDER, 8)
 	box.content_margin_left = 36
 	box.content_margin_right = 36
 	box.content_margin_top = 24
@@ -665,13 +734,13 @@ func _show_popup(text: String) -> void:
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_size_override("font_size", 24)
-	l.add_theme_color_override("font_color", Color(0.08, 0.08, 0.1))
+	l.add_theme_color_override("font_color", TITLE_GOLD)
 	v.add_child(l)
 	var hint := Label.new()
 	hint.text = "(pressione qualquer tecla)"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 14)
-	hint.add_theme_color_override("font_color", Color(0.4, 0.4, 0.45))
+	hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
 	v.add_child(hint)
 	add_child(root)
 	_popup = root
@@ -694,13 +763,13 @@ func _stored_select() -> void:
 
 	if row.src == "party":
 		if _party().size() <= 1:
-			_st_info.text = "Need at least 1 Alchemon in party."
+			_st_info.text = "É preciso ter pelo menos 1 Alchemon no time."
 			return
 		_party_data.party.erase(row.inst)
 		_storage.add_instance(row.inst)
 	else:
 		if _party().size() >= max_party_size:
-			_st_info.text = "Party FULL (%d/%d). Send one to Stored first." % [_party().size(), max_party_size]
+			_st_info.text = "Time CHEIO (%d/%d). Envie um para o armazenamento antes." % [_party().size(), max_party_size]
 			return
 		_storage.remove_instance(row.inst)
 		_party_data.party.append(row.inst)
@@ -714,4 +783,4 @@ func _stored_select() -> void:
 	party_changed.emit()
 	_refresh_all()
 	if broke:
-		_st_info.text += "   (Component broken: party changed)"
+		_st_info.text += "   (Composto rompido: o time mudou)"
