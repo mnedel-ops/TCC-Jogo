@@ -1,0 +1,891 @@
+diff --git "a/docs/ALCHEMON \342\200\224 Documento de Design de Jogo (GDD).md" "b/docs/ALCHEMON \342\200\224 Documento de Design de Jogo (GDD).md"
+index 15683a9..ef3c7bf 100644
+--- "a/docs/ALCHEMON \342\200\224 Documento de Design de Jogo (GDD).md"	
++++ "b/docs/ALCHEMON \342\200\224 Documento de Design de Jogo (GDD).md"	
+@@ -13,8 +13,8 @@ Creature capture baseado na Tabela Periódica. Este documento mantém o design o
+ | Área | Status | Observação |
+ | --- | --- | --- |
+ | Cenas, portas e spawn | \[OK\] | `SceneManager`, `SceneDoor`, 2 fases de teste |
+-| Exploração (movimento, interação, câmera) | \[Parcial\] | Sem corrida; sem F5/F9; câmera com zona morta |
+-| Encontros selvagens e de treinador | \[Parcial\] | Por tempo (não por passo); área de colisão (não cone de visão) |
++| Exploração (movimento, interação, câmera) | \[Parcial\] | Sem corrida; câmera com zona morta |
++| Encontros selvagens e de treinador | \[OK\] | Selvagens por tempo (não por passo); treinadores por área de colisão (não cone de visão) — decisão de design |
+ | Combate 2×2 por turnos | \[OK\] | Máquina de fases, iniciativa, ataque/item/captura/fuga |
+ | Tipos e efetividade | \[OK\] | Ciclo ×1,5 / ×0,66 / ×1,0 |
+ | Atributos, IV, personalidade | \[Parcial\] | Fórmula de HP difere; personalidade é extra |
+@@ -22,10 +22,10 @@ Creature capture baseado na Tabela Periódica. Este documento mantém o design o
+ | Misturas e Compostos | \[Parcial\] | Funcionam com 2 elementos; sem Compostos de 3+ e sem ruptura por temperatura |
+ | Captura | \[Parcial\] | Fórmula \[OK\]; métodos de separação são placeholders por tipo |
+ | XP e níveis | \[OK\] | XP segue a fórmula $N^3$|
+-| Obediência por insígnias | \[Pendente\] | Insígnia existe e é concedida; obediência não |
++| Obediência por insígnias | \[OK\] | Nível 16+ sem insígnia desobedece (50%); com insígnia obedece sempre |
+ | Economia (moeda, loja) | \[OK\] | Moeda \[OK\]; loja compra e vende (`ShopRules`). Falta balancear preços |
+ | PC / Armazenamento | \[Parcial\] | Troca de time e Compostos \[OK\]; sem caixas e sem troca de ataques |
+-| Cura / Hospital | \[Parcial\] | NPC curandeiro e teleporte na derrota  \[OK\]; sem hospital como cena|
++| Cura / Hospital | \[OK\] | NPC curandeiro; derrota cura o time e leva ao Lab, de frente para o Healer |
+ | Salvamento | \[OK\] | JSON atômico + backup, posição, inventário, NPCs derrotados |
+ | Menus e interface | \[Parcial\] | Menu unificado \[OK\]; entradas diferem do GDD |
+ | Testes automatizados | \[Extra\] | 74 testes GdUnit4 |
+@@ -80,7 +80,7 @@ O jogador é um `CharacterBody3D` (`player.gd`) composto por `MovementComponent`
+ | W/A/S/D (e setas/direcional) | Caminhar em 8 direções (`move_*`, `Input.get_vector`) | \[OK\] (velocidade fixa 5.0) |
+ | E (`ui_interact`) | Interagir com item, NPC, PC | \[OK\] |
+ | Tab (`ui_menu`) | Abre o menu unificado do jogo | \[OK\] abre o menu completo |
+-| F5 / F9 | Salvar / carregar rápido | \[Pendente\] não há ação mapeada |
++| F5 / F9 | Salvar / carregar rápido | \[OK\] ações `quick_save` / `quick_load` tratadas em `SceneManager` (bloqueadas em combate) |
+ 
+ Nos menus e popups o código também aceita setas, Enter/Espaço e botões de gamepad.
+ 
+@@ -106,13 +106,13 @@ Casas, hospitais, lojas e ginásios ainda **não são cenas separadas**: loja, c
+ 
+ O evento é `CombatSignal.combat_start(a, b)`; `CombatSceneManager._on_combat_start()` cria a cena de combate, move os atores para os `BattleAnchors` e injeta equipe, inventário, banco de espécies, armazenamento e vínculo.
+ 
+-### 4.1 Encontros com Treinadores — \[Parcial\]
++### 4.1 Encontros com Treinadores — \[OK\]
+ 
+-`NPC._on_combat_area_entered()` inicia o combate quando o jogador entra na `CombatCollision` do NPC (uma área, **não um cone de visão**). Define `is_trainer_battle = true`, nível e as duas espécies. Só ocorre se `GameSession.can_fight()` (há criatura viva). Após a vitória, `mark_defeated()` desativa o NPC e grava o ID no save; em líder de ginásio, concede a insígnia.
++`NPC._on_combat_area_entered()` inicia o combate quando o jogador entra na `CombatCollision` do NPC (uma área de colisão — **decisão de design: não há cone de visão**). Define `is_trainer_battle = true`, nível e as duas espécies. Só ocorre se `GameSession.can_fight()` (há criatura viva). Após a vitória, `mark_defeated()` desativa o NPC e grava o ID no save; em líder de ginásio, concede a insígnia.
+ 
+-### 4.2 Encontros Selvagens — \[Parcial\]
++### 4.2 Encontros Selvagens — \[OK\]
+ 
+-`WildernessEncounter` (Area3D com polígono editável) usa uma **rolagem por tempo**, não por passo:
++`WildernessEncounter` (Area3D com polígono editável) usa uma **rolagem por tempo** (decisão de design: **não por passo**):
+ 
+ - `check_interval` (1 s) e `encounter_chance` (30%) configuráveis; exige movimento do jogador (`require_movement`).
+ - Rola um encontro também ao entrar na área; respeita `cooldown` (3 s) após o combate; nunca durante outro combate.
+@@ -146,7 +146,7 @@ Máquina de fases `BattlePhaseMachine`: `ENCOUNTER_START → SELECTING_ACTIONS 
+ 
+ - `BattleRewards.build()` monta a tela de recompensas (`BattleRewardsScreen`), exibida **antes** de `combat_ended` liberar a exploração. \[OK\]
+ - **Vitória:** XP e, contra treinador, 100 moedas (`TRAINER_WIN_MONEY`). Selvagens não dão moeda. \[Parcial\] O GDD diz "ganho de EXP e moeda" em toda vitória.
+-- **Derrota:** o combate encerra e volta à exploração. \[Pendente\] **Não há teletransporte ao último hospital**; a cura é manual no NPC curandeiro. Criaturas com 0 HP não entram no próximo combate (`REVIVE_FAINTED_ON_BATTLE_START = false`) e `can_fight()` impede novos combates sem criatura viva.
++- **Derrota:** \[OK\] ao fim do combate o jogador é curado e reaparece no **Laboratório, de frente para o Healer** (`SceneManager.respawn_at_lab`, marcador `LabRespawn`). A cura manual no NPC curandeiro continua existindo. Criaturas com 0 HP não entram no próximo combate (`REVIVE_FAINTED_ON_BATTLE_START = false`) e `can_fight()` impede novos combates sem criatura viva.
+ - Não há evolução nem fusão permanente. \[OK\]
+ 
+ ---
+@@ -466,11 +466,11 @@ Só existem 2 tipos de composto (`CompoundRules`); o que não for iônico nem co
+ - **Covalente** (ametal + ametal, ΔE < 2,0): `(Σ octeto − Σ valência)` par e ≥ `n − 1` ligações.
+ - **Mistura:** metal + metal, gás nobre, metaloide ou qualquer par fora das regras acima.
+ - O PC informa se a combinação é possível, sem ensinar a resposta ("Seu Composto foi criado!").
+-- Ativo: `BondRules._pick_active_index` — maior nível; se houver Metal, o Metal é o **Cátion** (`is_bond_cation`: invisível, inalvejável, imune).
++- Ativo (receptor): `BondRules._pick_active_index`. **Iônico:** o Ânion (não-metal de maior nível); o Metal é o **Cátion** (`is_bond_cation`: invisível, inalvejável, imune). **Covalente:** o elemento mais eletronegativo (empate: maior nível); o menos eletronegativo é o doador.
+ 
+-#### Transferência de atributos do Composto — [Pendente]
++#### Transferência de atributos do Composto — [OK]
+ 
+-A regra anterior de transferência fixa de 70% do HP máximo e da energia é substituída pelo cálculo abaixo. Para cada atributo geral `X` — HP máximo, Ataque, Defesa e Velocidade — o valor do Composto é calculado a partir do atributo do Ânion somado à parcela transferida do Cátion:
++A regra anterior de transferência fixa de 70% do HP máximo e da energia foi substituída pelo cálculo abaixo (`BondRules.ionic_alpha`, `covalent_alpha`, `donor_alpha`). Para cada atributo geral `X` — HP máximo, Ataque, Defesa e Velocidade — o valor do Composto é calculado a partir do atributo do Ânion somado à parcela transferida do Cátion:
+ 
+ \[
+ X_{\text{Composto}} = X_{\text{Ânion}} + (\alpha \cdot X_{\text{Cátion}})
+@@ -496,7 +496,18 @@ Quando a fusão ocorrer durante uma batalha, a porcentagem de HP atual do Ânion
+ HP_{\text{Atual, Composto}} = \left(\frac{HP_{\text{Atual, Ânion}}}{HP_{\text{Máx, Ânion}}}\right) \cdot HP_{\text{Máx, Composto}}
+ \]
+ 
+-A implementação deverá proteger a divisão quando `HP_Máx, Ânion` for zero ou negativo e limitar o HP atual ao intervalo válido do Composto. A regra de preservação proporcional aplica-se à fusão durante o combate; o HP inicial de fusões realizadas fora de combate ainda precisa ser definido.
++A implementação protege a divisão quando `HP_Máx, Ânion` for zero ou negativo e limita o HP atual ao intervalo válido do Composto (mínimo 1 se vivo). \[OK\]
++
++**Compostos covalentes.** O elemento menos eletronegativo é o doador e o mais eletronegativo é o receptor:
++
++\[
++X_{\text{Composto}} = X_{\text{Receptor}} + (\alpha \cdot X_{\text{Doador}}), \qquad \alpha = 0{,}50 + 0{,}10 \cdot P
++\]
++
++`P` é a ordem da ligação entre os dois elementos (1 simples, 2 dupla, 3 tripla), vinda de `CompoundData.bonds`; sem ligação direta entre o par, usa-se a maior ordem do composto. Ex.: O=O (P = 2) dá α = 0,70.
++
++- No iônico, doador que não é metal entra com `Z = 0`. Com mais de um doador, cada um soma a sua parcela ao receptor.
++- O que cada doador somou fica em `CombatantState.compound_gain` e é desfeito na cisão (`break_compound`). O doador não perde atributos.
+ 
+ - Se o ativo cai, os parceiros são liberados com 30% do HP (`COMPOUND_RELEASE_HP_RATIO`) e a energia do caído. Essa regra de liberação não é alterada pela nova fórmula.
+ - [Parcial] **Limitação:** `validate_stoichiometry` aceita apenas **2 elementos**; o exemplo H₂O (3 criaturas) ainda não é possível, embora `BondRules` já trate grupos maiores. Ainda não verificado se o Ânion é mostrado como "ativo" na UI do jogo além do rótulo do HUD.
+@@ -554,9 +565,9 @@ Ver seção 8.1.
+ - **Distribuição:** \[Parcial\] `_grant_xp` concede XP **somente à criatura que derrotou/capturou** o alvo, e não igualmente às duas.
+ - Tela de recompensas mostra XP, level up e moedas \[OK\] (`BattleRewards.entries`).
+ 
+-### 12.3 Obediência por Insígnias — \[Pendente\]
++### 12.3 Obediência por Insígnias — \[OK\]
+ 
+-Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. Insígnia atual: **Insígnia do Metal**, concedida ao vencer o NPC `is_gym_trainer`.
++A insígnia controla os Alchemons de alto nível (`ObedienceRules`): até o **nível 15** o Alchemon sempre obedece; do **nível 16 em diante**, sem nenhuma insígnia obtida, ele **desobedece com 50% de chance** (`DISOBEY_CHANCE`) e perde a ação do turno ("X não obedeceu!"). Com pelo menos 1 insígnia (`BADGES_TO_CONTROL_HIGH_LEVEL`) obedece sempre. Só vale para o time do jogador. \[Pendente\] Escalonar o nível controlado por quantidade de insígnias. Existem também `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. Insígnia atual: **Insígnia do Metal**, concedida ao vencer o NPC `is_gym_trainer`.
+ 
+ ---
+ 
+@@ -605,7 +616,7 @@ NPC curandeiro (`is_healer`): pergunta Sim/Não, espera 2,5 s e chama `GameSessi
+ 
+ `GameSession` (autoload) e `SaveGame`:
+ 
+-- Manual pelo item **Save** do menu; arquivo `user://saves/slot_1.json`. \[Pendente\] Atalho F5.
++- Manual pelo item **Save** do menu; arquivo `user://saves/slot_1.json`. Atalho **F5** salva e **F9** carrega (posição, party, itens e NPCs derrotados); ignorados durante combate.
+ - `SaveGame.serialize()` grava: equipe, armazenamento, vínculo (por UID), moedas, nome/time do jogador, tempo de jogo, insígnias, inventário, NPCs derrotados e posição (fase, x, y, z, rotação).
+ - `write_file()` é **atômico** (arquivo temporário + rename) e mantém `.bak`; `read_file()` recupera o backup se o principal estiver corrompido.
+ - `apply()` valida tudo **antes** de alterar o estado (versão futura ou dados malformados não mudam nada), repara UIDs duplicados e descarta criaturas sem espécie.
+@@ -652,7 +663,7 @@ Atualmente existem **3 espécies placeholder** (Metal, Ametal, Metaloide) + 1 es
+ 
+ ## 20. Ginásios — \[Parcial\]
+ 
+-Não há cena de ginásio. Existe **um NPC líder de ginásio Metal** em `scene_1` (nível 8, espécies 1 e 2) que concede a **Insígnia do Metal**. A obediência garantida até nível 10 \[Pendente\].
++Não há cena de ginásio. Existe **um NPC líder de ginásio Metal** em `scene_1` (nível 8, espécies 1 e 2) que concede a **Insígnia do Metal**. A obediência é garantida até o nível 15; do 16 em diante depende da insígnia \[OK\].
+ 
+ ---
+ 
+@@ -734,8 +745,8 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de
+ 2. **Crítico:** multiplicador `(2L+5)/(L+5)` × fixo 1,5; acerto por ataque × erro global 1/6.
+ 3. **XP:** fórmula `√A·A²…` × XP fixo da espécie e 100 por nível; XP para ambas × só para quem derrotou.
+ 4. **Temperatura inicial:** 25 °C × 273,15 K; ΔT com `floor` × decimal.
+-5. **Mistura/Composto:** a transferência de atributos do Composto ainda usa 70% fixos de HP e energia no código; o novo design prevê fator variável (50%–95%) para HP máximo, Ataque, Defesa e Velocidade, calculado por eletronegatividade e carga do Cátion. A energia de ação ainda não tem regra definida.
+-6. **Derrota e cura:** hospital com teleporte × NPC curandeiro sem teleporte.
++5. **Mistura/Composto:** resolvido — a transferência usa as fórmulas iônica e covalente (HP máximo, Ataque, Defesa e Velocidade); a energia de ação deixou de ser transferida (regra a definir).
++6. **Derrota e cura:** resolvido — derrota cura o time e leva ao Lab, de frente para o Healer; o NPC curandeiro continua.
+ 7. **Fuga:** só contra selvagens × permitida sempre.
+ 8. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
+ 9. **Energia:** reduzida ao sofrer golpes × só ao atacar.
+@@ -769,7 +780,7 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de
+ 
+ ### 25.4 Atributos e Progressão
+ 
+-- Mapeamento nível → insígnias e implementação da obediência.
++- Mapeamento nível → quantidade de insígnias (hoje: nível 16+ exige 1 insígnia).
+ - Ataques e níveis de desbloqueio dos 6 elementos.
+ - XP Base fixo ou por criatura (hoje por espécie via `xp_reward`).
+ - Nível máximo (20 no protótipo) ainda não aplicado.
+@@ -782,4 +793,4 @@ A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de
+ 
+ - Tabelas de encontro por área com pesos.
+ - Cenas de hospital, loja e ginásio; mapas; Super Liga.
+-- Atalhos F5/F9 e ação de corrida.
++- Ação de corrida.
+diff --git a/tcc-jogo/COMBAT/bond_rules.gd b/tcc-jogo/COMBAT/bond_rules.gd
+index 60ccae6..dd93819 100644
+--- a/tcc-jogo/COMBAT/bond_rules.gd
++++ b/tcc-jogo/COMBAT/bond_rules.gd
+@@ -7,7 +7,17 @@ const MIXTURE := "mixture"
+ const COMPOUND := "compound"
+ 
+ const MIXTURE_BONUS := 8
+-const COMPOUND_TRANSFER_RATIO := 0.7
++# Atributos que o Composto transfere do doador para o receptor (ativo).
++const COMPOUND_STATS: Array[String] = ["max_hp", "attack", "defense", "mechanical_speed"]
++# Iônico: X_C = X_ânion + α·X_cátion, α = clamp(0,50 + 0,10·ΔE + 0,05·Z, 0,50, 0,95).
++const IONIC_ALPHA_BASE := 0.50
++const IONIC_ALPHA_PER_DELTA_E := 0.10
++const IONIC_ALPHA_PER_CHARGE := 0.05
++const IONIC_ALPHA_MIN := 0.50
++const IONIC_ALPHA_MAX := 0.95
++# Covalente: X_C = X_receptor + α·X_doador, α = 0,50 + 0,10·P (P = ordem da ligação).
++const COVALENT_ALPHA_BASE := 0.50
++const COVALENT_ALPHA_PER_ORDER := 0.10
+ const COMPOUND_RELEASE_HP_RATIO := 0.3
+ const COMPOUND_RELEASE_FALLBACK_ENERGY := 11
+ 
+@@ -63,6 +73,42 @@ static func _apply_mixture(a: CombatantState, b: CombatantState) -> void:
+ 	b.bond_partner_id = a.id
+ 
+ 
++static func ionic_alpha(delta_e: float, cation_charge: int) -> float:
++	return clampf(IONIC_ALPHA_BASE + IONIC_ALPHA_PER_DELTA_E * absf(delta_e) + IONIC_ALPHA_PER_CHARGE * float(cation_charge), IONIC_ALPHA_MIN, IONIC_ALPHA_MAX)
++
++
++static func covalent_alpha(bond_order: int) -> float:
++	return COVALENT_ALPHA_BASE + COVALENT_ALPHA_PER_ORDER * float(maxi(bond_order, 1))
++
++
++## α do doador para o receptor. Iônico: ΔE entre os elementos e carga Z do
++## cátion (doador não-metal entra com Z = 0). Covalente: ordem P da ligação entre
++## os dois elementos (se não houver ligação direta, a maior ordem do composto).
++static func donor_alpha(data: CompoundData, ionic: bool, receptor: AlchemonSheet, donor: AlchemonSheet) -> float:
++	if ionic:
++		var delta_e := absf(receptor.chem_electronegativity() - donor.chem_electronegativity())
++		return ionic_alpha(delta_e, _cation_charge(donor) if donor.is_metal() else 0)
++	return covalent_alpha(_bond_order_between(data, receptor, donor))
++
++
++static func _bond_order_between(data: CompoundData, a: AlchemonSheet, b: AlchemonSheet) -> int:
++	var best := 0
++	if data != null:
++		for bond in data.bonds:
++			var ka = bond.get("a")
++			var kb = bond.get("b")
++			if (ka == a.element_key() and kb == b.element_key()) or (ka == b.element_key() and kb == a.element_key()):
++				best = maxi(best, int(bond.get("order", 1)))
++	return best if best > 0 else _shared_pairs(data)
++
++
++static func _gain_from(donor: CombatantState, alpha: float) -> Dictionary:
++	var gain := {}
++	for stat in COMPOUND_STATS:
++		gain[stat] = maxi(int(floor(float(donor.get(stat)) * alpha + 0.000001)), 0)
++	return gain
++
++
+ static func _apply_compound_group(participants: Array[CombatantState], sheets: Array[AlchemonSheet]) -> Dictionary:
+ 	var has_metal := false
+ 	for s in sheets:
+@@ -70,11 +116,21 @@ static func _apply_compound_group(participants: Array[CombatantState], sheets: A
+ 			has_metal = true
+ 			break
+ 
+-	var active_index := _pick_active_index(participants, sheets, has_metal)
++	var data := CompoundRules.resolve(sheets)
++	var ionic := data.is_ionic() if data != null else has_metal
++
++	var active_index := _pick_active_index(participants, sheets, ionic)
+ 	if active_index == -1:
+ 		return {"kind": "cancelled", "reason": "no_valid_active_member"}
+ 	var active := participants[active_index]
++	var receptor_sheet := sheets[active_index]
++
++	# HP atual do receptor é preservado em proporção sobre o novo HP máximo.
++	var hp_ratio := 1.0
++	if active.max_hp > 0:
++		hp_ratio = clampf(float(active.hp) / float(active.max_hp), 0.0, 1.0)
+ 
++	var alphas := {}
+ 	for i in participants.size():
+ 		var c := participants[i]
+ 		c.bond_kind = COMPOUND
+@@ -84,27 +140,41 @@ static func _apply_compound_group(participants: Array[CombatantState], sheets: A
+ 		c.is_bond_inactive = true
+ 		if sheets[i].element_type == AlchemonType.Type.METAL:
+ 			c.is_bond_cation = true
+-		var hp_transfer := int(floor(c.max_hp * COMPOUND_TRANSFER_RATIO))
+-		var energy_transfer := int(floor(c.max_valence_electrons * COMPOUND_TRANSFER_RATIO))
+-		active.max_hp += hp_transfer
+-		active.hp += hp_transfer
+-		active.max_valence_electrons += energy_transfer
+-		active.valence_electrons += energy_transfer
++		var alpha := donor_alpha(data, ionic, receptor_sheet, sheets[i])
++		var gain := _gain_from(c, alpha)
++		c.compound_gain = gain
++		alphas[c.id] = alpha
++		active.max_hp += int(gain["max_hp"])
++		active.attack += int(gain["attack"])
++		active.defense += int(gain["defense"])
++		active.mechanical_speed += int(gain["mechanical_speed"])
++
++	active.hp = clampi(int(round(hp_ratio * float(active.max_hp))), 1 if active.alive else 0, active.max_hp)
+ 
+ 	var member_ids: Array[int] = []
+ 	for c in participants:
+ 		member_ids.append(c.id)
+ 
+-	return {"kind": "compound_formed", "active_id": active.id, "member_ids": member_ids}
++	return {"kind": "compound_formed", "active_id": active.id, "member_ids": member_ids, "alphas": alphas}
+ 
+ 
+-static func _pick_active_index(participants: Array[CombatantState], sheets: Array[AlchemonSheet], has_metal: bool) -> int:
++## Receptor (o que fica em campo). Iônico: o ânion (não-metal de maior nível).
++## Covalente: o mais eletronegativo (empate: maior nível).
++static func _pick_active_index(participants: Array[CombatantState], sheets: Array[AlchemonSheet], ionic: bool) -> int:
+ 	var best_index := -1
+ 	var best_level := -1
++	var best_en := -INF
+ 	for i in participants.size():
+-		if has_metal and sheets[i].element_type == AlchemonType.Type.METAL:
++		if ionic:
++			if sheets[i].element_type == AlchemonType.Type.METAL:
++				continue
++			if participants[i].level > best_level:
++				best_level = participants[i].level
++				best_index = i
+ 			continue
+-		if participants[i].level > best_level:
++		var en := sheets[i].chem_electronegativity()
++		if en > best_en + 0.0001 or (absf(en - best_en) <= 0.0001 and participants[i].level > best_level):
++			best_en = en
+ 			best_level = participants[i].level
+ 			best_index = i
+ 	return best_index
+@@ -126,6 +196,7 @@ static func release_compound_partners(state: CombatState, fallen: CombatantState
+ 		c.bond_partner_id = -1
+ 		c.is_bond_cation = false
+ 		c.is_bond_inactive = false
++		c.compound_gain = {}
+ 		c.hp = clampi(int(floor(c.max_hp * COMPOUND_RELEASE_HP_RATIO)), 1, c.max_hp)
+ 		c.max_valence_electrons = maxi(c.max_valence_electrons, energy)
+ 		c.valence_electrons = energy
+@@ -149,11 +220,13 @@ static func break_compound(state: CombatState, member: CombatantState) -> bool:
+ 		for c in group:
+ 			if c == active:
+ 				continue
+-			active.max_hp = maxi(active.max_hp - int(floor(c.max_hp * COMPOUND_TRANSFER_RATIO)), 1)
+-			active.max_valence_electrons = maxi(active.max_valence_electrons - int(floor(c.max_valence_electrons * COMPOUND_TRANSFER_RATIO)), 0)
++			var g: Dictionary = c.compound_gain
++			active.max_hp = maxi(active.max_hp - int(g.get("max_hp", 0)), 1)
++			active.attack = maxi(active.attack - int(g.get("attack", 0)), 1)
++			active.defense = maxi(active.defense - int(g.get("defense", 0)), 1)
++			active.mechanical_speed = maxi(active.mechanical_speed - int(g.get("mechanical_speed", 0)), 1)
+ 		if active.alive:
+ 			active.hp = clampi(active.hp, 1, active.max_hp)
+-		active.valence_electrons = clampi(active.valence_electrons, 0, active.max_valence_electrons)
+ 
+ 	var energy := COMPOUND_RELEASE_FALLBACK_ENERGY
+ 	if active != null and active.valence_electrons > 0:
+@@ -165,6 +238,7 @@ static func break_compound(state: CombatState, member: CombatantState) -> bool:
+ 		c.bond_partner_id = -1
+ 		c.is_bond_cation = false
+ 		c.is_bond_inactive = false
++		c.compound_gain = {}
+ 		if c == active or not was_inactive or not c.alive:
+ 			continue
+ 		c.hp = clampi(int(floor(c.max_hp * COMPOUND_RELEASE_HP_RATIO)), 1, c.max_hp)
+diff --git a/tcc-jogo/COMBAT/combat_controller_states.gd b/tcc-jogo/COMBAT/combat_controller_states.gd
+index 00d5a8c..460e818 100644
+--- a/tcc-jogo/COMBAT/combat_controller_states.gd
++++ b/tcc-jogo/COMBAT/combat_controller_states.gd
+@@ -306,6 +306,10 @@ func _resolve_round() -> void:
+ 			continue
+ 
+ 		ui.set_turn_text("Turno: %s" % _name_of(actor_id))
++		if actor.is_player and ObedienceRules.disobeys(actor.level, ObedienceRules.badges_earned(player_data)):
++			_say("%s não obedeceu! Falta uma insígnia para controlá-lo." % _name_of(actor_id))
++			await get_tree().create_timer(0.5).timeout
++			continue
+ 		var uses_bag_item := command.kind == "item" or command.kind == "capture"
+ 		if uses_bag_item and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
+ 			_say("Sem esse item na mochila! Acao cancelada.")
+diff --git a/tcc-jogo/COMBAT/combatant_state.gd b/tcc-jogo/COMBAT/combatant_state.gd
+index a8ff102..d7c9d5b 100644
+--- a/tcc-jogo/COMBAT/combatant_state.gd
++++ b/tcc-jogo/COMBAT/combatant_state.gd
+@@ -26,6 +26,8 @@ signal arena_hotter_than_myself(slot: int)
+ @export var bond_partner_id: int = -1
+ @export var is_bond_cation: bool = false
+ @export var is_bond_inactive: bool = false
++## O que este doador somou ao ativo do Composto (max_hp/attack/defense/mechanical_speed), p/ desfazer na cisão.
++@export var compound_gain: Dictionary = {}
+ @export var initiative: int = 0
+ @export var is_player: bool = false
+ @export var alive: bool = true
+diff --git a/tcc-jogo/COMBAT/obedience_rules.gd b/tcc-jogo/COMBAT/obedience_rules.gd
+new file mode 100644
+index 0000000..6bf3580
+--- /dev/null
++++ b/tcc-jogo/COMBAT/obedience_rules.gd
+@@ -0,0 +1,31 @@
++class_name ObedienceRules
++extends RefCounted
++## Obediência: a insígnia controla os Alchemons de alto nível.
++##
++## Até o nível OBEDIENCE_FREE_LEVEL (15) o Alchemon sempre obedece. A partir do
++## nível 16 ele só obedece sempre se o jogador tem pelo menos uma insígnia;
++## sem insígnia, ignora o comando com chance DISOBEY_CHANCE e perde a ação.
++
++const OBEDIENCE_FREE_LEVEL := 15
++const BADGES_TO_CONTROL_HIGH_LEVEL := 1
++const DISOBEY_CHANCE := 0.5
++
++
++static func badges_earned(player: PlayerData) -> int:
++	var n := 0
++	if player == null:
++		return n
++	for b in player.badges:
++		if b != null and b.earned:
++			n += 1
++	return n
++
++
++## true = nível alto e o jogador ainda não tem insígnias suficientes.
++static func is_uncontrolled(level: int, badges: int) -> bool:
++	return level > OBEDIENCE_FREE_LEVEL and badges < BADGES_TO_CONTROL_HIGH_LEVEL
++
++
++## `roll` em [0, 1): injetável nos testes.
++static func disobeys(level: int, badges: int, roll: float = randf()) -> bool:
++	return is_uncontrolled(level, badges) and roll < DISOBEY_CHANCE
+diff --git a/tcc-jogo/COMBAT/obedience_rules.gd.uid b/tcc-jogo/COMBAT/obedience_rules.gd.uid
+new file mode 100644
+index 0000000..6242480
+--- /dev/null
++++ b/tcc-jogo/COMBAT/obedience_rules.gd.uid
+@@ -0,0 +1 @@
++uid://cno2um6osi61j
+diff --git a/tcc-jogo/EXPLORATION/SCENES/Lab.tscn b/tcc-jogo/EXPLORATION/SCENES/Lab.tscn
+index e0cad97..a26bc99 100644
+--- a/tcc-jogo/EXPLORATION/SCENES/Lab.tscn
++++ b/tcc-jogo/EXPLORATION/SCENES/Lab.tscn
+@@ -118,5 +118,8 @@ mesh = SubResource("BoxMesh_uj048")
+ [node name="LabIn" type="Marker3D" parent="." unique_id=970622250]
+ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0034122467, 0, 2.8504162)
+ 
++[node name="LabRespawn" type="Marker3D" parent="." unique_id=1900000001]
++transform = Transform3D(0.70710677, 0, -0.70710677, 0, 1, 0, 0.70710677, 0, 0.70710677, 2.5261, 0, -3.4136)
++
+ [node name="PC" parent="." unique_id=1971466549 instance=ExtResource("4_pryhs")]
+ transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -6.8905363, 0, -2.0840569)
+diff --git a/tcc-jogo/EXPLORATION/npc.gd b/tcc-jogo/EXPLORATION/npc.gd
+index 73ee668..9450c88 100644
+--- a/tcc-jogo/EXPLORATION/npc.gd
++++ b/tcc-jogo/EXPLORATION/npc.gd
+@@ -60,6 +60,14 @@ func _process(delta: float) -> void:
+ 	if Input.is_action_just_pressed("ui_interact") and is_zone and not (figther and is_combat_zone):
+ 		talk()
+ 
++func _exit_tree() -> void:
++	# NPC liberado com diálogo/loja aberto (ex.: quick load, troca de fase) não
++	# pode deixar o jogador travado.
++	if _locked_player != null and is_instance_valid(_locked_player):
++		_locked_player.set_physics_process(true)
++	_locked_player = null
++
++
+ func _on_area_entered(area: Area3D) -> void:
+ 	if area.is_in_group("player"):
+ 		is_zone = true
+diff --git a/tcc-jogo/project.godot b/tcc-jogo/project.godot
+index d6f1636..0756090 100644
+--- a/tcc-jogo/project.godot
++++ b/tcc-jogo/project.godot
+@@ -162,6 +162,17 @@ move_right={
+ ]
+ }
+ 
++quick_save={
++"deadzone": 0.5,
++"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194336,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
++]
++}
++quick_load={
++"deadzone": 0.5,
++"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194340,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
++]
++}
++
+ [layer_names]
+ 
+ 3d_physics/layer_1="Player"
+diff --git a/tcc-jogo/scenes/scene_manager.gd b/tcc-jogo/scenes/scene_manager.gd
+index 8ca254a..8f2361a 100644
+--- a/tcc-jogo/scenes/scene_manager.gd
++++ b/tcc-jogo/scenes/scene_manager.gd
+@@ -9,20 +9,126 @@ extends Node
+ @export var first_spawn_point: String
+ 
+ var _current_level: Node3D
++var _toast: Label
++var _toast_id := 0
++var _respawn_pending := false
++
++const LAB_SCENE := "res://EXPLORATION/SCENES/Lab.tscn"
++# Marker3D no Lab, de frente para o Healer (NPC "Doutor").
++const LAB_RESPAWN_MARKER := "LabRespawn"
+ 
+ func _ready() -> void:
+ 	add_to_group("scene_manager")
++	_build_toast()
++	CombatSignal.battle_finished.connect(_on_battle_finished)
++	CombatSignal.combat_ended.connect(_on_combat_ended)
+ 	if _resume_saved_position(GameSession.take_resume_position()):
+ 		return
+ 	if first_level:
+ 		change_level(first_level, first_spawn_point)
+ 
+-func change_level(new_level_scene: PackedScene, spawn_point_name: String) -> void:
++func _unhandled_input(event: InputEvent) -> void:
++	if CombatSignal.in_combat:
++		return
++	if event.is_action_pressed("quick_save", false, true):
++		quick_save()
++		get_viewport().set_input_as_handled()
++	elif event.is_action_pressed("quick_load", false, true):
++		quick_load()
++		get_viewport().set_input_as_handled()
++
++
++func quick_save() -> void:
++	var ok := GameSession.save_game() == OK
++	_show_toast("Jogo salvo (F5)." if ok else "Falha ao salvar!", ok)
++
++
++func quick_load() -> void:
++	if not GameSession.has_save():
++		_show_toast("Nenhum save para carregar.", false)
++		return
++	if GameSession.load_game() != OK:
++		_show_toast("Falha ao carregar!", false)
++		return
++	var pos := GameSession.take_resume_position()
++	if not _resume_saved_position(pos):
++		push_warning("Quick load: save sem posição, mantendo posição atual.")
++	_unlock_player()
++	_show_toast("Jogo carregado (F9).", true)
++
++
++## Quick load / troca de fase pode acontecer com o jogador travado por um
++## diálogo, loja ou curandeiro aberto. Destrava e zera o movimento.
++func _unlock_player() -> void:
++	player.velocity = Vector3.ZERO
++	player.set_physics_process(true)
++	camera_rig.set_physics_process(true)
++
++
++func _on_battle_finished(player_won: bool, _was_trainer: bool) -> void:
++	_respawn_pending = not player_won
++
++
++func _on_combat_ended() -> void:
++	if not _respawn_pending:
++		return
++	_respawn_pending = false
++	_respawn_when_free()
++
++
++# Espera o combate terminar de vez (o jogador volta p/ a posição de origem por
++# tween) antes de teleportar, senão o tween desfaz o respawn.
++func _respawn_when_free() -> void:
++	while CombatSignal.in_combat:
++		await get_tree().process_frame
++	respawn_at_lab()
++
++
++## Derrota: cura o time e leva o jogador ao Lab, de frente para o Healer.
++func respawn_at_lab() -> void:
++	var scene := load(LAB_SCENE) as PackedScene
++	if scene == null:
++		push_error("Respawn: cena do Lab não encontrada (%s)." % LAB_SCENE)
++		return
++	GameSession.heal_party()
++	change_level(scene, LAB_RESPAWN_MARKER, true)
++	var spawn := _current_level.get_node_or_null(LAB_RESPAWN_MARKER) as Node3D
++	var mesh := player.get_node_or_null("Mesh") as Node3D
++	if spawn != null and mesh != null:
++		mesh.global_rotation.y = spawn.global_rotation.y
++	_unlock_player()
++	_show_toast("Você desmaiou e acordou no Laboratório.", true)
++
++
++func _build_toast() -> void:
++	var layer := CanvasLayer.new()
++	layer.layer = 20
++	add_child(layer)
++	_toast = Label.new()
++	_toast.visible = false
++	_toast.add_theme_font_size_override("font_size", 28)
++	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 24)
++	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
++	layer.add_child(_toast)
++
++
++func _show_toast(text: String, ok: bool) -> void:
++	_toast.text = text
++	_toast.add_theme_color_override("font_color", Color(1, 0.85, 0.3) if ok else Color(1, 0.4, 0.4))
++	_toast.visible = true
++	_toast_id += 1
++	var id := _toast_id
++	await get_tree().create_timer(1.5, true).timeout
++	if id == _toast_id:
++		_toast.visible = false
++
++
++func change_level(new_level_scene: PackedScene, spawn_point_name: String, immediate := false) -> void:
+ 	if new_level_scene == null:
+ 		push_error("Cena destino não configurada para porta.")
+ 		return
+ 
+-	var new_level := _swap_level(new_level_scene)
++	var new_level := _swap_level(new_level_scene, immediate)
+ 	var spawn := new_level.get_node_or_null(spawn_point_name) as Marker3D
+ 
+ 	if spawn == null:
+@@ -41,7 +147,7 @@ func _resume_saved_position(pos: Dictionary) -> bool:
+ 		push_warning("Saved level '%s' not found, starting at the first level." % path)
+ 		return false
+ 
+-	_swap_level(scene)
++	_swap_level(scene, true)
+ 	_place_player(Transform3D(Basis(), Vector3(pos["x"], pos["y"], pos["z"])))
+ 	var mesh := player.get_node_or_null("Mesh") as Node3D
+ 	if mesh != null:
+@@ -61,8 +167,14 @@ func get_save_position() -> Dictionary:
+ 	}
+ 
+ 
+-func _swap_level(new_level_scene: PackedScene) -> Node3D:
++## immediate = tira o nível antigo da árvore na hora (quick load, respawn): evita
++## dois níveis vivos no mesmo frame (nomes duplicados, Areas sobrepostas).
++## Não usar de dentro de callback de física (portas): lá só queue_free é seguro.
++func _swap_level(new_level_scene: PackedScene, immediate := false) -> Node3D:
+ 	if _current_level:
++		if immediate and _current_level.get_parent() != null:
++			_silence_areas(_current_level)
++			_current_level.get_parent().remove_child(_current_level)
+ 		_current_level.queue_free()
+ 	var new_level := new_level_scene.instantiate() as Node3D
+ 	level_holder.add_child(new_level)
+@@ -70,6 +182,15 @@ func _swap_level(new_level_scene: PackedScene) -> Node3D:
+ 	return new_level
+ 
+ 
++# Areas com eventos pendentes sendo destruídas fazem o Jolt acusar erro
++# (ref_count <= 0). Desliga o monitoramento antes de remover o nível.
++func _silence_areas(root: Node) -> void:
++	for n in root.find_children("*", "Area3D", true, false):
++		var a := n as Area3D
++		a.monitoring = false
++		a.monitorable = false
++
++
+ func _place_player(xform: Transform3D) -> void:
+ 	player.velocity = Vector3.ZERO
+ 	player.global_transform = xform
+diff --git a/tcc-jogo/test/test_compound_formulas.gd b/tcc-jogo/test/test_compound_formulas.gd
+new file mode 100644
+index 0000000..326c8cf
+--- /dev/null
++++ b/tcc-jogo/test/test_compound_formulas.gd
+@@ -0,0 +1,125 @@
++extends GdUnitTestSuite
++## Atributos do Composto (HP máx, Ataque, Defesa, Velocidade):
++##   iônico:    X_C = X_ânion + α·X_cátion, α = clamp(0,50 + 0,10·ΔE + 0,05·Z, 0,50, 0,95)
++##   covalente: X_C = X_receptor + α·X_doador, α = 0,50 + 0,10·P
++
++var db: AlchemonDatabase
++
++
++func before_test() -> void:
++	db = AlchemonDatabase.new()
++
++
++func _sheet(id: int, number: int, etype: AlchemonType.Type, valence: int, en: float) -> AlchemonSheet:
++	var s := AlchemonSheet.new("E%d" % id, 100, id)
++	s.atomic_number = number
++	s.atomic_mass = number * 2
++	s.element_type = etype
++	s.valence_electrons = valence
++	s.electronegativity = en
++	s.melting_point = 100.0
++	s.boiling_point = 200.0
++	db.alchemons.append(s)
++	return s
++
++
++func _c(id: int, sheet: AlchemonSheet, level: int, hp: int, atk: int, df: int, spd: int, slot: int) -> CombatantState:
++	var c := CombatantState.new(id, sheet.id, hp, true, slot, 10)
++	c.level = level
++	c.attack = atk
++	c.defense = df
++	c.mechanical_speed = spd
++	return c
++
++
++func _state(list: Array) -> CombatState:
++	var st := CombatState.new()
++	for c in list:
++		st.combatants[c.id] = c
++		st.player_ids.append(c.id)
++	return st
++
++
++func test_alpha_ionic_clamps() -> void:
++	assert_float(BondRules.ionic_alpha(3.0, 1)).is_equal_approx(0.5 + 0.3 + 0.05, 0.0001)
++	assert_float(BondRules.ionic_alpha(0.0, 0)).is_equal_approx(0.5, 0.0001)
++	assert_float(BondRules.ionic_alpha(10.0, 3)).is_equal_approx(0.95, 0.0001)
++
++
++func test_alpha_covalent_by_bond_order() -> void:
++	assert_float(BondRules.covalent_alpha(1)).is_equal_approx(0.6, 0.0001)
++	assert_float(BondRules.covalent_alpha(2)).is_equal_approx(0.7, 0.0001)
++	assert_float(BondRules.covalent_alpha(3)).is_equal_approx(0.8, 0.0001)
++
++
++func test_ionic_li_f_anion_receives_cation_share() -> void:
++	var li_s := _sheet(1, 3, AlchemonType.Type.METAL, 1, 0.98)
++	var f_s := _sheet(2, 9, AlchemonType.Type.AMETAL, 7, 3.98)
++	var li := _c(1, li_s, 5, 50, 20, 30, 40, 0)
++	var f := _c(2, f_s, 10, 100, 60, 50, 70, 1)
++	var st := _state([li, f])
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [li, f], [li_s, f_s], st)
++	assert_str(res["kind"]).is_equal("compound_formed")
++	assert_int(int(res["active_id"])).is_equal(2)
++	# ΔE = 3,00 ; Z(Li) = 1 -> α = 0,5 + 0,3 + 0,05 = 0,85
++	assert_int(f.max_hp).is_equal(100 + int(floor(50 * 0.85)))
++	assert_int(f.attack).is_equal(60 + int(floor(20 * 0.85)))
++	assert_int(f.defense).is_equal(50 + int(floor(30 * 0.85)))
++	assert_int(f.mechanical_speed).is_equal(70 + int(floor(40 * 0.85)))
++	assert_int(f.hp).is_equal(f.max_hp)
++	# Doador não muda.
++	assert_int(li.max_hp).is_equal(50)
++	assert_int(li.attack).is_equal(20)
++
++
++func test_break_compound_restores_receptor_stats() -> void:
++	var li_s := _sheet(1, 3, AlchemonType.Type.METAL, 1, 0.98)
++	var f_s := _sheet(2, 9, AlchemonType.Type.AMETAL, 7, 3.98)
++	var li := _c(1, li_s, 5, 50, 20, 30, 40, 0)
++	var f := _c(2, f_s, 10, 100, 60, 50, 70, 1)
++	var st := _state([li, f])
++	BondRules.apply_bond(BondRules.COMPOUND, [li, f], [li_s, f_s], st)
++	assert_bool(BondRules.break_compound(st, f)).is_true()
++	assert_int(f.max_hp).is_equal(100)
++	assert_int(f.attack).is_equal(60)
++	assert_int(f.defense).is_equal(50)
++	assert_int(f.mechanical_speed).is_equal(70)
++	assert_int(li.compound_gain.size()).is_equal(0)
++
++
++func test_covalent_most_electronegative_is_receptor_and_order_sets_alpha() -> void:
++	# O=O (ordem 2): empate de eletronegatividade -> maior nível recebe; α = 0,70.
++	var o_s := _sheet(3, 8, AlchemonType.Type.AMETAL, 6, 3.44)
++	var a := _c(1, o_s, 5, 50, 20, 30, 40, 0)
++	var b := _c(2, o_s, 10, 100, 60, 50, 70, 1)
++	var st := _state([a, b])
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [a, b], [o_s, o_s], st)
++	assert_str(res["kind"]).is_equal("compound_formed")
++	assert_int(int(res["active_id"])).is_equal(2)
++	assert_int(b.max_hp).is_equal(100 + int(floor(50 * 0.7)))
++	assert_int(b.attack).is_equal(60 + int(floor(20 * 0.7)))
++
++
++func test_covalent_less_electronegative_donates() -> void:
++	# Cl (3,16) + F (3,98): ΔE < 2 -> covalente. F é o receptor mesmo com nível menor.
++	var cl_s := _sheet(4, 17, AlchemonType.Type.AMETAL, 7, 3.16)
++	var f_s := _sheet(2, 9, AlchemonType.Type.AMETAL, 7, 3.98)
++	var cl := _c(1, cl_s, 12, 80, 40, 40, 40, 0)
++	var f := _c(2, f_s, 5, 60, 30, 30, 30, 1)
++	var st := _state([cl, f])
++	var res := BondRules.apply_bond(BondRules.COMPOUND, [cl, f], [cl_s, f_s], st)
++	assert_str(res["kind"]).is_equal("compound_formed")
++	assert_int(int(res["active_id"])).is_equal(2)
++	assert_int(f.max_hp).is_equal(60 + int(floor(80 * 0.6)))
++
++
++func test_fusion_keeps_receptor_hp_percentage() -> void:
++	var li_s := _sheet(1, 3, AlchemonType.Type.METAL, 1, 0.98)
++	var f_s := _sheet(2, 9, AlchemonType.Type.AMETAL, 7, 3.98)
++	var li := _c(1, li_s, 5, 50, 20, 30, 40, 0)
++	var f := _c(2, f_s, 10, 100, 60, 50, 70, 1)
++	f.hp = 50 # 50 % do HP máximo
++	var st := _state([li, f])
++	BondRules.apply_bond(BondRules.COMPOUND, [li, f], [li_s, f_s], st)
++	assert_int(f.max_hp).is_equal(142)
++	assert_int(f.hp).is_equal(71)
+diff --git a/tcc-jogo/test/test_compound_formulas.gd.uid b/tcc-jogo/test/test_compound_formulas.gd.uid
+new file mode 100644
+index 0000000..1dc7d65
+--- /dev/null
++++ b/tcc-jogo/test/test_compound_formulas.gd.uid
+@@ -0,0 +1 @@
++uid://cst18sipcqws8
+diff --git a/tcc-jogo/test/test_compound_thermal.gd b/tcc-jogo/test/test_compound_thermal.gd
+index 78b557b..dcb6a62 100644
+--- a/tcc-jogo/test/test_compound_thermal.gd
++++ b/tcc-jogo/test/test_compound_thermal.gd
+@@ -144,11 +144,12 @@ func test_attack_changes_compound_temperature_not_members() -> void:
+ 	assert_float(st.get_combatant(2).temperature).is_equal_approx(273.15, 0.001)
+ 
+ 
++# HP do ativo = 100 + floor(50 · α); α(Li,F) = 0,5 + 0,10·3,00 + 0,05·1 = 0,85 -> 142.
+ func test_below_melting_stays_solid_without_damage() -> void:
+ 	var st := _ionic_pair()
+ 	_hit(st, 100.0)
+ 	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.SOLIDO)
+-	assert_int(st.get_combatant(2).hp).is_equal(135)
++	assert_int(st.get_combatant(2).hp).is_equal(142)
+ 
+ 
+ func test_fusion_damages_active_only_and_keeps_bond_and_stats() -> void:
+@@ -157,17 +158,22 @@ func test_fusion_damages_active_only_and_keeps_bond_and_stats() -> void:
+ 	var cation := st.get_combatant(1)
+ 	var max_hp := active.max_hp
+ 	var cation_hp := cation.hp
++	# Atributos já com a transferência do Composto (α = 0,85 sobre o cátion: 50/60/70).
++	var attack := active.attack
++	var defense := active.defense
++	var speed := active.mechanical_speed
++	assert_int(attack).is_equal(50 + int(floor(50 * 0.85)))
+ 	_hit(st, 600.0) # 310 K > 300
+ 	var expected := ThermalRules.transition_damage(AlchemonSheet.SOLIDO, AlchemonSheet.LIQUIDO, max_hp, 10)
+ 	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.LIQUIDO)
+ 	assert_str(_th(st).previous_physical_state).is_equal(AlchemonSheet.SOLIDO)
+-	assert_int(active.hp).is_equal(135 - expected)
++	assert_int(active.hp).is_equal(142 - expected)
+ 	assert_int(cation.hp).is_equal(cation_hp)
+ 	assert_str(active.bond_kind).is_equal(BondRules.COMPOUND)
+ 	assert_int(active.max_hp).is_equal(max_hp)
+-	assert_int(active.attack).is_equal(50)
+-	assert_int(active.defense).is_equal(60)
+-	assert_int(active.mechanical_speed).is_equal(70)
++	assert_int(active.attack).is_equal(attack)
++	assert_int(active.defense).is_equal(defense)
++	assert_int(active.mechanical_speed).is_equal(speed)
+ 
+ 
+ func test_boiling_condensation_solidification() -> void:
+@@ -176,24 +182,24 @@ func test_boiling_condensation_solidification() -> void:
+ 	_th(st).reset_temperature(350.0) # líquido
+ 	_hit(st, 600.0) # 410 K => ebulição
+ 	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.GASOSO)
+-	assert_int(active.hp).is_equal(135 - ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 135, 10))
++	assert_int(active.hp).is_equal(142 - ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 142, 10))
+ 	var hp := active.hp
+ 	_hit(st, -200.0) # 390 K => condensação
+ 	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.LIQUIDO)
+-	assert_int(active.hp).is_equal(hp - ThermalRules.transition_damage(AlchemonSheet.GASOSO, AlchemonSheet.LIQUIDO, 135, 10))
++	assert_int(active.hp).is_equal(hp - ThermalRules.transition_damage(AlchemonSheet.GASOSO, AlchemonSheet.LIQUIDO, 142, 10))
+ 	hp = active.hp
+ 	_hit(st, -1000.0) # 290 K => solidificação
+ 	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.SOLIDO)
+-	assert_int(active.hp).is_equal(hp - ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.SOLIDO, 135, 10))
++	assert_int(active.hp).is_equal(hp - ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.SOLIDO, 142, 10))
+ 
+ 
+ func test_one_attack_crossing_two_phases_applies_both_transitions() -> void:
+ 	var st := _ionic_pair()
+ 	_hit(st, 1500.0) # 250 -> 400 K: fusão + ebulição
+ 	assert_str(_th(st).physical_state).is_equal(AlchemonSheet.GASOSO)
+-	var total := ThermalRules.transition_damage(AlchemonSheet.SOLIDO, AlchemonSheet.LIQUIDO, 135, 10) \
+-		+ ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 135, 10)
+-	assert_int(st.get_combatant(2).hp).is_equal(135 - total)
++	var total := ThermalRules.transition_damage(AlchemonSheet.SOLIDO, AlchemonSheet.LIQUIDO, 142, 10) \
++		+ ThermalRules.transition_damage(AlchemonSheet.LIQUIDO, AlchemonSheet.GASOSO, 142, 10)
++	assert_int(st.get_combatant(2).hp).is_equal(142 - total)
+ 
+ 
+ func test_arena_temperature_does_not_affect_compound() -> void:
+@@ -202,7 +208,7 @@ func test_arena_temperature_does_not_affect_compound() -> void:
+ 	CombatResultApplier._apply_arena_heat(st, db)
+ 	assert_str(st.get_combatant(2).bond_kind).is_equal(BondRules.COMPOUND)
+ 	assert_float(_th(st).temperature).is_equal_approx(250.0, 0.001)
+-	assert_int(st.get_combatant(2).hp).is_equal(135)
++	assert_int(st.get_combatant(2).hp).is_equal(142)
+ 
+ 
+ # --- cisão -------------------------------------------------------------------
+diff --git a/tcc-jogo/test/test_obedience.gd b/tcc-jogo/test/test_obedience.gd
+new file mode 100644
+index 0000000..8fb1713
+--- /dev/null
++++ b/tcc-jogo/test/test_obedience.gd
+@@ -0,0 +1,26 @@
++extends GdUnitTestSuite
++## A insígnia controla a obediência dos Alchemons de nível 16+.
++
++
++func test_level_15_always_obeys() -> void:
++	assert_bool(ObedienceRules.disobeys(15, 0, 0.0)).is_false()
++
++
++func test_level_16_without_badge_can_disobey() -> void:
++	assert_bool(ObedienceRules.disobeys(16, 0, 0.0)).is_true()
++	assert_bool(ObedienceRules.disobeys(16, 0, 0.99)).is_false()
++
++
++func test_badge_controls_high_level() -> void:
++	assert_bool(ObedienceRules.disobeys(40, 1, 0.0)).is_false()
++
++
++func test_badges_earned_counts_only_earned() -> void:
++	var p := PlayerData.new()
++	var a := BadgeData.new()
++	a.earned = true
++	var b := BadgeData.new()
++	p.badges.append(a)
++	p.badges.append(b)
++	assert_int(ObedienceRules.badges_earned(p)).is_equal(1)
++	assert_int(ObedienceRules.badges_earned(null)).is_equal(0)
+diff --git a/tcc-jogo/test/test_obedience.gd.uid b/tcc-jogo/test/test_obedience.gd.uid
+new file mode 100644
+index 0000000..136f453
+--- /dev/null
++++ b/tcc-jogo/test/test_obedience.gd.uid
+@@ -0,0 +1 @@
++uid://bryhns8xpwsde
