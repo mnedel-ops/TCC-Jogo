@@ -214,7 +214,8 @@ func test_center_heal_refills_hp_and_energy_and_revives() -> void:
 	var state := _build([a])
 	var c := state.get_combatant(state.player_ids[0])
 	assert_int(c.hp).is_equal(c.max_hp)
-	assert_int(c.valence_electrons).is_equal(tpl.max_valence_electrons)
+	assert_int(c.valence_electrons).is_equal(AlchemonFormulas.compute_stat(tpl.energia_de_acao, a.individual_value, a.level))
+	assert_int(c.max_valence_electrons).is_equal(c.valence_electrons)
 
 
 func test_capture_keeps_the_individual_that_was_fought() -> void:

@@ -30,7 +30,10 @@ static func level_up(combatant: CombatantState, template: AlchemonSheet, levels:
 		combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, iv, combatant.level)
 		combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, iv, combatant.level)
 		var new_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, iv, combatant.level)
-		combatant.action_energy += new_energy_max - old_energy_max
+		var energy_gain := new_energy_max - old_energy_max
+		combatant.action_energy += energy_gain
+		combatant.max_valence_electrons += energy_gain
+		combatant.valence_electrons += energy_gain
 		var hp_gain := AlchemonFormulas.compute_stat(template.base_hp, iv, combatant.level) - old_hp_max
 		combatant.max_hp += hp_gain
 		if combatant.hp > 0:

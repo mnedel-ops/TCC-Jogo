@@ -136,7 +136,7 @@ static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array
 
 static func _combatant_from(id: int, instance: AlchemonInstance, template: AlchemonSheet, is_player: bool, slot: int) -> CombatantState:
 	var stats := instance.compute_stats(template)
-	var c := CombatantState.new(id, instance.species_id, stats.max_hp, is_player, slot, template.max_valence_electrons)
+	var c := CombatantState.new(id, instance.species_id, stats.max_hp, is_player, slot, stats.action_energy)
 	c.source_uid = instance.uid
 	c.level = instance.level
 	c.experience = instance.experience

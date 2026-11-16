@@ -321,7 +321,7 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 	var defense: int = stats.defense
 	var speed: int = stats.mechanical_speed
 	var energy: int = stats.action_energy
-	var max_action_energy: int = s.max_valence_electrons
+	var max_action_energy: int = energy
 	var action_energy_now := inst.energy_or_full(max_action_energy)
 
 	var rows: Array = [

@@ -7,13 +7,13 @@ const REVIVE_FAINTED_ON_BATTLE_START := false
 const PERSIST_ENERGY := true
 
 
-static func write_back(inst: AlchemonInstance, c: CombatantState, template: AlchemonSheet) -> void:
+static func write_back(inst: AlchemonInstance, c: CombatantState, _template: AlchemonSheet) -> void:
 	inst.level = c.level
 	inst.experience = c.experience
 	inst.attack_ids.assign(c.attack_ids)
-	inst.current_hp = clampi(c.hp, 0, inst.max_hp_for(template))
+	inst.current_hp = clampi(c.hp, 0, inst.max_hp_for(_template))
 	if PERSIST_ENERGY:
-		inst.current_energy = clampi(c.valence_electrons, 0, template.max_valence_electrons)
+		inst.current_energy = maxi(c.valence_electrons, 0)
 
 
 static func apply_battle(party: Array[AlchemonInstance], state: CombatState, database: AlchemonDatabase) -> void:

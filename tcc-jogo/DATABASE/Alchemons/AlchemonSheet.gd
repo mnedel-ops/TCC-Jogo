@@ -44,8 +44,9 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
 @export var base_mechanical_speed: int = 70
 ## Energia de ação base. Escala a energia de ação da criatura com o nível.
 @export var energia_de_acao: int = 8
-## Limite de energia gasta pelos golpes no combate (Mistura/Composto somam nele).
-## Não é a valência química: ver valence_electrons.
+## Fallback da valência química quando valence_electrons = -1.
+## NÃO limita mais a energia de ação no combate: o teto vem de energia_de_acao
+## (escalada por IV e nível). Mistura/Composto continuam somando no teto da batalha.
 @export var max_valence_electrons: int = 8
 ## XP concedida a quem derrota ou captura esta espécie.
 @export var xp_reward: int = 100

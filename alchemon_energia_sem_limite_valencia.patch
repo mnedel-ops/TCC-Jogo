@@ -1,0 +1,92 @@
+diff --git a/tcc-jogo/COMBAT/alchemon_growth.gd b/tcc-jogo/COMBAT/alchemon_growth.gd
+index b0aebee..66ae8c5 100644
+--- a/tcc-jogo/COMBAT/alchemon_growth.gd
++++ b/tcc-jogo/COMBAT/alchemon_growth.gd
+@@ -30,7 +30,10 @@ static func level_up(combatant: CombatantState, template: AlchemonSheet, levels:
+ 		combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, iv, combatant.level)
+ 		combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, iv, combatant.level)
+ 		var new_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, iv, combatant.level)
+-		combatant.action_energy += new_energy_max - old_energy_max
++		var energy_gain := new_energy_max - old_energy_max
++		combatant.action_energy += energy_gain
++		combatant.max_valence_electrons += energy_gain
++		combatant.valence_electrons += energy_gain
+ 		var hp_gain := AlchemonFormulas.compute_stat(template.base_hp, iv, combatant.level) - old_hp_max
+ 		combatant.max_hp += hp_gain
+ 		if combatant.hp > 0:
+diff --git a/tcc-jogo/COMBAT/combat_state_factory.gd b/tcc-jogo/COMBAT/combat_state_factory.gd
+index 0276a20..0cf1d1c 100644
+--- a/tcc-jogo/COMBAT/combat_state_factory.gd
++++ b/tcc-jogo/COMBAT/combat_state_factory.gd
+@@ -136,7 +136,7 @@ static func _try_bond(state: CombatState, database: AlchemonDatabase, ids: Array
+ 
+ static func _combatant_from(id: int, instance: AlchemonInstance, template: AlchemonSheet, is_player: bool, slot: int) -> CombatantState:
+ 	var stats := instance.compute_stats(template)
+-	var c := CombatantState.new(id, instance.species_id, stats.max_hp, is_player, slot, template.max_valence_electrons)
++	var c := CombatantState.new(id, instance.species_id, stats.max_hp, is_player, slot, stats.action_energy)
+ 	c.source_uid = instance.uid
+ 	c.level = instance.level
+ 	c.experience = instance.experience
+diff --git a/tcc-jogo/COMBAT/creature_sync.gd b/tcc-jogo/COMBAT/creature_sync.gd
+index a56a206..1403e78 100644
+--- a/tcc-jogo/COMBAT/creature_sync.gd
++++ b/tcc-jogo/COMBAT/creature_sync.gd
+@@ -7,13 +7,13 @@ const REVIVE_FAINTED_ON_BATTLE_START := false
+ const PERSIST_ENERGY := true
+ 
+ 
+-static func write_back(inst: AlchemonInstance, c: CombatantState, template: AlchemonSheet) -> void:
++static func write_back(inst: AlchemonInstance, c: CombatantState, _template: AlchemonSheet) -> void:
+ 	inst.level = c.level
+ 	inst.experience = c.experience
+ 	inst.attack_ids.assign(c.attack_ids)
+ 	inst.current_hp = clampi(c.hp, 0, inst.max_hp_for(template))
+ 	if PERSIST_ENERGY:
+-		inst.current_energy = clampi(c.valence_electrons, 0, template.max_valence_electrons)
++		inst.current_energy = maxi(c.valence_electrons, 0)
+ 
+ 
+ static func apply_battle(party: Array[AlchemonInstance], state: CombatState, database: AlchemonDatabase) -> void:
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+index 623d1d9..5c05716 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+@@ -44,8 +44,9 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
+ @export var base_mechanical_speed: int = 70
+ ## Energia de ação base. Escala a energia de ação da criatura com o nível.
+ @export var energia_de_acao: int = 8
+-## Limite de energia gasta pelos golpes no combate (Mistura/Composto somam nele).
+-## Não é a valência química: ver valence_electrons.
++## Fallback da valência química quando valence_electrons = -1.
++## NÃO limita mais a energia de ação no combate: o teto vem de energia_de_acao
++## (escalada por IV e nível). Mistura/Composto continuam somando no teto da batalha.
+ @export var max_valence_electrons: int = 8
+ ## XP concedida a quem derrota ou captura esta espécie.
+ @export var xp_reward: int = 100
+diff --git a/tcc-jogo/INTERFACES/pages/alchemons_page.gd b/tcc-jogo/INTERFACES/pages/alchemons_page.gd
+index b2087af..6517a10 100644
+--- a/tcc-jogo/INTERFACES/pages/alchemons_page.gd
++++ b/tcc-jogo/INTERFACES/pages/alchemons_page.gd
+@@ -321,7 +321,7 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
+ 	var defense: int = stats.defense
+ 	var speed: int = stats.mechanical_speed
+ 	var energy: int = stats.action_energy
+-	var max_action_energy: int = s.max_valence_electrons
++	var max_action_energy: int = energy
+ 	var action_energy_now := inst.energy_or_full(max_action_energy)
+ 
+ 	var rows: Array = [
+diff --git a/tcc-jogo/test/test_creature_persistence.gd b/tcc-jogo/test/test_creature_persistence.gd
+index fc9e7a2..9a74f2f 100644
+--- a/tcc-jogo/test/test_creature_persistence.gd
++++ b/tcc-jogo/test/test_creature_persistence.gd
+@@ -214,7 +214,8 @@ func test_center_heal_refills_hp_and_energy_and_revives() -> void:
+ 	var state := _build([a])
+ 	var c := state.get_combatant(state.player_ids[0])
+ 	assert_int(c.hp).is_equal(c.max_hp)
+-	assert_int(c.valence_electrons).is_equal(tpl.max_valence_electrons)
++	assert_int(c.valence_electrons).is_equal(AlchemonFormulas.compute_stat(tpl.energia_de_acao, a.individual_value, a.level))
++	assert_int(c.max_valence_electrons).is_equal(c.valence_electrons)
+ 
+ 
+ func test_capture_keeps_the_individual_that_was_fought() -> void:
