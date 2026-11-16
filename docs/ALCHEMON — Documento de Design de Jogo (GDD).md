@@ -1,11 +1,8 @@
 # ALCHEMON — Documento de Design de Jogo (GDD)
 
 **Versão:** atualização de estado do protótipo  
-**Referência de código:** repositório `mnedel-ops/TCC-Jogo`, branch `main`, snapshot consultado em 16/11/2026  
-**Commit identificado na indexação do repositório:** `ac112fe8094e117201e857bd6a93d7ad74999f22`  
 **Engine declarada no GDD existente:** Godot 4.6, renderer GL Compatibility e física Jolt.
 
-> Este documento registra o comportamento encontrado no código consultado. A existência de uma regra em um arquivo não comprova, por si só, que todo o fluxo esteja validado visualmente em uma partida. Os estados abaixo distinguem implementação de integração e de funcionalidades ainda planejadas.
 
 ## Legenda de status
 
