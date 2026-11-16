@@ -22,19 +22,19 @@
 | Encontros | [Parcial] | Encontros por tempo e áreas de colisão; não por passos ou cone de visão. |
 | Combate 2×2 por turnos | [OK] | Máquina de fases, iniciativa, comandos, resolução e encerramento. |
 | Tipos e efetividade | [OK] | Ciclo Metal > Metaloide > Ametal > Metal; multiplicadores 1,5 / 0,66 / 1,0. |
-| Atributos e IV | [Parcial] | Fórmulas de atributos e IV implementados; correspondência química dos atributos-base ainda não consolidada. |
+| Atributos e IV | [OK] | Fórmulas de atributos e IV implementados |
 | Personalidades | [Extra] | Modificadores de +10% e −10% em atributos. |
 | Temperatura e estados físicos | [Parcial] | Aquecimento do alvo, transições, dano térmico e estados do Composto; a temperatura global da arena não propaga o calor para todos os combatentes. |
 | Compostos iônicos e covalentes | [Parcial] | Regras químicas suportam grupos de até quatro Alchemons e até quatro elementos distintos; transferência de atributos ainda usa 70% fixos. |
 | Captura | [Parcial] | Fórmula e preservação da instância implementadas; métodos de captura ainda são categorias provisórias. |
-| Ataques por nível | [OK]/[Parcial] | Desbloqueio por nível e limite de quatro golpes implementados; a escolha de substituição depende da interface. |
+| Ataques por nível | [OK]/[Parcial] | Desbloqueio por nível e limite de quatro golpes implementados. |
 | XP e níveis | [OK] | Curva de XP acumulada N³, recompensa por derrota e distribuição ao grupo vivo do lado que venceu a ação. |
 | Insígnias e obediência | [Parcial] | Insígnia do Metal é concedida; regras de obediência não foram identificadas. |
 | Economia e loja | [OK]/[Parcial] | Compra e venda implementadas; itens e valores ainda precisam de balanceamento. |
-| PC e armazenamento | [Parcial] | Troca de equipe, armazenamento e configuração de vínculos; sem caixas organizadas. |
+| PC e armazenamento | [Parcial] | Troca de equipe, armazenamento e configuração de vínculos. |
 | Cura | [Parcial] | NPC Enfermeiro restaura HP e energia; não há cena de hospital ou teleporte após derrota. |
 | Salvamento | [OK] | JSON, gravação atômica, backup, posição, inventário e progresso de NPCs. |
-| Menus | [Parcial] | Menu unificado e páginas funcionais; opções previstas originalmente não estão todas presentes. |
+| Menus | [OK] | Menu unificado e páginas funcionais. |
 | Testes automatizados | [Extra] | Há suítes GdUnit4. A contagem de testes diverge entre o GDD e a documentação técnica e precisa ser reconciliada. |
 
 ---
