@@ -321,12 +321,15 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
 	var defense: int = stats.defense
 	var speed: int = stats.mechanical_speed
 	var energy: int = stats.action_energy
+	var max_action_energy: int = s.max_valence_electrons
+	var action_energy_now := inst.energy_or_full(max_action_energy)
 
 	var rows: Array = [
 		["Tipo", AlchemonType.type_name(s.element_type)],
 		["Nivel", str(lvl)],
 		["XP", "%d / %d" % [inst.experience, AlchemonGrowth.xp_to_next(inst.level)]],
 		["Massa atômica", "%d / %d" % [hp, max_hp]],
+		["Energia de ação", "%d / %d" % [action_energy_now, max_action_energy]],
 		["Eletronegatividade", str(attack)],
 		["Energia de ionização", str(defense)],
 		["Velocidade cinética", str(speed)],

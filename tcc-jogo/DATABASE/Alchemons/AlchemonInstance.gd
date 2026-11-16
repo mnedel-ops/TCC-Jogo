@@ -55,6 +55,10 @@ func hp_or_full(max_hp: int) -> int:
 	return max_hp if current_hp == UNSET else clampi(current_hp, 0, max_hp)
 
 
+func energy_or_full(max_energy: int) -> int:
+	return max_energy if current_energy == UNSET else clampi(current_energy, 0, max_energy)
+
+
 func is_fainted() -> bool:
 	return current_hp == 0
 

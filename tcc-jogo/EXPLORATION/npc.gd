@@ -37,15 +37,40 @@ var _ui_closed_frame: int = -1
 var alchemon_level: int = -1
 var npc_id: String = ""
 
+const COLOR_FIGHTER := Color(0.85, 0.15, 0.15)
+const COLOR_SHOPKEEPER := Color(0.2, 0.4, 0.9)
+const COLOR_HEALER := Color(0.2, 0.75, 0.3)
+
 
 func _ready() -> void:
 	dialoguearea.area_entered.connect(_on_area_entered)
 	dialoguearea.area_exited.connect(_on_area_exited)
 	_create_dialogue_box()
+	_apply_role_color()
 	
 	if figther:
 		combat_collision.area_entered.connect(_on_combat_area_entered)
 		combat_collision.area_exited.connect(_on_combat_area_exited)
+
+
+func get_role_color() -> Color:
+	if is_shopkeeper:
+		return COLOR_SHOPKEEPER
+	if is_healer:
+		return COLOR_HEALER
+	if is_trainer:
+		return COLOR_FIGHTER
+	return Color.TRANSPARENT
+
+
+func _apply_role_color() -> void:
+	var color := get_role_color()
+	if color.a == 0.0:
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	for mesh in find_children("*", "MeshInstance3D", true, false):
+		(mesh as MeshInstance3D).material_override = mat
 
 
 func _process(delta: float) -> void:

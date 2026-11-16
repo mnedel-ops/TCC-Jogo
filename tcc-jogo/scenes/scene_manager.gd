@@ -9,13 +9,68 @@ extends Node
 @export var first_spawn_point: String
 
 var _current_level: Node3D
+var _toast: Label
+var _toast_id := 0
 
 func _ready() -> void:
 	add_to_group("scene_manager")
+	_build_toast()
 	if _resume_saved_position(GameSession.take_resume_position()):
 		return
 	if first_level:
 		change_level(first_level, first_spawn_point)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if CombatSignal.in_combat:
+		return
+	if event.is_action_pressed("quick_save", false, true):
+		quick_save()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("quick_load", false, true):
+		quick_load()
+		get_viewport().set_input_as_handled()
+
+
+func quick_save() -> void:
+	var ok := GameSession.save_game() == OK
+	_show_toast("Jogo salvo (F5)." if ok else "Falha ao salvar!", ok)
+
+
+func quick_load() -> void:
+	if not GameSession.has_save():
+		_show_toast("Nenhum save para carregar.", false)
+		return
+	if GameSession.load_game() != OK:
+		_show_toast("Falha ao carregar!", false)
+		return
+	var pos := GameSession.take_resume_position()
+	if not _resume_saved_position(pos):
+		push_warning("Quick load: save sem posição, mantendo posição atual.")
+	_show_toast("Jogo carregado (F9).", true)
+
+
+func _build_toast() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	add_child(layer)
+	_toast = Label.new()
+	_toast.visible = false
+	_toast.add_theme_font_size_override("font_size", 28)
+	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE, 24)
+	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	layer.add_child(_toast)
+
+
+func _show_toast(text: String, ok: bool) -> void:
+	_toast.text = text
+	_toast.add_theme_color_override("font_color", Color(1, 0.85, 0.3) if ok else Color(1, 0.4, 0.4))
+	_toast.visible = true
+	_toast_id += 1
+	var id := _toast_id
+	await get_tree().create_timer(1.5, true).timeout
+	if id == _toast_id:
+		_toast.visible = false
+
 
 func change_level(new_level_scene: PackedScene, spawn_point_name: String) -> void:
 	if new_level_scene == null:

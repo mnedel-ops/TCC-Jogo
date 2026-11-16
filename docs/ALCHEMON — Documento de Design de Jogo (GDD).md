@@ -1,71 +1,97 @@
 # ALCHEMON — Documento de Design de Jogo (GDD)
 
-**Versão de protótipo — atualizada com o estado real do código** (repositório `mnedel-ops/TCC-Jogo`, branch `main`, Godot 4.6, renderer GL Compatibility, física Jolt).
+**Versão:** atualização de estado do protótipo  
+**Referência de código:** repositório `mnedel-ops/TCC-Jogo`, branch `main`, snapshot consultado em 16/11/2026  
+**Commit identificado na indexação do repositório:** `ac112fe8094e117201e857bd6a93d7ad74999f22`  
+**Engine declarada no GDD existente:** Godot 4.6, renderer GL Compatibility e física Jolt.
 
-Creature capture baseado na Tabela Periódica. Este documento mantém o design original e acrescenta, em cada seção, o que **já existe no código**, onde está (arquivo/classe/função) e onde o código **diverge** do design.
+> Este documento registra o comportamento encontrado no código consultado. A existência de uma regra em um arquivo não comprova, por si só, que todo o fluxo esteja validado visualmente em uma partida. Os estados abaixo distinguem implementação de integração e de funcionalidades ainda planejadas.
 
-**Legenda de status:** \[OK\] Implementado · \[Parcial\] Parcial ou diverge do design · \[Pendente\] Não implementado (planejado) · \[Extra\] Implementado, mas não previsto no GDD original
+## Legenda de status
+
+- **[OK]** Implementado no código consultado.
+- **[Parcial]** Implementado com limitações, integração incompleta ou divergência em relação ao design.
+- **[Pendente]** Planejado, mas não identificado como implementado.
+- **[Extra]** Recurso implementado que não fazia parte do escopo original documentado.
 
 ---
 
 ## 0. Resumo do estado do protótipo
 
-| Área | Status | Observação |
-| --- | --- | --- |
-| Cenas, portas e spawn | \[OK\] | `SceneManager`, `SceneDoor`, 2 fases de teste |
-| Exploração (movimento, interação, câmera) | \[Parcial\] | Sem corrida; sem F5/F9; câmera com zona morta |
-| Encontros selvagens e de treinador | \[Parcial\] | Por tempo (não por passo); área de colisão (não cone de visão) |
-| Combate 2×2 por turnos | \[OK\] | Máquina de fases, iniciativa, ataque/item/captura/fuga |
-| Tipos e efetividade | \[OK\] | Ciclo ×1,5 / ×0,66 / ×1,0 |
-| Atributos, IV, personalidade | \[Parcial\] | Fórmula de HP difere; personalidade é extra |
-| Temperatura e estado físico | \[Parcial\] | Aquecimento e mudança de estado existem; regras de dano nulo e Laço por temperatura não |
-| Misturas e Compostos | \[Parcial\] | Funcionam com 2 elementos; sem Compostos de 3+ e sem ruptura por temperatura |
-| Captura | \[Parcial\] | Fórmula \[OK\]; métodos de separação são placeholders por tipo |
-| XP e níveis | \[OK\] | XP segue a fórmula $N^3$|
-| Obediência por insígnias | \[Pendente\] | Insígnia existe e é concedida; obediência não |
-| Economia (moeda, loja) | \[OK\] | Moeda \[OK\]; loja compra e vende (`ShopRules`). Falta balancear preços |
-| PC / Armazenamento | \[Parcial\] | Troca de time e Compostos \[OK\]; sem caixas e sem troca de ataques |
-| Cura / Hospital | \[Parcial\] | NPC curandeiro e teleporte na derrota  \[OK\]; sem hospital como cena|
-| Salvamento | \[OK\] | JSON atômico + backup, posição, inventário, NPCs derrotados |
-| Menus e interface | \[Parcial\] | Menu unificado \[OK\]; entradas diferem do GDD |
-| Testes automatizados | \[Extra\] | 74 testes GdUnit4 |
+| Área | Status | Estado observado |
+|---|---|---|
+| Cenas, portas e spawn | [OK] | `SceneManager`, `SceneDoor` e duas fases de teste. |
+| Exploração | [Parcial] | Movimento, interação e câmera funcional; corrida e atalhos F5/F9 não identificados. |
+| Encontros | [Parcial] | Encontros por tempo e áreas de colisão; não por passos ou cone de visão. |
+| Combate 2×2 por turnos | [OK] | Máquina de fases, iniciativa, comandos, resolução e encerramento. |
+| Tipos e efetividade | [OK] | Ciclo Metal > Metaloide > Ametal > Metal; multiplicadores 1,5 / 0,66 / 1,0. |
+| Atributos e IV | [Parcial] | Fórmulas de atributos e IV implementados; correspondência química dos atributos-base ainda não consolidada. |
+| Personalidades | [Extra] | Modificadores de +10% e −10% em atributos. |
+| Temperatura e estados físicos | [Parcial] | Aquecimento do alvo, transições, dano térmico e estados do Composto; a temperatura global da arena não propaga o calor para todos os combatentes. |
+| Misturas | [Parcial] | Vínculo entre exatamente dois Alchemons; bônus em HP e energia, não em todos os atributos. |
+| Compostos iônicos e covalentes | [Parcial] | Regras químicas suportam grupos de até quatro Alchemons e até quatro elementos distintos; transferência de atributos ainda usa 70% fixos. |
+| Captura | [Parcial] | Fórmula e preservação da instância implementadas; métodos de captura ainda são categorias provisórias. |
+| Ataques por nível | [OK]/[Parcial] | Desbloqueio por nível e limite de quatro golpes implementados; a escolha de substituição depende da interface. |
+| XP e níveis | [OK] | Curva de XP acumulada N³, recompensa por derrota e distribuição ao grupo vivo do lado que venceu a ação. |
+| Insígnias e obediência | [Parcial] | Insígnia do Metal é concedida; regras de obediência não foram identificadas. |
+| Economia e loja | [OK]/[Parcial] | Compra e venda implementadas; itens e valores ainda precisam de balanceamento. |
+| PC e armazenamento | [Parcial] | Troca de equipe, armazenamento e configuração de vínculos; sem caixas organizadas. |
+| Cura | [Parcial] | NPC Enfermeiro restaura HP e energia; não há cena de hospital ou teleporte após derrota. |
+| Salvamento | [OK] | JSON, gravação atômica, backup, posição, inventário e progresso de NPCs. |
+| Menus | [Parcial] | Menu unificado e páginas funcionais; opções previstas originalmente não estão todas presentes. |
+| Testes automatizados | [Extra] | Há suítes GdUnit4. A contagem de testes diverge entre o GDD e a documentação técnica e precisa ser reconciliada. |
 
 ---
 
-## 1. Visão Geral
+## 1. Visão geral
 
-Alchemon é um jogo de captura de criaturas cujas mecânicas traduzem regras da Química Geral para o gameplay. Cada criatura representa um elemento químico e seus atributos derivam de propriedades químicas desse elemento.
+Alchemon é um jogo 3D de captura e colecionismo de criaturas inspirado no gênero *creature capture*. Cada criatura representa um elemento químico da Tabela Periódica. As propriedades químicas dos elementos são utilizadas como referência para atributos, ataques, formação de vínculos e mecânicas térmicas.
 
-### 1.1 Público-Alvo
+A proposta combina exploração, captura, treinamento, combate por turnos e experimentação com combinações químicas. O objetivo pedagógico é apresentar conceitos de Química Geral por meio de sistemas que o jogador utiliza para progredir.
 
-- Estudantes do Ensino Médio
-- Adultos interessados em Química
-- Entusiastas do gênero creature capture
+### 1.1 Público-alvo
 
-### 1.2 Estética e Áudio
+- Estudantes do Ensino Médio;
+- adultos interessados em Química;
+- jogadores interessados em jogos de captura e treinamento de criaturas.
 
-Modelos poligonais no estilo PSX, inspirados visualmente em Digimon World. Trilha de tom aventuresco. *Status: \[OK\] visual 3D low-poly; áudio não verificado no código.*
+### 1.2 Direção visual e áudio
 
-### 1.3 Objetivos do Jogador
+A direção visual utiliza modelos 3D low-poly com referências estéticas à era PSX e a jogos como *Digimon World*. A trilha sonora deve acompanhar o tom de aventura.
 
-- Coletar insígnias de ginásio — \[Parcial\] `PlayerData.award_badge()` e `BadgeData` existem; 1 insígnia (Metal) cadastrada.
-- Derrotar o campeão da Super Liga — \[Pendente\]
-- Localizar criaturas raras ou lendárias — \[Pendente\]
-- Recuperar elementos artificiais fugitivos — \[Pendente\]
+- **Visual 3D low-poly:** [OK] identificado no projeto.
+- **Áudio:** [Pendente de verificação] não foi possível confirmar o estado de implementação dos recursos sonoros apenas pelos scripts consultados.
+
+### 1.3 Objetivos do jogador
+
+| Objetivo | Status |
+|---|---|
+| Capturar e colecionar Alchemons | [Parcial] sistema de captura funcional, catálogo ainda limitado. |
+| Treinar Alchemons e desbloquear ataques | [OK] progressão e aprendizado de ataques implementados. |
+| Formar Misturas e Compostos | [Parcial] regras implementadas, com limitações de balanceamento e integração. |
+| Conquistar insígnias de ginásio | [Parcial] existe a Insígnia do Metal. |
+| Derrotar o campeão da Super Liga | [Pendente] |
+| Localizar criaturas raras ou lendárias | [Pendente] |
+| Recuperar elementos artificiais fugitivos | [Pendente] |
 
 ---
 
-## 2. Estrutura do Jogo e Cenários
+## 2. Estrutura do jogo e cenários
 
-Jogo dividido em cenários independentes (sem mundo aberto contínuo). Tudo roda dentro de `scenes/main.tscn`, que contém `Player`, `CameraRig`, `FollowerManager`, `SceneManager`, `CombatSceneManager`, `LevelHolder` e `BattleAnchors`. Autoloads: `GameSession` e `CombatSignal`.
+O jogo é dividido em cenários independentes, sem um mundo aberto contínuo. A cena principal mantém o jogador, a câmera, os seguidores, os gerenciadores de cena e os pontos de ancoragem utilizados pelo combate.
 
-### 2.1 Transição entre Cenários — \[OK\]
+### 2.1 Transição entre cenários — [OK]
 
-- `SceneDoor` (Area3D, `porta.gd`) possui `target_level_path` e `target_spawn_point`. Ao detectar o jogador (grupo `player`), chama `SceneManager.change_level()`.
-- `SceneManager.change_level(scene, spawn)`: remove a fase atual, instancia a nova em `LevelHolder` e posiciona o jogador no `Marker3D` de destino (`_place_player`), recentralizando a câmera.
-- `SceneManager.get_save_position()` e `_resume_saved_position()` permitem retomar fase, posição e rotação após carregar um save.
-- Fases existentes: `scene_1.tscn` (NPCs, loja, curandeiro, ginásio, mato alto) e `scene_2.tscn`.
-- *Em aberto (mantido):* evitar posicionar a porta de entrada sobre a área de saída para não gerar loop de transição.
+`SceneDoor` detecta a entrada do jogador e solicita a mudança ao `SceneManager`. O gerenciador remove a fase atual, instancia a próxima em `LevelHolder` e posiciona o jogador no `Marker3D` indicado.
+
+O sistema também registra a fase, posição e rotação do jogador para retomada após o carregamento de um salvamento.
+
+Fases identificadas no GDD existente:
+
+- `scene_1.tscn`: NPCs, loja, Enfermeiro, ginásio e área de mato alto;
+- `scene_2.tscn`: segunda fase de teste.
+
+**Ponto de atenção:** as portas devem ser posicionadas de modo que o ponto de entrada não sobreponha a área de saída, evitando transições repetidas.
 
 ---
 
@@ -73,713 +99,776 @@ Jogo dividido em cenários independentes (sem mundo aberto contínuo). Tudo roda
 
 ### 3.1 Controles
 
-O jogador é um `CharacterBody3D` (`player.gd`) composto por `MovementComponent`, `InteractionComponent`, `InventoryComponent` e `CombatHandler`.
+O jogador é um `CharacterBody3D` composto por componentes de movimentação, interação, inventário e integração com o combate.
 
-| Tecla | Ação | Status |
-| --- | --- | --- |
-| W/A/S/D (e setas/direcional) | Caminhar em 8 direções (`move_*`, `Input.get_vector`) | \[OK\] (velocidade fixa 5.0) |
-| E (`ui_interact`) | Interagir com item, NPC, PC | \[OK\] |
-| Tab (`ui_menu`) | Abre o menu unificado do jogo | \[OK\] abre o menu completo |
-| F5 / F9 | Salvar / carregar rápido | \[Pendente\] não há ação mapeada |
+| Entrada | Ação | Status |
+|---|---|---|
+| W/A/S/D e setas | Caminhar em oito direções | [OK] |
+| E | Interagir com itens, NPCs e estações | [OK] |
+| Tab | Abrir o menu unificado | [OK] |
+| F5 / F9 | Salvar / carregar rapidamente | [Pendente] |
+| Corrida | Deslocamento acelerado | [Pendente] |
 
-Nos menus e popups o código também aceita setas, Enter/Espaço e botões de gamepad.
+Os menus também aceitam navegação por teclado, confirmação, retorno e mouse em listas.
 
 ### 3.2 Câmera
 
-`CameraRig` mantém altura fixa e ângulo fixo, sem controle do jogador. Diferente do GDD, ela **segue com zona morta** (`dead_zone`, `follow_speed`, `snap_distance`) em vez de ficar rigidamente atrás do avatar. A rotação do avatar é instantânea (`mesh.rotation.y = atan2(...)`), sem suavização — \[OK\] conforme o GDD.
+A câmera mantém altura e ângulo fixos e acompanha o jogador por uma zona morta, com parâmetros de velocidade de seguimento e distância de reposicionamento. Não há controle livre de câmera pelo jogador.
 
-### 3.3 Movimentação e Bloqueios — \[OK\]
+**Divergência:** o comportamento atual não corresponde a uma câmera rigidamente presa atrás do avatar; o seguimento utiliza zona morta.
 
-Colisões do cenário bloqueiam o jogador; não há pulo (apenas gravidade). Camadas físicas: Player, Environment, Item, NPC. Quedas de borda controladas não foram verificadas.
+### 3.3 Movimentação e colisões — [OK]
 
-### 3.4 Interação com Itens e NPCs
+O jogador utiliza colisões do cenário para impedir a passagem por obstáculos. Não foi identificado sistema de pulo como ação de exploração. A gravidade permanece ativa.
 
-- **Itens:** `InteractableItem` (grupo `collectible`) entra na área do `InteractionComponent`; ao pressionar E, `InventoryComponent.collect_from_area()` adiciona o item à mochila (`InventoryData.add_item`) e remove o objeto. \[OK\]
-- **NPCs (`npc.gd`)**: diálogo com texto digitado (`DialogueBox`: `show_text`, `skip_typing`, `close`). \[OK\] Além de falar, o NPC pode assumir papéis \[Extra\]: **treinador**, **líder de ginásio**, **lojista** e **curandeiro**, configurados por `NPCSpawnPoint` e instanciados por `Level.place_npcs()`. Cada NPC recebe um ID estável (`fase/marcador`) usado para lembrar derrotas.
-- Caixa de diálogo com opções Sim/Não existe (`DialogueBox.ask`) — usada pelo curandeiro. O GDD previa diálogo apenas unidirecional.
+### 3.4 Itens e NPCs — [OK]/[Extra]
 
-### 3.5 Estruturas do Mapa — \[Parcial\]
+- Itens coletáveis são identificados pelo sistema de interação e adicionados ao inventário.
+- NPCs apresentam diálogos com texto progressivo e permitem avançar ou encerrar a exibição.
+- Há diálogos de confirmação Sim/Não, utilizados pelo Enfermeiro.
+- NPCs podem assumir os papéis de treinador, líder de ginásio, lojista e Enfermeiro. Esses papéis são configurados nos pontos de spawn.
+- NPCs derrotados recebem identificadores persistentes para impedir que o mesmo combate seja iniciado novamente após o progresso ser salvo.
 
-Casas, hospitais, lojas e ginásios ainda **não são cenas separadas**: loja, centro de cura são NPCs dentro do "Laboratorio".
+### 3.5 Estruturas do mapa — [Parcial]
 
-## 4. Início de Combate
-
-O evento é `CombatSignal.combat_start(a, b)`; `CombatSceneManager._on_combat_start()` cria a cena de combate, move os atores para os `BattleAnchors` e injeta equipe, inventário, banco de espécies, armazenamento e vínculo.
-
-### 4.1 Encontros com Treinadores — \[Parcial\]
-
-`NPC._on_combat_area_entered()` inicia o combate quando o jogador entra na `CombatCollision` do NPC (uma área, **não um cone de visão**). Define `is_trainer_battle = true`, nível e as duas espécies. Só ocorre se `GameSession.can_fight()` (há criatura viva). Após a vitória, `mark_defeated()` desativa o NPC e grava o ID no save; em líder de ginásio, concede a insígnia.
-
-### 4.2 Encontros Selvagens — \[Parcial\]
-
-`WildernessEncounter` (Area3D com polígono editável) usa uma **rolagem por tempo**, não por passo:
-
-- `check_interval` (1 s) e `encounter_chance` (30%) configuráveis; exige movimento do jogador (`require_movement`).
-- Rola um encontro também ao entrar na área; respeita `cooldown` (3 s) após o combate; nunca durante outro combate.
-- Duas decisões: chance de lutar → espécie sorteada de `alchemons[]` (uniforme) com nível sorteado entre `min_level` e `max_level`.
-- *Em aberto:* tabelas por área com pesos e níveis definitivos (a lista atual é uniforme).
+Loja, cura e ginásio são representados por NPCs e pontos de interação dentro das fases. Não foram identificadas cenas independentes completas para hospital, loja ou ginásio.
 
 ---
 
-## 5. Combate
+## 4. Encontros e início de combate
 
-Formato 2×2 — \[OK\] (`BattlefieldSlot`: 2 slots do jogador e 2 do oponente; `Battlefield`, `BattlefieldRules`).
+O sinal `CombatSignal.combat_start` inicia a integração entre exploração e combate. `CombatSceneManager` posiciona os participantes nos pontos de batalha e prepara equipe, inventário, banco de espécies, armazenamento e vínculos.
 
-### 5.1 Fluxo do Turno — \[OK\]
+### 4.1 Encontros com treinadores — [Parcial]
 
-Máquina de fases `BattlePhaseMachine`: `ENCOUNTER_START → SELECTING_ACTIONS → RESOLVING_ACTIONS → END_OF_ROUND → (SELECTING_ACTIONS | COMBAT_OVER) → VICTORY | DEFEAT`. Transições inválidas são rejeitadas (`is_valid_transition`).
+O combate começa quando o jogador entra na área `CombatCollision` do NPC. A implementação utiliza uma área de colisão, não um cone de visão.
 
-1. **Ordem:** `CombatRules.roll_initiative()` calcula a iniciativa de cada criatura e ordena de forma decrescente em `turn_order_ids`. \[Parcial\] É calculada **uma vez no início do combate**, não a cada rodada.
-2. **Seleção:** o jogador escolhe ação e alvo de cada criatura (uma por vez) em `BattleCommands`; a IA enfileira em `_queue_enemy_commands()` (ataque e alvo aleatórios). `CombatRules.has_all_commands()` garante que todas as criaturas ativas tenham comando antes de resolver.
-3. **Resolução:** `CombatRules.resolve_action()` produz um `CombatResult`; **somente** `CombatResultApplier.apply()` altera o `CombatState`. Alvo morto é redirecionado (`_retarget_if_dead`).
-4. Repete até um lado ficar sem criaturas vivas (`CombatRules.check_combat_end()`).
+O NPC define o nível e as espécies adversárias. Após a derrota, seu identificador é registrado e o encontro é desativado. Líderes de ginásio podem conceder uma insígnia.
 
-### 5.2 Ações do Turno — \[Parcial\]
+### 4.2 Encontros selvagens — [Parcial]
 
-- **Ataque** \[OK\]: o menu lista até 4 ataques da espécie (`MAX_ATTACKS = 4`). Hoje cada espécie cadastrada tem 3.
-- **Item** \[OK\]: usa item da mochila em aliado (`_resolve_item`); consome o item. Os itens atuais são genéricos (`heal_amount = 0`); a Poção real ainda não existe.
-- **Captura** \[OK\] (ver seção 11), bloqueada em batalha de treinador.
-- **Fuga** \[Parcial\]: chance fixa 5/6 (`FLEE_CHANCE`) \[OK\]. Se falha, os inimigos atacam. O código **não restringe fuga a criaturas selvagens**.
-- **Slap** \[Extra\] \[OK\]: quando `valence_electrons <= 0`, qualquer ataque vira SLAP (poder 10, custo 0, neutro, sem aquecer a arena).
+`WildernessEncounter` utiliza uma área configurável e uma rolagem temporal:
 
-### 5.3 Fim de Combate — \[Parcial\]
+- intervalo de verificação configurável;
+- chance de encontro configurável;
+- exigência de movimento do jogador;
+- possibilidade de rolagem ao entrar na área;
+- intervalo de recarga após o combate;
+- bloqueio de novos encontros durante uma batalha;
+- seleção de espécie e nível a partir dos parâmetros da área.
 
-- `BattleRewards.build()` monta a tela de recompensas (`BattleRewardsScreen`), exibida **antes** de `combat_ended` liberar a exploração. \[OK\]
-- **Vitória:** XP e, contra treinador, 100 moedas (`TRAINER_WIN_MONEY`). Selvagens não dão moeda. \[Parcial\] O GDD diz "ganho de EXP e moeda" em toda vitória.
-- **Derrota:** o combate encerra e volta à exploração. \[Pendente\] **Não há teletransporte ao último hospital**; a cura é manual no NPC curandeiro. Criaturas com 0 HP não entram no próximo combate (`REVIVE_FAINTED_ON_BATTLE_START = false`) e `can_fight()` impede novos combates sem criatura viva.
-- Não há evolução nem fusão permanente. \[OK\]
+A lista de espécies é selecionada de forma uniforme no estado documentado. Tabelas ponderadas e específicas para cada região permanecem como trabalho futuro.
 
 ---
 
-## 6. Sistema de Tipos — \[OK\]
+## 5. Sistema de combate
 
-`AlchemonType`: Metal, Ametal, Metaloide. Ciclo Metal > Metaloide > Ametal > Metal. Multiplicadores: `SUPER_EFFECTIVE = 1.5`, `RESISTED = 0.66`, `NEUTRAL = 1.0`. A efetividade usa o **tipo do ataque** contra o **tipo da espécie alvo** (`AlchemonType.effectiveness`). O mesmo tipo é neutro.
+O combate utiliza formato 2×2, com até duas criaturas de cada lado. O estado da batalha é separado dos recursos persistentes das criaturas.
 
----
+### 5.1 Fluxo de turno — [OK]
 
-## 7. Atributos
+A máquina de fases controla o ciclo:
 
-### 7.1 Correspondência Química — \[Parcial\]
+`ENCOUNTER_START → SELECTING_ACTIONS → RESOLVING_ACTIONS → END_OF_ROUND → SELECTING_ACTIONS / COMBAT_OVER → VICTORY / DEFEAT`
 
-A estrutura existe em `AlchemonSheet` (`atomic_mass`, `max_hp`, `base_attack`, `base_defense`, `base_mechanical_speed`, `base_action_energy`, `max_valence_electrons`, `octet_target`). **Os valores atuais são placeholders** (ex.: base 70 padrão) e ainda não derivam das propriedades químicas reais.
+1. **Iniciativa:** calculada por criatura e utilizada para ordenar as ações.
+2. **Seleção:** o jogador escolhe comandos e alvos; a IA seleciona ações para seus participantes.
+3. **Resolução:** as regras produzem resultados, e `CombatResultApplier` aplica as alterações ao estado da batalha.
+4. **Encerramento:** o combate termina quando um dos lados não possui participantes vivos.
 
-### 7.2 Fórmulas — \[Parcial\]
+A iniciativa é calculada no início do combate; não foi identificada uma nova rolagem obrigatória a cada rodada.
 
-`AlchemonFormulas.compute_stat(base, iv, level) = floor(0,01 × (2×base + IV) × nível) + 5` \[OK\] (Ataque, Defesa, Velocidade Mecânica).
+### 5.2 Ações disponíveis — [Parcial]
 
-**HP — diverge:** `compute_max_hp = base_hp + compute_stat(nível) − compute_stat(1)`. No nível 1 o HP é igual ao HP base da ficha; a fórmula do GDD (`floor(...) + nível + 10`) **não** é usada. *Decisão pendente: atualizar o código ou o GDD.*
+- **Ataque:** utiliza um dos golpes equipados, respeitando o custo de energia.
+- **Item:** utiliza itens válidos da mochila em aliados.
+- **Captura:** permite tentar capturar criaturas selvagens; não deve ser utilizada contra treinadores.
+- **Fuga:** utiliza chance fixa de sucesso de 5/6. A implementação consultada não restringe a ação a encontros selvagens.
+- **Slap:** [Extra] quando a energia de ação chega a zero, o ataque selecionado é substituído por Slap, com poder 10, custo zero e efetividade neutra. Slap não injeta energia térmica.
 
-IV: sorteado de 1 a 31 por `CreatureFactory.create()` e guardado na criatura. Sem EV. \[OK\] Atributos derivados **não são salvos**: são recalculados por `AlchemonInstance.compute_stats()` no início de cada combate.
+### 5.3 Dano e efetividade — [OK]
 
-&#91;Extra\] **Personalidade** (`AlchemonPersonality`): neutral, bold, stoic, hasty, calm, keen. Cada uma dá +10% em um atributo e −10% em outro. Sorteada na criação. Não estava no GDD original.
+A fórmula de dano considera nível, poder do ataque, Ataque do usuário, Defesa do alvo e efetividade elemental. A Defesa utilizada no denominador possui limite mínimo de 1.
 
-### 7.3 Energia de Ação — \[Parcial\]
+Multiplicadores:
 
-O recurso em combate é `valence_electrons` (máximo = `max_valence_electrons` da espécie). É gasto por ataque (`energy_cost`, padrão 2) e persiste entre combates (`PERSIST_ENERGY`). Recarrega no curandeiro (`GameSession.heal_party`). \[Parcial\] O GDD diz que a energia também **diminui ao sofrer golpes**; o código não faz isso. Sem energia → SLAP \[OK\].
+| Relação | Multiplicador |
+|---|---:|
+| Super efetivo | 1,5 |
+| Resistido | 0,66 |
+| Neutro | 1,0 |
 
-### 7.4 Cadastro de um novo Alchemon
+### 5.4 Críticos e erros — [Parcial]
 
-Para cadastrar uma nova espécie, preencher os dados abaixo no recurso `AlchemonSheet` e nos recursos associados. Os valores devem representar a espécie, não uma instância individual capturada pelo jogador.
+- Chance global de crítico: 12,5%.
+- Multiplicador crítico atual: 1,5.
+- Chance global de erro: 1/6.
 
-**Lista de preenchimento por espécie:**
+As probabilidades são globais no código consultado, não configuradas individualmente por ataque. O multiplicador crítico também diverge da fórmula originalmente prevista no GDD.
 
-1. **Identificação:** nome da criatura, nome do elemento, símbolo químico e número atômico.
-2. **Classificação:** tipo de combate (`Metal`, `Ametal` ou `Metaloide`) e categoria química (`Metal`, `Ametal` ou `Metaloide`). Caso o projeto utilize um único campo para ambas, manter a nomenclatura consistente.
-3. **Propriedades químicas:** massa atômica, elétrons de valência e alvo da regra do octeto.
-4. **Atributos-base:** HP máximo, Ataque, Defesa, Velocidade Mecânica e Energia de Ação. Enquanto a correspondência química não estiver definida, preencher com valores provisórios balanceados e identificar esses valores como placeholders.
-5. **Propriedades térmicas:** ponto de fusão e ponto de ebulição, em Kelvin.
-6. **Combate:** cadastrar os ataques da espécie (até quatro; atualmente as espécies documentadas possuem três), com nome, tipo, poder e custo de energia conforme o formato de `AttackData` utilizado no projeto.
-7. **Progressão:** definir a recompensa de experiência (`xp_reward`) da espécie.
-8. **Representação visual:** associar o modelo 3D, ícone/retrato e demais recursos visuais exigidos pela cena ou interface.
+### 5.5 Vitória e derrota — [Parcial]
 
-**Dados individuais não devem ser preenchidos no recurso da espécie:** UID, nível inicial, IV, personalidade, HP atual e energia atual pertencem à instância criada por `CreatureFactory`. O IV é sorteado entre 1 e 31; personalidade é sorteada pelo sistema atual.
+A tela de recompensas é exibida antes de o controle retornar à exploração.
 
-### 7.5 Tabela de referência — `AlchemonSheet`
-
-A tabela distingue os campos documentados no recurso atual das propriedades adicionais recomendadas para a futura implementação da formação de compostos. Confirmar os nomes e tipos diretamente no script `AlchemonSheet.gd` antes de alterar os recursos existentes.
-
-| Campo | Tipo sugerido | Valor a preencher |
-| --- | --- | --- | --- |
-| `element_name` | `String` | Nome do elemento químico | 
-| `element_symbol` | `String` | Símbolo químico (ex.: `Fe`)|
-| `atomic_number` | `int` | Número atômico |
-| `atomic_mass` | `float` | Massa atômica em u |
-| `element_category` | `enum`/`String` | Metal, Ametal ou Metaloide|
-| `max_hp` | `int` | HP máximo-base |
-| `base_attack` | `int` | Ataque-base |
-| `base_defense` | `int` | Defesa-base |
-| `base_mechanical_speed` | `int` | Velocidade-base |
-| `base_action_energy` | `int` | Energia de Ação-base, se utilizada pelo código |
-| `max_valence_electrons` | `int` | Limite máximo do recurso de energia atual |
-| `valence_electrons` | `int` | Quantidade real de elétrons de valência |
-| `octet_target` | `int` | Quantidade-alvo para a regra do octeto |
-| `electronegativity` | `float` | Eletronegatividade na escala de Pauling |
-| `oxidation_states` | `Array[int]` | Estados de oxidação comuns (ex.: `[-2, 2, 4, 6]`) |
-| `bonding_capacity` | `int` | Capacidade covalente típica |
-| `temperature` | `float` | Ponto de fusão em K |
-| `boiling_point` | `float` | Ponto de ebulição em K|
-| `xp_reward` | `int` | Experiência concedida ao derrotar a espécie|
-| `attacks` | `Array[AttackData]` ou estrutura equivalente | Até quatro ataques cadastrados |
-| `model` / `portrait` | recurso visual | Modelo 3D e retrato/ícone |
-
-**Observações para o cadastro:**
-
-- Usar valores de fontes químicas confiáveis e manter as unidades consistentes. Massa atômica deve estar em unidade de massa atômica; temperatura, em Kelvin; eletronegatividade, na escala de Pauling.
-- Para elementos com vários estados de oxidação, cadastrar todos os estados comuns relevantes, não apenas um valor arbitrário.
-- `valence_electrons` e `max_valence_electrons` têm significados diferentes. O primeiro é uma propriedade química; o segundo representa o limite do recurso de energia no sistema atual.
-- `electronegativity`, `oxidation_states` e `bonding_capacity` são propriedades recomendadas para a implementação futura dos Compostos; não presumir que já existam no código.
-- Os atributos-base de combate continuam placeholders até que as fórmulas de correspondência química sejam definidas e balanceadas.
-
-**Modelo de ficha para copiar e preencher:**
-
-```text
-Nome do Alchemon:
-Elemento químico:
-Símbolo:
-Número atômico:
-Categoria química / tipo de combate:
-Massa atômica (u):
-Elétrons de valência:
-Alvo do octeto:
-Estados de oxidação comuns:
-Eletronegatividade (Pauling):
-Capacidade covalente típica:
-Ponto de fusão (K):
-Ponto de ebulição (K):
-HP máximo-base:
-Ataque-base:
-Defesa-base:
-Velocidade-base:
-Energia de Ação-base / limite de energia:
-Recompensa de XP:
-Ataques (nome, tipo, poder e custo):
-Modelo 3D:
-Retrato / ícone:
-```
-
-
-
-### 7.6 Elementos cadastrados no protótipo
-
-Esta subseção documenta os seis elementos definidos para as espécies de Alchemon atualmente contempladas no protótipo. Os atributos-base correspondem aos valores de nível 1 fornecidos para o balanceamento inicial. Eles ainda não representam uma conversão automática das propriedades químicas em atributos de combate.
-
-**Convenções de cadastro:**
-
-- Massa atômica em unidade de massa atômica (`u`).
-- Eletronegatividade na escala de Pauling.
-- Pontos de fusão e ebulição em Kelvin (`K`).
-- `EV` representa a quantidade de elétrons da camada externa utilizada como referência para o recurso de energia de ação. Para metais de transição, a configuração eletrônica deve ser considerada ao interpretar esse valor.
-- Os estados de oxidação listados são os estados comuns considerados pelo projeto, não uma lista exaustiva de todos os compostos conhecidos.
-- A capacidade de ligação é uma referência didática para as regras iniciais de formação de Compostos; não representa um limite químico universal.
-
-#### 7.6.1 Hidrogênio (H)
-
-| Campo | Valor |
-|---|---|
-| Nome | Hidrogênio |
-| Símbolo | `H` |
-| Número atômico | 1 |
-| Categoria | Ametal |
-| Massa atômica | 1,008 u |
-| Elétrons de valência | 1 (`1s¹`) |
-| Estados de oxidação | +1, -1 |
-| Eletronegatividade | 2,20 |
-| Capacidade de ligação | 1 |
-| HP máximo-base (nível 1) | 45 |
-| Ataque-base | 60 |
-| Defesa-base | 40 |
-| Velocidade-base | 95 |
-| Energia de ação (EV) | 1 |
-| Ponto de fusão | 13,99 K |
-| Ponto de ebulição | 20,27 K |
-| Alvo de estabilidade | 2 elétrons (regra do dueto) |
-
-O Hidrogênio segue a regra do dueto: sua configuração estável mais simples corresponde a dois elétrons, como no Hélio. Pode participar de ligações covalentes simples e formar os íons H⁺ ou H⁻ em contextos químicos apropriados.
-
-#### 7.6.2 Oxigênio (O)
-
-| Campo | Valor |
-|---|---|
-| Nome | Oxigênio |
-| Símbolo | `O` |
-| Número atômico | 8 |
-| Categoria | Ametal |
-| Massa atômica | 15,999 u |
-| Elétrons de valência | 6 (`2s² 2p⁴`) |
-| Estados de oxidação | -2, -1, +2 |
-| Eletronegatividade | 3,44 |
-| Capacidade de ligação | 2 |
-| HP máximo-base (nível 1) | 60 |
-| Ataque-base | 85 |
-| Defesa-base | 45 |
-| Velocidade-base | 80 |
-| Energia de ação (EV) | 6 |
-| Ponto de fusão | 54,36 K |
-| Ponto de ebulição | 90,19 K |
-| Alvo de estabilidade | 8 elétrons |
-
-O Oxigênio tende a completar o octeto ao receber ou compartilhar dois elétrons. Sua capacidade de ligação típica é duas ligações, embora a estrutura efetiva dependa do composto formado.
-
-#### 7.6.3 Silício (Si)
-
-| Campo | Valor |
-|---|---|
-| Nome | Silício |
-| Símbolo | `Si` |
-| Número atômico | 14 |
-| Categoria | Metaloide |
-| Massa atômica | 28,085 u |
-| Elétrons de valência | 4 (`3s² 3p²`) |
-| Estados de oxidação | +4, -4, +2 |
-| Eletronegatividade | 1,90 |
-| Capacidade de ligação | 4 |
-| HP máximo-base (nível 1) | 75 |
-| Ataque-base | 65 |
-| Defesa-base | 75 |
-| Velocidade-base | 55 |
-| Energia de ação (EV) | 4 |
-| Ponto de fusão | 1.687 K |
-| Ponto de ebulição | 3.538 K |
-| Alvo de estabilidade | 8 elétrons |
-
-O Silício apresenta quatro elétrons de valência e participa de estruturas covalentes, inclusive redes cristalinas. A capacidade de quatro ligações é uma simplificação adequada ao modelo inicial do jogo.
-
-#### 7.6.4 Arsênio (As)
-
-| Campo | Valor |
-|---|---|
-| Nome | Arsênio |
-| Símbolo | `As` |
-| Número atômico | 33 |
-| Categoria | Metaloide |
-| Massa atômica | 74,922 u |
-| Elétrons de valência | 5 (`4s² 4p³`) |
-| Estados de oxidação | +5, +3, -3 |
-| Eletronegatividade | 2,18 |
-| Capacidade de ligação | 3 ou 5 |
-| HP máximo-base (nível 1) | 70 |
-| Ataque-base | 80 |
-| Defesa-base | 60 |
-| Velocidade-base | 60 |
-| Energia de ação (EV) | 5 |
-| Sublimação a 1 atm | aproximadamente 887 K |
-| Ponto de ebulição | Não se aplica como transição líquido-gás a 1 atm; o elemento sublima |
-| Alvo de estabilidade | 8 elétrons (modelo simplificado) |
-
-O Arsênio apresenta estados de oxidação variados e pode participar de estruturas com diferentes números de ligações. À pressão atmosférica, o arsênio cinza sublima; portanto, o valor de 887 K deve ser registrado como temperatura de sublimação, e não como ponto de fusão e ponto de ebulição convencionais. O valor de fusão próximo de 1.090 K ocorre sob pressão elevada e não deve ser usado como ponto de fusão padrão do recurso térmico.
-
-#### 7.6.5 Ferro (Fe)
-
-| Campo | Valor |
-|---|---|
-| Nome | Ferro |
-| Símbolo | `Fe` |
-| Número atômico | 26 |
-| Categoria | Metal de transição |
-| Massa atômica | 55,845 u |
-| Elétrons na camada externa | 2 (`4s²`) |
-| Estados de oxidação | +2, +3 |
-| Eletronegatividade | 1,83 |
-| Capacidade de ligação | 2 ou 3 em estados iônicos comuns; pode formar complexos de coordenação |
-| HP máximo-base (nível 1) | 95 |
-| Ataque-base | 55 |
-| Defesa-base | 90 |
-| Velocidade-base | 40 |
-| Energia de ação (EV) | 2 |
-| Ponto de fusão | 1.811 K |
-| Ponto de ebulição | 3.134 K |
-| Alvo de estabilidade | Não representado adequadamente pela regra simples do octeto |
-
-Para o Ferro, o cadastro de dois elétrons considera a camada externa `4s²`, utilizada como referência para o recurso de energia. A configuração eletrônica também inclui a subcamada `3d⁶`; por isso, a descrição de elétrons de valência em metais de transição depende do contexto químico. Os estados +2 e +3 são os principais considerados pelo projeto. A regra do octeto não descreve adequadamente todos os seus compostos e complexos de coordenação.
-
-#### 7.6.6 Ouro (Au)
-
-| Campo | Valor |
-|---|---|
-| Nome | Ouro |
-| Símbolo | `Au` |
-| Número atômico | 79 |
-| Categoria | Metal de transição / metal nobre |
-| Massa atômica | 196,967 u |
-| Elétrons na camada externa | 1 (`6s¹`) |
-| Estados de oxidação | +1, +3 |
-| Eletronegatividade | 2,54 |
-| Capacidade de ligação | Estados iônicos +1 e +3; também forma complexos de coordenação |
-| HP máximo-base (nível 1) | 110 |
-| Ataque-base | 50 |
-| Defesa-base | 95 |
-| Velocidade-base | 35 |
-| Energia de ação (EV) | 1 |
-| Ponto de fusão | 1.337,33 K |
-| Ponto de ebulição | 3.129 K |
-| Alvo de estabilidade | Não representado adequadamente pela regra simples do octeto |
-
-O Ouro apresenta os estados de oxidação +1 e +3 entre os mais relevantes para o projeto. Sua configuração eletrônica inclui a subcamada `5d¹⁰` preenchida e um elétron na camada `6s`. A regra do octeto não é suficiente para descrever sua química de coordenação e seus estados estáveis.
-
-#### 7.6.7 Resumo dos atributos-base
-
-A tabela reúne os valores de nível 1 para consulta durante o cadastro e o balanceamento das espécies.
-
-| Elemento | HP | Ataque | Defesa | Velocidade | EV |
-|---|---:|---:|---:|---:|---:|
-| Hidrogênio (H) | 45 | 60 | 40 | 95 | 1 |
-| Oxigênio (O) | 60 | 85 | 45 | 80 | 6 |
-| Silício (Si) | 75 | 65 | 75 | 55 | 4 |
-| Arsênio (As) | 70 | 80 | 60 | 60 | 5 |
-| Ferro (Fe) | 95 | 55 | 90 | 40 | 2 |
-| Ouro (Au) | 110 | 50 | 95 | 35 | 1 |
+- Vitórias contra treinadores concedem 100 moedas.
+- Encontros selvagens não concedem moedas no estado documentado.
+- A derrota encerra o combate e retorna à exploração.
+- Não foi identificado teletransporte automático para um hospital após a derrota.
+- Criaturas derrotadas não são automaticamente revividas no início do combate seguinte.
 
 ---
 
-## 8. Temperatura da Arena
+## 6. Sistema de tipos — [OK]
 
-### 8.1 Regras Gerais — \[Parcial\]
+Os tipos de combate são Metal, Ametal e Metaloide. A relação de efetividade segue o ciclo:
 
-- Valor interno em Kelvin; HUD mostra "Temperatura da Arena: X K" \[OK\].
-- &#91;Parcial\] Valor inicial: **273,15 K** (`CombatState.arena_temperature`); o GDD prevê 25 °C (298,15 K).
-- Afeta todas as criaturas em campo \[OK\].
-- Golpes que acertam somam `compute_temperature_delta = (nível/10 + 1) × (poder/10) × (ataque/100)`. \[Parcial\] Sem `floor` (valor decimal); o GDD usa `floor`. Slap não aquece. O GDD diz que golpes **recebidos** também alteram; o código aplica o aumento uma vez por golpe que acerta.
+`Metal > Metaloide > Ametal > Metal`
 
-### 8.2 Mudança de Estado Físico — \[Parcial\]
-
-`AlchemonSheet.state_at(temp)` retorna sólido (≤ ponto de fusão `temperature`), líquido (≤ `boiling_point`) ou gasoso. `CombatResultApplier._apply_arena_heat()` reavalia o estado de cada criatura viva; ao mudar, emite `arena_hotter_than_myself` e causa **5 de dano** (`STATE_CHANGE_DAMAGE`). Cátions de Composto são imunes. \[Pendente\] Não implementado: alteração proporcional de atributos por estado e a regra de "fora do estado ativo = não causa nem sofre dano".
-
-### 8.3 Ruptura de Laço por Temperatura — \[Pendente\]
-
-No código, um Composto só se desfaz quando o **Ânion cai** (`BondRules.release_compound_partners`). A Energia de Dissociação de Ligação ainda não é usada.
+A efetividade é calculada entre o tipo do ataque e o tipo da espécie atingida. Ataques contra o próprio tipo são neutros.
 
 ---
 
-## 9. Laços entre Alchemons
+## 7. Atributos e dados dos Alchemons
 
-O jogador define o vínculo no PC (`PlayerBondData`: `kind` + índices). Ao iniciar o combate, `CombatStateFactory._apply_player_bond()` revalida e aplica; a IA também forma laços (`_try_bond`). Bônus ficam só no estado transitório de batalha e **não vazam** para a criatura salva.
+### 7.1 Atributos-base e propriedades químicas — [Parcial]
 
-### 9.1 Misturas — \[Parcial\]
+`AlchemonSheet` armazena os dados de cada espécie, incluindo massa atômica, atributos-base, energia de ação, propriedades de valência e propriedades térmicas.
 
-`AlchemyStation.is_mixture()`: dois Alchemons que **não formam** composto iônico nem covalente (metal + metal, gás nobre, metaloide, ΔE ou cargas incompatíveis). `BondRules.MIXTURE_BONUS = 8`, aplicado a **HP máximo e energia máxima** (e valores atuais) de ambos. \[Parcial\] O GDD diz "todos os atributos".
+Os atributos-base de combate ainda devem ser tratados como parâmetros de balanceamento quando não houver uma fórmula química formal que justifique sua conversão. Não se deve afirmar que HP, Ataque, Defesa e Velocidade já são calculados automaticamente a partir de massa atômica ou eletronegatividade.
 
-### 9.2 Compostos — \[Parcial\]
+### 7.2 Fórmulas de atributos — [Parcial]
 
-Só existem 2 tipos de composto (`CompoundRules`); o que não for iônico nem covalente é Mistura. `AlchemyStation.validate_stoichiometry()` valida a Regra do Octeto:
-
-- **Iônico** (metal + ametal, ΔE ≥ 2,0): `n_cátion · Z_cátion = n_ânion · (8 − V_ânion)`.
-- **Covalente** (ametal + ametal, ΔE < 2,0): `(Σ octeto − Σ valência)` par e ≥ `n − 1` ligações.
-- **Mistura:** metal + metal, gás nobre, metaloide ou qualquer par fora das regras acima.
-- O PC informa se a combinação é possível, sem ensinar a resposta ("Seu Composto foi criado!").
-- Ativo: `BondRules._pick_active_index` — maior nível; se houver Metal, o Metal é o **Cátion** (`is_bond_cation`: invisível, inalvejável, imune).
-
-#### Transferência de atributos do Composto — [Pendente]
-
-A regra anterior de transferência fixa de 70% do HP máximo e da energia é substituída pelo cálculo abaixo. Para cada atributo geral `X` — HP máximo, Ataque, Defesa e Velocidade — o valor do Composto é calculado a partir do atributo do Ânion somado à parcela transferida do Cátion:
+Para Ataque, Defesa e Velocidade Mecânica, o código utiliza:
 
 \[
-X_{\text{Composto}} = X_{\text{Ânion}} + (\alpha \cdot X_{\text{Cátion}})
-\]
-
-O fator de transferência `α` varia conforme a diferença de eletronegatividade e a carga/valência do Cátion:
-
-\[
-\alpha = \operatorname{clamp}\left(0{,}50 + 0{,}10 \cdot \Delta E + 0{,}05 \cdot Z_{\text{Cátion}}\,;\,0{,}50\,;\,0{,}95\right)
+\operatorname{Stat}(B, IV, N) =
+\left\lfloor 0{,}01(2B+IV)N \right\rfloor + 5
 \]
 
 Onde:
 
-- `ΔE` é a diferença absoluta entre as eletronegatividades dos elementos, na mesma escala: `|EN_Ânion − EN_Cátion|`.
-- `Z_Cátion` é o módulo da carga/valência positiva atribuída ao Cátion na ligação (por exemplo, 1 para Li⁺, 2 para Mg²⁺ e 3 para Al³⁺); nesta fórmula, não representa o número atômico.
-- `clamp(valor, mínimo, máximo)` limita `α` ao intervalo de 0,50 a 0,95.
-- Os atributos usados no cálculo são os valores máximos finais das criaturas no momento da formação, após os modificadores de nível, IV e personalidade.
-- A fórmula contempla HP máximo, Ataque, Defesa e Velocidade. **Energia de ação não está incluída** nesta transferência e permanece sem regra definida para o Composto.
+- \(B\): atributo-base da espécie;
+- \(IV\): valor individual sorteado;
+- \(N\): nível da criatura.
 
-Quando a fusão ocorrer durante uma batalha, a porcentagem de HP atual do Ânion será preservada sobre o novo HP máximo do Composto:
+O IV é sorteado entre 1 e 31 na criação da instância.
+
+**HP:** o comportamento registrado no código é calculado a partir do HP-base e da diferença entre o atributo calculado no novo nível e no nível anterior. Portanto, o HP no nível 1 permanece igual ao HP-base da ficha. Essa implementação diverge da fórmula de HP originalmente proposta no GDD e deve ser considerada a referência do protótipo até que uma decisão de projeto altere o código.
+
+### 7.3 Personalidades — [Extra]
+
+As instâncias recebem uma personalidade que aumenta um atributo em 10% e reduz outro em 10%. As personalidades identificadas no GDD existente são:
+
+- neutral;
+- bold;
+- stoic;
+- hasty;
+- calm;
+- keen.
+
+A personalidade é sorteada na criação da criatura e integra os dados individuais da instância.
+
+### 7.4 Energia de ação — [Parcial]
+
+A energia é representada no combate por `valence_electrons`, com limite associado à ficha da espécie. Os ataques consomem energia conforme o custo cadastrado. O valor atual persiste entre combates e é restaurado pelo Enfermeiro.
+
+Quando a energia chega a zero, o ataque é substituído por Slap. Não foi identificado consumo adicional de energia ao receber dano.
+
+### 7.5 Cadastro de uma nova espécie
+
+Para cadastrar uma espécie, preencher os dados correspondentes no recurso `AlchemonSheet` e nos recursos associados:
+
+1. **Identificação:** nome da criatura, elemento químico, símbolo e número atômico.
+2. **Classificação:** tipo de combate e categoria química.
+3. **Propriedades químicas:** massa atômica, elétrons de valência, alvo de estabilidade, eletronegatividade e estados de oxidação.
+4. **Atributos-base:** HP, Ataque, Defesa, Velocidade Mecânica e Energia de Ação.
+5. **Propriedades térmicas:** ponto de fusão, ponto de ebulição e calor específico, conforme os campos do recurso.
+6. **Combate:** ataques associados, poder, tipo, custo de energia e nível de desbloqueio.
+7. **Progressão:** recompensa de XP.
+8. **Representação:** modelo 3D, retrato e demais recursos visuais.
+
+UID, nível, IV, personalidade, HP atual, energia atual e lista de golpes equipados são dados da instância individual, não da espécie.
+
+### 7.6 Elementos documentados no GDD
+
+O documento anterior apresenta seis elementos de referência:
+
+| Elemento | Símbolo | Número atômico | Categoria |
+|---|---|---:|---|
+| Hidrogênio | H | 1 | Ametal |
+| Oxigênio | O | 8 | Ametal |
+| Silício | Si | 14 | Metaloide |
+| Arsênio | As | 33 | Metaloide |
+| Ferro | Fe | 26 | Metal de transição |
+| Ouro | Au | 79 | Metal de transição |
+
+Os valores detalhados de massa, eletronegatividade, estados de oxidação, propriedades térmicas e atributos-base devem permanecer associados às fichas individuais e ser revisados com fontes químicas confiáveis.
+
+**Inconsistência documental a resolver:** a versão anterior do GDD afirma que seis elementos estão documentados, mas a seção de espécies disponíveis descreve três espécies placeholder e uma espécie de debug. A quantidade de fichas documentadas não deve ser confundida com a quantidade de espécies efetivamente configuradas e selecionáveis no jogo.
+
+---
+
+## 8. Temperatura e estados físicos
+
+### 8.1 Temperatura de combate — [Parcial]
+
+O sistema utiliza Kelvin. A temperatura inicial da arena registrada no GDD anterior é 273,15 K.
+
+Quando um ataque acerta, o código calcula um incremento térmico:
 
 \[
-HP_{\text{Atual, Composto}} = \left(\frac{HP_{\text{Atual, Ânion}}}{HP_{\text{Máx, Ânion}}}\right) \cdot HP_{\text{Máx, Composto}}
+\Delta T_{\text{golpe}} =
+\left(\frac{N}{10}+1\right)
+\left(\frac{P}{10}\right)
+\left(\frac{A}{100}\right)
 \]
 
-A implementação deverá proteger a divisão quando `HP_Máx, Ânion` for zero ou negativo e limitar o HP atual ao intervalo válido do Composto. A regra de preservação proporcional aplica-se à fusão durante o combate; o HP inicial de fusões realizadas fora de combate ainda precisa ser definido.
+Onde \(N\) é o nível do atacante, \(P\) é o poder do golpe e \(A\) é o Ataque do atacante. O valor é decimal; não há arredondamento por `floor` nessa função.
 
-- Se o ativo cai, os parceiros são liberados com 30% do HP (`COMPOUND_RELEASE_HP_RATIO`) e a energia do caído. Essa regra de liberação não é alterada pela nova fórmula.
-- [Parcial] **Limitação:** `validate_stoichiometry` aceita apenas **2 elementos**; o exemplo H₂O (3 criaturas) ainda não é possível, embora `BondRules` já trate grupos maiores. Ainda não verificado se o Ânion é mostrado como "ativo" na UI do jogo além do rótulo do HUD.
+O valor térmico do golpe é convertido em energia \(Q\) por um fator de escala de balanceamento. Para criaturas individuais, a variação de temperatura segue:
 
----
+\[
+\Delta T = \frac{Q}{m \cdot c_p}
+\]
 
-## 10. Ataques
+Onde \(m\) é a massa atômica utilizada pelo sistema e \(c_p\) é o calor específico cadastrado.
 
-`AttackData`: `indexAttack`, `attack_name`, `power`, `energy_cost` (padrão 2), `element_type`. \[Parcial\] **Faltam** probabilidade de acerto e de crítico por ataque (o código usa valores globais). Ataques existentes: Tackle, Scratch, TailStrike, SLAP e ataques de debug. Cada espécie tem **3** ataques, não 4. Aprendizado de ataques por nível \[Pendente\].
+**Limitação importante:** o código também atualiza `arena_temperature`, mas a rotina consultada não propaga essa temperatura global para todos os participantes. O aquecimento efetivo por golpe é aplicado ao alvo atingido. Portanto, não documentar a arena como um campo térmico que aquece automaticamente todas as criaturas.
 
-### 10.1 Dano — \[OK\]/\[Parcial\]
+### 8.2 Transições de estado físico — [Parcial]
 
-`compute_damage = ((((2×nível/5 + 2) × poder × atq/def) / 50) + 2) × efetividade`, defesa mínima 1, resultado ≥ 0. Fórmula conforme o GDD. \[OK\]
+As criaturas individuais podem transitar entre sólido, líquido e gasoso conforme a temperatura e os pontos de fusão e ebulição da ficha.
 
-### 10.2 Crítico — \[Parcial\]
+As transições implementadas provocam dano calculado sobre o HP máximo:
 
-`CRIT_CHANCE = 12,5%` \[OK\]. Multiplicador **fixo 1,5** (`CRIT_MULTIPLIER`); o GDD prevê `(2×nível + 5)/(nível + 5)`. Existe também **chance de erro global de 1/6** (`MISS_CHANCE`) no lugar da probabilidade por ataque.
+| Transição | Parcela do HP máximo | Parcela por nível |
+|---|---:|---:|
+| Sólido → Líquido (fusão) | 10% | +1 × nível |
+| Líquido → Gasoso (ebulição) | 20% | +2 × nível |
+| Gasoso → Líquido (condensação) | 15% | +1,5 × nível (arredondamento inteiro do código) |
+| Líquido → Sólido (solidificação) | 10% | +1 × nível |
 
-### 10.3 Incremento de Temperatura — \[Parcial\]
+A mudança de estado pode percorrer mais de uma transição em um único aquecimento ou resfriamento, aplicando o dano de cada etapa atravessada.
 
-Ver seção 8.1.
+**Não implementado no comportamento consultado:** bônus ou penalidades diretas de Ataque, Defesa, Velocidade ou outros atributos por estado físico. O efeito atual é térmico e relacionado ao dano de transição.
 
-### 10.4 Iniciativa — \[OK\]
+### 8.3 Temperatura dos Compostos — [Parcial]
 
-`compute_initiative = floor(((velocidade + IV) × 2 × nível) / 100) + 5`.
+Um Composto possui temperatura própria, separada da temperatura individual de seus participantes. Suas propriedades térmicas são calculadas no momento da formação:
 
----
+- massa total: soma das massas dos participantes;
+- ponto de fusão e ebulição: médias ponderadas pela massa;
+- calor específico: parâmetro de balanceamento de acordo com o tipo de ligação;
+- limite de surto térmico: definido pelo tipo de ligação;
+- temperatura de cisão: calculada conforme a ligação iônica ou covalente.
 
-## 11. Captura de Criaturas Selvagens
+A mudança de estado físico do Composto provoca dano de transição no participante ativo do vínculo.
 
-### 11.1 Fluxo — \[Parcial\]
+### 8.4 Ruptura térmica e Sobrecarga — [Parcial]
 
-1. A interface envia o comando `capture` com um item de método de separação (`ItemData.is_capture_method`).
-2. `CombatRules._resolve_capture()` valida alvo (inimigo vivo) e método.
-3. **Método correto:** `tool_multiplier` = 255 se `capture_type` = tipo da espécie; 127 se errado. \[Parcial\] Hoje há 3 métodos placeholder (Metal, Ametal, Metaloide), **não** métodos físicos/químicos reais. O GDD exige perder o turno com dica textual no método incorreto — \[Pendente\] (hoje só reduz a chance).
-4. Captura bloqueada em batalha de treinador (`CAPTURE_BLOCKED_TEXT`). \[OK\]
-5. Em Composto inimigo, a regra de romper o laço antes de capturar o Cátion \[Pendente\].
+A cisão do Composto ocorre quando a temperatura interna alcança a temperatura de cisão ou quando um único golpe provoca uma variação térmica superior ao limite de surto.
 
-### 11.2 Fórmula — \[OK\]
+As fórmulas registradas no código são:
 
-`compute_capture_value(hp_max, hp_atual, X) = max(floor((3·HPmax − 2·HPatual) × X / (3·HPmax)), 1)`, limitado a 255, com redução de 8 bits (duas divisões inteiras por 2) quando `3·HPmax > 255`. Rolagem `randi_range(0, 254)`; sucesso se `roll < a`.
+**Ligação iônica:**
 
-### 11.3 Resultado da captura — \[Extra\]
+\[
+T_{\text{cisão}} =
+T_{\text{ebulição do ânion}}
++ 250|\Delta E|
++ 100|Z_{\text{cátion}}|
+\]
 
-`CombatResultApplier._apply_capture()` guarda **a mesma instância** combatida (`CombatState.enemy_instances`): UID, IV, personalidade e HP. A criatura nunca é armazenada com 0 HP (mínimo 1). Depois é transferida para `CapturedStorage`. O item é consumido a cada tentativa.
+**Ligação covalente:**
 
----
+\[
+T_{\text{cisão}} =
+\max(T_{\text{ebulição dos participantes}})
++ 150P
+\]
 
-## 12. Progressão de Nível e Experiência
+Onde \(\Delta E\) é a diferença de eletronegatividade, \(Z_{\text{cátion}}\) é a carga positiva de referência do cátion e \(P\) é a maior ordem de ligação compartilhada identificada no Composto.
 
-- **Nível:** \[Parcial\] não há teto de nível 20 no código.
-- **Level up** (`AlchemonGrowth.level_up`): recalcula ataque, defesa e velocidade, aumenta o limite de energia (sem restaurar a atual) e o HP máximo (somado ao HP atual se vivo). Múltiplos níveis por recompensa \[OK\].
-- **XP necessário:** \[Parcial\] fixo, `XP_TO_LEVEL_UP = 100` por nível, com sobra preservada.
-- **XP ganho:** \[OK\] `EXP = ((a × b × L) / 5) / 2` (`AlchemonGrowth.xp_for_defeat`). `a` = 1 (selvagem) ou 1,5 (treinador); `b` = `xp_reward` da espécie derrotada (padrão 100); `L` = nível do derrotado. Arredonda para baixo, mínimo 1.
-- **Distribuição:** \[Parcial\] `_grant_xp` concede XP **somente à criatura que derrotou/capturou** o alvo, e não igualmente às duas.
-- Tela de recompensas mostra XP, level up e moedas \[OK\] (`BattleRewards.entries`).
+Após a cisão:
 
-### 12.3 Obediência por Insígnias — \[Pendente\]
+- o vínculo é desfeito;
+- os participantes sobreviventes são liberados;
+- ocorre choque térmico de 20 pontos de dano nos participantes elegíveis;
+- cada Alchemon recebe o choque no máximo uma vez por combate;
+- inicia-se Sobrecarga Térmica por dois turnos completos;
+- os participantes liberados herdam a temperatura interna do Composto.
 
-Não há chance de desobediência. Existem apenas `BadgeData`, `PlayerData.award_badge()` (retorna `false` se já obtida) e a exibição na página do jogador. Insígnia atual: **Insígnia do Metal**, concedida ao vencer o NPC `is_gym_trainer`.
-
----
-
-## 13. Economia
-
-### 13.1 Moeda — \[Parcial\]
-
-`PlayerData.money` inicia em **500**; `add_money()` nunca fica negativo. Vitória contra treinador = 100. Venda de itens \[OK\] (loja).
-
-### 13.2 Itens — \[Parcial\]
-
-`ItemDatabase` e `ItemData` (`index`, `nome`, `descricao`, `icone`, `heal_amount`, `is_capture_method`, `capture_type`, `valorVenda`). `valorVenda` (int) = valor de venda do lojista, que compra pela metade. Cadastrados: 2 itens genéricos e 3 "métodos" de captura. Poção e Recuperador de Energia ainda **não existem como dados**.
-
-### 13.3 Lojas — \[OK\]
-
-NPC lojista abre `ShopDialogueBox` com Comprar / Vender / Sair. O lojista tem uma lista de itens à venda (`NPCSpawnPoint.shop_stock`; vazia = todos os itens com preço do `ItemDatabase`). Jogador **compra** pelo `valorVenda` e **vende** por metade dele (arredonda pra baixo; item com `valorVenda` ≤ 0 não é negociado). Regras em `ShopRules` (`buy_price`, `sell_price`, `buy`, `sell`), sem UI, cobertas por `test_shop.gd`.
-
----
-
-## 14. Armazenamento de Criaturas (PC)
-
-`PCStation` (`pc.gd`) abre `pc_ui` ao pressionar E, travando o jogador. Páginas: **Alchemy**, **Stored**, **Exit**.
-
-- **Time:** `max_party_size = 2` \[OK\]; não permite esvaziar o time (mínimo 1).
-- **Stored:** troca entre time e `CapturedStorage` conservando a instância (UID, nível, XP, IV, HP). \[OK\]
-- **Alchemy:** seleciona 2 criaturas, valida e cria Mistura/Composto. \[OK\]
-- &#91;Parcial\] Armazenamento é uma **lista sem caixas** (o GDD prevê 5 caixas × 30 = 150).
-- &#91;Pendente\] Troca de ataques equipados.
-- &#91;Parcial\] O PC está em cena e **não exige hospital**.
+Os valores de calor específico, limites de surto e dano de choque são parâmetros de balanceamento do jogo, não constantes físico-químicas universais.
 
 ---
 
-## 15. NPCs e Diálogo
+## 9. Misturas e Compostos
 
-Ver 3.4. Diálogo de duas falas (`dialogue` / `dialogue_defeated`) para treinadores e extra `dialogue_healed` para curandeiro. \[OK\]
+Os vínculos são configurados no PC e revalidados quando o combate é iniciado. O sistema mantém o vínculo no estado transitório de batalha, sem gravar os bônus temporários nos atributos permanentes da instância.
 
----
+### 9.1 Misturas — [Parcial]
 
-## 16. Hospital / Cura — \[Parcial\]
+Uma Mistura é formada por exatamente dois Alchemons quando a combinação não satisfaz as regras de formação de um Composto iônico ou covalente.
 
-NPC curandeiro (`is_healer`): pergunta Sim/Não, espera 2,5 s e chama `GameSession.heal_party()`, que restaura HP e energia de todas as criaturas (gratuito \[OK\]). \[Pendente\] Teletransporte ao último hospital, rastreamento do último hospital e cena de hospital.
+Exemplos de combinações que podem resultar em Mistura incluem metal + metal, combinações com metaloides, gases nobres ou pares sem ligação válida segundo o modelo do jogo.
 
----
+Efeito atual:
 
-## 17. Sistema de Salvamento — \[OK\]
+- +8 no HP máximo de cada participante;
+- +8 no HP atual de cada participante;
+- +8 na energia máxima de cada participante;
+- +8 na energia atual de cada participante.
 
-`GameSession` (autoload) e `SaveGame`:
+**Divergência:** o design anterior previa bônus em todos os atributos. O código aplica o bônus somente a HP e energia.
 
-- Manual pelo item **Save** do menu; arquivo `user://saves/slot_1.json`. \[Pendente\] Atalho F5.
-- `SaveGame.serialize()` grava: equipe, armazenamento, vínculo (por UID), moedas, nome/time do jogador, tempo de jogo, insígnias, inventário, NPCs derrotados e posição (fase, x, y, z, rotação).
-- `write_file()` é **atômico** (arquivo temporário + rename) e mantém `.bak`; `read_file()` recupera o backup se o principal estiver corrompido.
-- `apply()` valida tudo **antes** de alterar o estado (versão futura ou dados malformados não mudam nada), repara UIDs duplicados e descarta criaturas sem espécie.
-- Menu inicial: Novo Jogo (com confirmação de sobrescrita), Carregar e Sair. `autosave` existe e vem desligado.
+### 9.2 Compostos iônicos e covalentes — [Parcial]
 
----
+`CompoundRules` classifica as combinações e calcula a composição química. A estação de alquimia aceita grupos de dois a quatro Alchemons.
 
-## 18. Interface e Menus
+Limites identificados:
 
-### 18.1 Navegação — \[Parcial\]
+- até quatro Alchemons no grupo;
+- até quatro elementos químicos distintos;
+- até seis unidades de cada elemento;
+- até doze átomos na composição calculada.
 
-Nos menus: W/S movem (`menu_up/down`), E confirma (`menu_interact`), D abre sublista (`menu_right`), Esc volta. A tecla A (`menu_left`) está mapeada. Também há suporte a mouse nas listas.
+As quantidades estequiométricas são calculadas pelo sistema. Criaturas repetidas do mesmo elemento contribuem para a quantidade daquele elemento na fórmula.
 
-### 18.2 Menu do Jogo — \[Parcial\]
+**Ligação iônica:** ocorre entre metais e ametais quando a diferença de eletronegatividade atinge o limiar de 2,0 e as cargas podem ser neutralizadas. O sistema procura estados de oxidação e quantidades que resultem em carga total zero.
 
-`GameMenu` unificado (pausa + menu) com itens modulares ícone + nome:
+**Ligação covalente:** ocorre entre ametais quando a diferença de eletronegatividade é inferior ao limiar de 2,0. O algoritmo procura uma composição e ordens de ligação que satisfaçam as capacidades de ligação do modelo.
 
-| Item implementado | Corresponde no GDD | Conteúdo |
-| --- | --- | --- |
-| **Table** | Wiki (Tabela Periódica) | Lista de espécies por massa atômica, ficha, estatísticas e prévia 3D girando |
-| **Bag** | Bag | Itens empilhados, detalhe do item |
-| **Alchemons** | Alchemon | Cartões do time, estatísticas, ataques e informações |
-| **Player** | Name | Nome, equipe, moedas, tempo de jogo e insígnias |
-| **Save** | Save | Salva e mostra aviso "Game saved." |
-| **Exit** | Exit | Fluxo de saída |
+O sistema inclui fórmulas conhecidas para combinações como H₂, O₂, O₃, H₂O, NH₃, HCl, CH₄, CO₂, NaCl, MgCl₂, Na₂O, MgO e Al₂O₃, entre outras registradas em `CompoundRules`.
 
-&#91;Parcial\] "Options" não existe. O menu é exibido como lista, mas a posição "lado direito da tela" não foi verificada.
+A classificação didática é uma simplificação: não substitui uma descrição química completa de estruturas moleculares, ressonância, coordenação ou exceções à regra do octeto.
 
-### 18.3 Submenu Exit — \[OK\]
+### 9.3 Participante ativo, cátion e parceiros — [Parcial]
 
-`ExitFlowComponent`: 1º pop-up "Do you wish to exit without saving?" (Yes/No) → 2º pop-up "You want to exit the game?" (Exit/Cancel) → `get_tree().quit()`.
+`BondRules` seleciona o participante ativo do Composto. A regra atual escolhe o participante de maior nível, evitando selecionar um metal como ativo quando há metal no grupo.
 
-### 18.4 Interface de combate — \[Extra\]
+Os participantes não ativos ficam inativos durante o vínculo. No caso iônico, o metal é marcado como cátion e recebe as propriedades de proteção previstas pelo sistema de combate, incluindo não ser selecionado como alvo direto.
 
-`BattleCommands` (Ataque / Item / Fuga, com menu de captura dentro de Item), `CombatBalloons` (HUD de HP/energia/nível/XP por criatura), `CombatLogBox` (log), destaque de alvo (`TargetHighlight`) e indicadores `[Selvagem]`, `[Mistura]`, `[Cátion]`.
+### 9.4 Transferência de atributos — [Parcial]
 
----
+A implementação consultada ainda utiliza uma transferência fixa de 70% do HP máximo e da energia máxima dos participantes não ativos para o participante ativo:
 
-## 19. Elementos Disponíveis (Protótipo) — \[Parcial\]
+\[
+X_{\text{transferido}} =
+\left\lfloor 0{,}70 \cdot X_{\text{participante}} \right\rfloor
+\]
 
-Atualmente existem **3 espécies placeholder** (Metal, Ametal, Metaloide) + 1 espécie de debug (id 999). O objetivo de 6 elementos (2 Metais, 1 Ametal, 1 Metaloide, 1 Radioativo, 1 Artificial) e as lendárias \[Pendente\].
+O código aplica essa transferência a HP máximo, HP atual, energia máxima e energia atual. Ao desfazer o vínculo, os valores transferidos são removidos do ativo.
 
----
+**Importante:** a fórmula variável de transferência por eletronegatividade e carga do cátion, discutida anteriormente no projeto, não está implementada no código consultado. O arquivo `composto_alpha.patch` não deve ser tratado como funcionalidade integrada enquanto não estiver aplicado e confirmado na branch principal.
 
-## 20. Ginásios — \[Parcial\]
+### 9.5 Liberação dos participantes — [Parcial]
 
-Não há cena de ginásio. Existe **um NPC líder de ginásio Metal** em `scene_1` (nível 8, espécies 1 e 2) que concede a **Insígnia do Metal**. A obediência garantida até nível 10 \[Pendente\].
+Quando o participante ativo cai, os parceiros são liberados. A regra atual restaura os participantes liberados com 30% do HP máximo e utiliza a energia do participante que caiu, com um valor mínimo de fallback quando necessário.
 
----
-
-## 21. Notas Técnicas de Implementação (Engine) — \[OK\]
-
-### 21.1 Inventário (atualização)
-
-- `inventory.tres` (`InventoryData`): lista de índices de itens; `add_item`, `remove_item`, `get_quantity`, `get_stacked_view`.
-- `ItemDatabase.tres`: itens indexados (`get_item(index)`).
-- Itens coletáveis pertencem ao grupo global `collectible`.
-
-### 21.2 Arquitetura por responsabilidade
-
-| Pasta | Responsabilidade |
-| --- | --- |
-| `scenes/` | Cena principal, fases, portas, NPC spawn, `SceneManager`, `FollowerManager`, PC |
-| `EXPLORATION/` | Jogador e componentes, câmera, NPC, encontros, estação de alquimia |
-| `COMBAT/` | Estado, regras, fases, ações, recompensas, sincronização |
-| `DATABASE/` | Espécies, instâncias, ataques, inventário, jogador, `SaveGame` |
-| `INTERFACES/` | Menus, HUD, comandos de batalha, páginas |
-| `autoload/` | `GameSession`, `CombatSignal` |
-| `test/` | Testes GdUnit4 |
-
-### 21.3 Princípio de separação
-
-`CombatRules` calcula o resultado; `CombatResultApplier` é o único que altera `CombatState`; `CreatureSync` grava de volta nível, XP, HP e energia por **UID** (nunca pela posição). Recursos persistentes são alterados só nessas fronteiras.
+A cisão térmica também desfaz o vínculo e aplica choque térmico conforme as regras da seção 8.
 
 ---
 
-## 22. Índice de Funções Implementadas
+## 10. Ataques e aprendizado
 
-| Classe / arquivo | Funções principais |
-| --- | --- |
-| `AlchemonFormulas` | `compute_stat`, `compute_max_hp`, `compute_damage`, `compute_initiative`, `compute_temperature_delta`, `compute_capture_value` |
-| `AlchemonType` | `effectiveness`, `type_name` |
-| `AlchemonGrowth` | `grant_experience`, `level_up` |
-| `CombatRules` | `roll_initiative`, `resolve_action`, `_resolve_attack/_item/_capture`, `resolve_flee`, `tool_multiplier`, `capture_roll_succeeds`, `check_combat_end`, `has_all_commands` |
-| `CombatResultApplier` | `apply`, `_apply_damage`, `_apply_heal`, `_apply_capture`, `_apply_arena_heat`, `_grant_xp` |
-| `BondRules` | `apply_bond`, `release_compound_partners` |
-| `AlchemyStation` | `determine_bond_kind`, `is_mixture`, `validate_stoichiometry` |
-| `BattlePhaseMachine` | `is_valid_transition`, `transition`, `force_phase` |
-| `CombatStateFactory` | `build` (com vínculo do jogador e da IA) |
-| `CombatSceneManager` | `_on_combat_start`, `_on_battle_finished`, `_on_combat_ended` |
-| `BattleRewards` | `build`, `money_for` |
-| `CreatureSync` | `apply_battle`, `write_back` |
-| `CreatureFactory` | `create` (IV, personalidade, UID) |
-| `AlchemonInstance` | `compute_stats`, `to_dict`, `from_dict`, `hp_or_full`, `is_fainted` |
-| `CapturedStorage` / `PlayerPartyData` | `add_instance`, `remove_instance`, `find_by_uid` |
-| `PlayerData` | `add_money`, `award_badge`, `get_play_time` |
-| `GameSession` | `new_game`, `save_game`, `load_game`, `heal_party`, `can_fight`, `mark_npc_defeated`, `take_resume_position` |
-| `SaveGame` | `serialize`, `apply`, `write_file`, `read_file` |
-| `SceneManager` / `SceneDoor` | `change_level`, `get_save_position` |
-| `WildernessEncounter` | `_roll` (por tempo) |
-| `NPC` | `talk`, `open_healer`, `open_shop`, `mark_defeated` |
-| `PCStation` / `pc_ui` | `open_pc`, troca de time, criação de Mistura/Composto |
-| `GameMenu`, `TablePage`, `BagPage`, `AlchemonsPage`, `PlayerPage` | Menu unificado e páginas |
+### 10.1 Cadastro e lista de ataques — [Parcial]
 
----
+Os ataques possuem identificador, nome, poder, custo de energia, tipo e nível de desbloqueio. O banco global de ataques é utilizado para compor uma lista comum de golpes, ordenada pelo nível necessário.
 
-## 23. Testes Automatizados (GdUnit4) — \[Extra\]
+Ataques de debug não entram na lista normal.
 
-| Suíte | Testes | Escopo |
-| --- | --- | --- |
-| `test_alchemonGrowth` | 4 | Fórmula de atributo, level up, energia, estado físico |
-| `test_capture_formula` | 13 | Valor de captura, limites 1–255, redução de 8 bits, rolagem, ferramenta |
-| `test_battle_rewards` | 11 | Moeda, XP, tela de recompensas, ordem de encerramento |
-| `test_creature_persistence` | 39 | UID, JSON, saneamento, sincronização por UID, save/load, posição, inventário |
-| `test_player_bond_combat` | 5 | Vínculo do jogador em combate, vínculo obsoleto, cátion inalvejável |
-| `test_badges` | 4 | Insígnia concedida uma vez, busca por nome, `player.tres` |
-| **Total** | **76** |  |
+### 10.2 Limite de golpes — [OK]
 
-A documentação técnica completa, a matriz de QA (RF01–RF14) e os testes de performance estão em `docs/ARQUITETURA_E_TESTES.md`.
+Cada instância pode manter até quatro ataques equipados. Na criação, o sistema seleciona os ataques já desbloqueados até o nível atual, respeitando o limite de quatro.
+
+### 10.3 Aprendizado por nível — [OK]/[Parcial]
+
+Quando uma criatura alcança um nível com novo ataque disponível:
+
+- se houver espaço, o golpe é adicionado automaticamente;
+- se o conjunto estiver cheio, o golpe fica pendente para o jogador;
+- o jogador pode substituir um golpe equipado ou recusar o novo aprendizado;
+- para adversários controlados pela IA, o sistema substitui automaticamente o golpe de menor poder.
+
+A lógica de aprendizado está implementada em `AttackLearning` e é chamada durante o avanço de nível.
+
+### 10.4 Dano, crítico e erro — [Parcial]
+
+O dano considera nível, poder, Ataque, Defesa e efetividade elemental. A chance de crítico e a chance de erro ainda são globais, e o multiplicador crítico atual é fixo em 1,5.
 
 ---
 
-## 24. Divergências GDD × Código (decisões pendentes)
+## 11. Captura de criaturas
 
-1. **HP:** fórmula do GDD (`+ nível + 10`) × fórmula do código (base + ganho por nível).
-2. **Crítico:** multiplicador `(2L+5)/(L+5)` × fixo 1,5; acerto por ataque × erro global 1/6.
-3. **XP:** fórmula `√A·A²…` × XP fixo da espécie e 100 por nível; XP para ambas × só para quem derrotou.
-4. **Temperatura inicial:** 25 °C × 273,15 K; ΔT com `floor` × decimal.
-5. **Mistura/Composto:** a transferência de atributos do Composto ainda usa 70% fixos de HP e energia no código; o novo design prevê fator variável (50%–95%) para HP máximo, Ataque, Defesa e Velocidade, calculado por eletronegatividade e carga do Cátion. A energia de ação ainda não tem regra definida.
-6. **Derrota e cura:** hospital com teleporte × NPC curandeiro sem teleporte.
-7. **Fuga:** só contra selvagens × permitida sempre.
-8. **Câmera:** fixa atrás do avatar × zona morta com seguimento.
-9. **Energia:** reduzida ao sofrer golpes × só ao atacar.
-10. **Menu:** Wiki/Alchemon/Bag/Name/Save/Options/Exit × Table/Bag/Alchemons/Player/Save/Exit; Tab abre o menu completo.
+### 11.1 Fluxo — [Parcial]
+
+1. O jogador seleciona um item identificado como método de captura.
+2. O sistema valida se o alvo é um inimigo vivo.
+3. A compatibilidade entre o método e o tipo da criatura determina o multiplicador.
+4. Uma rolagem aleatória determina o sucesso.
+5. Em caso de sucesso, a criatura capturada é transferida para o armazenamento.
+
+A captura é bloqueada em batalhas contra treinadores.
+
+### 11.2 Multiplicadores atuais — [Parcial]
+
+- método compatível: 255;
+- método incompatível: 127.
+
+Os métodos atuais são categorias provisórias associadas aos tipos Metal, Ametal e Metaloide. A lista definitiva de ferramentas físicas ou químicas e seus critérios de utilização permanece pendente.
+
+### 11.3 Fórmula de captura — [OK]
+
+O valor de captura aumenta conforme o HP do alvo diminui:
+
+\[
+a =
+\max\left(
+\left\lfloor
+\frac{(3HP_{\max}-2HP_{\text{atual}})X}{3HP_{\max}}
+\right\rfloor,
+1
+\right)
+\]
+
+O resultado é limitado ao intervalo de 1 a 255. Quando necessário, o sistema reduz os termos para caber no limite de oito bits. A rolagem ocorre entre 0 e 254, e a captura é bem-sucedida quando o valor sorteado é menor que \(a\).
+
+### 11.4 Preservação da instância — [OK]
+
+A captura preserva a instância exata utilizada no combate, incluindo UID, IV, personalidade, nível e estado de HP. O HP armazenado não pode ser inferior a 1. A instância é transferida para `CapturedStorage`.
 
 ---
 
-## 25. Questões em Aberto (mantidas do GDD original)
+## 12. Progressão, experiência e níveis
+
+### 12.1 Curva de experiência — [OK]
+
+A experiência acumulada necessária para alcançar o nível \(N\) segue a curva cúbica:
+
+\[
+XP_{\text{acumulada}}(N)=N^3
+\]
+
+O custo para avançar do nível \(N\) para \(N+1\) é:
+
+\[
+XP_{\text{próximo}}=(N+1)^3-N^3
+\]
+
+O excedente de experiência permanece após o avanço, e uma única recompensa pode conceder múltiplos níveis.
+
+### 12.2 Experiência por derrota — [OK]
+
+A recompensa utiliza a fórmula:
+
+\[
+XP = \left\lfloor \frac{a \cdot b \cdot L}{10} \right\rfloor
+\]
+
+Onde:
+
+- \(a=1\) em encontros selvagens;
+- \(a=1{,}5\) em batalhas contra treinadores;
+- \(b\) é a recompensa-base de XP da espécie derrotada;
+- \(L\) é o nível da criatura derrotada.
+
+O resultado possui mínimo de 1 ponto de experiência.
+
+### 12.3 Distribuição de experiência — [OK]
+
+A implementação atual concede a experiência aos participantes vivos do lado responsável pela derrota do alvo, não apenas à criatura que executou o golpe final. Isso inclui os membros vivos da equipe do jogador e, conforme o lado que realizou a ação, os participantes vivos da equipe adversária.
+
+### 12.4 Efeitos do avanço de nível — [OK]/[Parcial]
+
+O avanço recalcula Ataque, Defesa e Velocidade, aumenta o HP máximo e a energia máxima e aciona o sistema de aprendizado de ataques.
+
+O aumento de HP máximo também é acrescentado ao HP atual quando a criatura está viva. O aumento do limite de energia não restaura automaticamente a energia atual.
+
+**Pendente:** definir e implementar um teto de nível, caso o limite 20 previsto no design original continue desejado.
+
+### 12.5 Insígnias e obediência — [Parcial]
+
+A estrutura de insígnias existe, e o NPC líder do ginásio Metal concede a Insígnia do Metal. A implementação de regras de obediência por nível e quantidade de insígnias não foi identificada.
+
+---
+
+## 13. Economia e itens
+
+### 13.1 Moeda — [OK]/[Parcial]
+
+O jogador inicia com 500 moedas. A vitória contra treinadores concede 100 moedas. A venda de itens também pode gerar moeda.
+
+Os valores de recompensa e preços ainda precisam de balanceamento.
+
+### 13.2 Itens — [Parcial]
+
+Os itens são definidos por dados que incluem identificador, nome, descrição, ícone, valor de cura, identificação de método de captura, tipo de captura e valor de venda.
+
+Os itens de cura e recuperação de energia devem ser conferidos no banco atual antes de serem descritos como conteúdo final. A versão anterior do GDD registrava apenas itens genéricos e métodos de captura provisórios.
+
+### 13.3 Lojas — [OK]
+
+O NPC lojista oferece opções de compra e venda. O preço de compra utiliza o valor de venda cadastrado; a venda pelo jogador ocorre por metade desse valor, arredondado para baixo. Itens com valor não positivo não são negociados.
+
+---
+
+## 14. PC e armazenamento de criaturas
+
+O PC permite acessar páginas de alquimia, armazenamento e saída.
+
+- **Equipe:** limite atual de duas criaturas; o jogador não pode deixar a equipe vazia.
+- **Armazenamento:** transfere instâncias entre equipe e armazenamento, preservando UID e dados individuais.
+- **Alquimia:** seleciona participantes para formar Misturas ou Compostos, conforme as regras químicas.
+
+**Limitações:** o armazenamento é uma lista, não um sistema completo de caixas. A organização prevista originalmente em caixas e a troca de ataques por meio do PC ainda precisam ser verificadas ou implementadas.
+
+---
+
+## 15. NPCs e diálogos
+
+NPCs podem apresentar diálogos iniciais e falas alternativas após serem derrotados. O Enfermeiro possui fluxo de confirmação e mensagem específica após a cura.
+
+Papéis identificados:
+
+- treinador;
+- líder de ginásio;
+- lojista;
+- Enfermeiro.
+
+A persistência do estado de NPC derrotado utiliza identificadores estáveis associados à fase e ao ponto de spawn.
+
+---
+
+## 16. Cura e hospital
+
+### 16.1 Enfermeiro — [OK]
+
+O NPC Enfermeiro solicita confirmação, aguarda o tempo configurado e executa a cura da equipe. O sistema restaura HP e energia das criaturas.
+
+### 16.2 Hospital — [Pendente]
+
+Não foi identificada uma cena de hospital independente, o rastreamento de último hospital ou o teletransporte automático para esse local após a derrota.
+
+---
+
+## 17. Salvamento e carregamento — [OK]
+
+O sistema utiliza `GameSession` e `SaveGame`. O salvamento manual é acessado pelo menu e utiliza arquivo JSON em `user://saves/slot_1.json`.
+
+Os dados registrados incluem:
+
+- equipe e armazenamento;
+- vínculos alquímicos;
+- moedas e dados do jogador;
+- tempo de jogo;
+- insígnias;
+- inventário;
+- NPCs derrotados;
+- fase, posição e rotação do jogador.
+
+A gravação é atômica, utiliza arquivo temporário e mantém backup `.bak`. O carregamento valida os dados antes de alterar o estado da sessão, trata dados malformados e pode recuperar o backup quando o arquivo principal está corrompido.
+
+O autosave existe como opção, mas permanece desligado por padrão no estado documentado. Atalhos F5/F9 não foram identificados.
+
+---
+
+## 18. Interface e menus
+
+### 18.1 Menu unificado — [Parcial]
+
+O menu do jogo reúne as seguintes páginas:
+
+| Página | Conteúdo |
+|---|---|
+| Table | Catálogo de espécies, ficha, estatísticas e prévia 3D. |
+| Bag | Itens do inventário e detalhes. |
+| Alchemons | Equipe, estatísticas, ataques e informações das criaturas. |
+| Player | Nome, equipe, moedas, tempo de jogo e insígnias. |
+| Save | Salvamento manual. |
+| Exit | Fluxo de confirmação e saída. |
+
+A página de opções prevista no design original não foi identificada no menu atual.
+
+### 18.2 Interface de combate — [Extra]
+
+A interface de combate inclui comandos de ação, HUD de HP, energia, nível e XP, registro de eventos, seleção de alvo e indicadores de estado, como Selvagem, Mistura e Cátion.
+
+A documentação visual deve ser atualizada conforme os elementos efetivamente presentes nas cenas e recursos de interface.
+
+---
+
+## 19. Espécies disponíveis no protótipo
+
+O GDD anterior descreve três espécies placeholder — Metal, Ametal e Metaloide — e uma espécie de debug identificada pelo ID 999. Também documenta seis elementos químicos como referência de cadastro.
+
+Essas duas informações representam coisas diferentes:
+
+1. **Elementos documentados:** fichas químicas de referência descritas no GDD.
+2. **Espécies utilizáveis no protótipo:** recursos efetivamente cadastrados no banco de dados e selecionáveis nas cenas.
+
+A lista de espécies jogáveis deve ser confirmada diretamente no recurso `AlchemonDatabase` antes de cada versão de distribuição.
+
+---
+
+## 20. Ginásios e insígnias
+
+Existe um NPC líder de ginásio Metal na primeira fase de teste. A vitória concede a Insígnia do Metal.
+
+Ainda não foi identificada uma estrutura completa de ginásios como cenas independentes, progressão por múltiplas insígnias, Super Liga ou sistema de obediência associado às insígnias.
+
+---
+
+## 21. Arquitetura técnica
+
+O projeto está organizado por responsabilidade:
+
+| Diretório | Responsabilidade |
+|---|---|
+| `scenes/` | Cena principal, fases, portas, pontos de spawn e gerenciadores de cena. |
+| `EXPLORATION/` | Jogador, componentes, câmera, NPCs, encontros e estação de alquimia. |
+| `COMBAT/` | Estado da batalha, regras, fases, ações, vínculos, térmica e sincronização. |
+| `DATABASE/` | Espécies, instâncias, ataques, inventário, jogador e salvamento. |
+| `INTERFACES/` | Menus, HUD, comandos e páginas de interface. |
+| `autoload/` | Serviços globais de sessão e sinais. |
+| `test/` | Testes automatizados GdUnit4. |
+
+### 21.1 Separação de responsabilidades
+
+- `CombatRules` calcula resultados das ações.
+- `CombatResultApplier` aplica os resultados ao estado transitório do combate.
+- `BondRules` controla formação, efeitos e dissolução dos vínculos.
+- `ThermalRules` calcula variações térmicas, transições e sobrecarga.
+- `CompoundRules` analisa combinações químicas e determina a composição.
+- `AttackLearning` controla desbloqueio, aprendizado e substituição de ataques.
+- `CreatureSync` sincroniza os resultados da batalha com as instâncias persistentes por UID.
+
+O estado transitório de combate não deve sobrescrever atributos permanentes com bônus temporários de Misturas ou Compostos.
+
+---
+
+## 22. Índice de sistemas e responsabilidades
+
+| Sistema | Responsabilidade principal |
+|---|---|
+| `AlchemonFormulas` | Fórmulas de atributos, dano, iniciativa, temperatura e captura. |
+| `AlchemonType` | Efetividade e identificação dos tipos. |
+| `AlchemonGrowth` | XP, avanço de nível e atualização de atributos. |
+| `AttackLearning` | Lista de ataques, desbloqueios, aprendizado e substituição. |
+| `CombatRules` | Validação e resolução das ações de combate. |
+| `CombatResultApplier` | Aplicação de dano, cura, captura, calor e XP. |
+| `ThermalRules` | Aquecimento, resfriamento, transições e sobrecarga térmica. |
+| `CompoundRules` | Classificação iônica/covalente e composição estequiométrica. |
+| `BondRules` | Misturas, Compostos, transferência atual e liberação de parceiros. |
+| `AlchemyStation` | Validação das seleções realizadas no PC. |
+| `BattlePhaseMachine` | Controle das fases do combate. |
+| `CombatStateFactory` | Criação do estado de batalha e aplicação de vínculos. |
+| `BattleRewards` | Construção das recompensas após a batalha. |
+| `CreatureSync` | Sincronização dos dados por UID. |
+| `CreatureFactory` | Criação de instâncias, IV e personalidade. |
+| `GameSession` | Novo jogo, cura, salvamento, carregamento e progresso. |
+| `SaveGame` | Serialização, validação e persistência JSON. |
+| `SceneManager` | Mudança de fase e retomada de posição. |
+| `WildernessEncounter` | Encontros selvagens por tempo. |
+| `NPC` | Diálogos, loja, cura e encontros com treinadores. |
+| `PCStation` | Armazenamento e criação de vínculos. |
+
+---
+
+## 23. Testes e qualidade
+
+O repositório contém testes automatizados GdUnit4 para regras de combate, crescimento, captura, persistência, vínculos e outros sistemas.
+
+**Inconsistência da documentação:** o GDD anterior informa 76 testes, enquanto `docs/ARQUITETURA_E_TESTES.md` apresenta uma contagem diferente em seu conteúdo. Não consolidar uma quantidade definitiva sem executar a suíte completa na versão atual e atualizar os dois documentos.
+
+A cobertura automatizada não substitui a verificação integrada das cenas. Os fluxos que dependem de física, entrada do jogador, HUD, animações, sinais e troca entre exploração e combate ainda precisam de execução manual no Godot.
+
+### 23.1 Critérios de validação
+
+- execução dos testes automatizados;
+- verificação de encontros e transições de cena;
+- execução de combate completo;
+- teste de captura e preservação da instância;
+- formação, uso e dissolução de Misturas e Compostos;
+- aquecimento, transições térmicas, cisão e Sobrecarga;
+- aprendizado e substituição de ataques;
+- salvamento e carregamento de equipe, inventário e posição.
+
+### 23.2 Performance e builds
+
+O documento técnico existente descreve uma bateria de testes para FPS, carregamento de cenas, RAM, VRAM e integridade dos builds Windows. Os resultados quantitativos devem ser preenchidos somente após execução no ambiente-alvo. A presença de executáveis e pacotes exportados não comprova, isoladamente, desempenho ou execução correta.
+
+---
+
+## 24. Divergências e decisões de projeto
+
+1. **HP:** a fórmula do código utiliza o HP-base e o ganho calculado por nível; não corresponde à fórmula de HP originalmente proposta.
+2. **Crítico:** o código usa multiplicador fixo de 1,5, em vez da fórmula variável originalmente descrita.
+3. **Erro:** a chance é global (1/6), não individual por ataque.
+4. **Temperatura global:** `arena_temperature` é atualizada, mas a rotina consultada não propaga o calor para todos os combatentes.
+5. **Temperatura individual:** o alvo atingido recebe energia térmica e pode sofrer dano ao atravessar transições de estado físico.
+6. **Compostos:** a transferência de HP e energia permanece fixa em 70%; a fórmula variável por eletronegatividade e carga ainda não está integrada.
+7. **Misturas:** o bônus atual é aplicado a HP e energia, não a todos os atributos.
+8. **Compostos de múltiplos participantes:** a lógica atual aceita grupos de até quatro Alchemons, embora versões anteriores do GDD descrevessem somente pares.
+9. **XP:** a curva atual é cúbica (N³); a recompensa é calculada pela espécie e pelo nível derrotado.
+10. **Distribuição de XP:** o código atual concede XP aos participantes vivos do lado responsável pela derrota, e não somente ao autor do golpe final.
+11. **Ataques por nível:** o sistema de desbloqueio e substituição está implementado; o GDD anterior ainda o classificava como pendente.
+12. **Captura:** a fórmula está implementada, mas os métodos permanecem categorias provisórias.
+13. **Derrota:** não há teletransporte automático para hospital.
+14. **Encontros:** a rolagem é temporal, não por passos; treinadores usam área de colisão, não cone de visão.
+15. **Obediência:** a insígnia existe, mas não há regra de desobediência identificada.
+16. **Espécies:** o número de elementos descritos no GDD não corresponde necessariamente ao número de espécies cadastradas no banco do jogo.
+17. **Testes:** a contagem informada no GDD diverge da documentação técnica e precisa de execução e reconciliação.
+
+---
+
+## 25. Trabalho futuro
 
 ### 25.1 Temperatura
 
-- Fator de conversão entre Energia de Dissociação (kJ/mol) e Kelvin para ruptura de laço.
-- Proporção de alteração de atributos por estado físico.
-- Unidades alternativas no HUD em confrontos especiais.
+- Definir se a temperatura da arena deve aquecer todos os participantes ou permanecer apenas como indicador global.
+- Validar os valores de calor específico e o fator de escala térmica.
+- Definir se estados físicos devem modificar atributos, além do dano de transição.
+- Revisar a modelagem térmica de elementos que sublimam à pressão ambiente, como o Arsênio.
+- Validar as fórmulas de temperatura de cisão e limites de surto com testes integrados.
 
 ### 25.2 Misturas e Compostos
 
-- Percentual de incremento da Mistura (hoje fixo em +8 em HP e energia).
-- Definir como identificar Ânion e Cátion em ligações covalentes.
-- Definir a regra de transferência ou preservação da energia de ação, não contemplada na nova fórmula.
+- Integrar e testar a fórmula variável de transferência de atributos, caso ela permaneça como decisão de design.
+- Definir formalmente a transferência ou preservação de energia de ação.
 - Definir o HP inicial de Compostos formados fora de combate.
-- Se o jogador pode romper compostos adversários aquecendo a arena.
-- Limite de Compostos por combate.
-- *Novo:* suporte a Compostos de 3+ criaturas (ex.: H₂O).
+- Revisar a identificação de cátion e ânion em compostos com múltiplos participantes.
+- Testar a seleção de grupos de três e quatro Alchemons na interface.
+- Definir limites de Compostos simultâneos por combate.
+- Verificar a possibilidade de o jogador provocar a cisão de Compostos adversários por aquecimento.
 
 ### 25.3 Captura
 
-- Lista final de métodos físicos/químicos e critério de acerto.
-- Multiplicador X de cada categoria (hoje 255 / 127).
-- Onde e a que custo a Ferramenta de Separação é obtida.
+- Definir os métodos físicos e químicos definitivos.
+- Estabelecer os multiplicadores e critérios pedagógicos de cada método.
+- Implementar dicas para tentativas com método incompatível, se mantidas no design.
+- Definir como capturar participantes de um Composto sem violar as regras de vínculo.
 
-### 25.4 Atributos e Progressão
+### 25.4 Progressão e combate
 
-- Mapeamento nível → insígnias e implementação da obediência.
-- Ataques e níveis de desbloqueio dos 6 elementos.
-- XP Base fixo ou por criatura (hoje por espécie via `xp_reward`).
-- Nível máximo (20 no protótipo) ainda não aplicado.
+- Definir o nível máximo.
+- Completar o balanceamento dos ataques e seus níveis de desbloqueio.
+- Verificar visualmente a interface de escolha e substituição de ataques.
+- Revisar as chances globais de erro e crítico.
+- Avaliar a iniciativa por rodada ou por combate.
 
-### 25.5 Economia
+### 25.5 Mundo e conteúdo
 
-- Balancear `valorVenda` dos itens e recompensa por vitória.
+- Criar tabelas de encontros ponderadas por região.
+- Ampliar o banco de espécies jogáveis.
+- Desenvolver ginásios, insígnias e sistema de obediência.
+- Desenvolver hospital e retorno após derrota.
+- Desenvolver Super Liga, criaturas raras e elementos artificiais.
+- Implementar corrida e atalhos de salvamento/carregamento, se mantidos no escopo.
 
-### 25.6 Mundo e Encontros
+### 25.6 Validação
 
-- Tabelas de encontro por área com pesos.
-- Cenas de hospital, loja e ginásio; mapas; Super Liga.
-- Atalhos F5/F9 e ação de corrida.
+- Executar a suíte completa GdUnit4 e reconciliar a contagem de testes.
+- Executar os fluxos manuais de integração no Godot.
+- Medir FPS, carregamento, RAM e VRAM em builds de distribuição.
+- Registrar versão do engine, sistema operacional, hardware, commit e data dos testes.
+- Separar claramente testes automatizados, testes funcionais manuais e testes de desempenho.
