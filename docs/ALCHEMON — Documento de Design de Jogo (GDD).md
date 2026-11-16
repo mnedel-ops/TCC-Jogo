@@ -25,7 +25,6 @@
 | Atributos e IV | [Parcial] | Fórmulas de atributos e IV implementados; correspondência química dos atributos-base ainda não consolidada. |
 | Personalidades | [Extra] | Modificadores de +10% e −10% em atributos. |
 | Temperatura e estados físicos | [Parcial] | Aquecimento do alvo, transições, dano térmico e estados do Composto; a temperatura global da arena não propaga o calor para todos os combatentes. |
-| Misturas | [Parcial] | Vínculo entre exatamente dois Alchemons; bônus em HP e energia, não em todos os atributos. |
 | Compostos iônicos e covalentes | [Parcial] | Regras químicas suportam grupos de até quatro Alchemons e até quatro elementos distintos; transferência de atributos ainda usa 70% fixos. |
 | Captura | [Parcial] | Fórmula e preservação da instância implementadas; métodos de captura ainda são categorias provisórias. |
 | Ataques por nível | [OK]/[Parcial] | Desbloqueio por nível e limite de quatro golpes implementados; a escolha de substituição depende da interface. |
