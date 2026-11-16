@@ -127,7 +127,7 @@ O jogador utiliza colisões do cenário para impedir a passagem por obstáculos.
 
 ### 3.5 Estruturas do mapa — [Parcial]
 
-Loja, cura e ginásio são representados por NPCs e pontos de interação dentro das fases. Não foram identificadas cenas independentes completas para hospital, loja ou ginásio.
+Loja, cura e ginásio são representados por NPCs e pontos de interação dentro das fases. Não foram identificadas cenas independentes completas para hospital e loja.
 
 ---
 
@@ -230,7 +230,18 @@ A efetividade é calculada entre o tipo do ataque e o tipo da espécie atingida.
 
 `AlchemonSheet` armazena os dados de cada espécie, incluindo massa atômica, atributos-base, energia de ação, propriedades de valência e propriedades térmicas.
 
-Os atributos-base de combate ainda devem ser tratados como parâmetros de balanceamento quando não houver uma fórmula química formal que justifique sua conversão. Não se deve afirmar que HP, Ataque, Defesa e Velocidade já são calculados automaticamente a partir de massa atômica ou eletronegatividade.
+
+## Conversão de Conceitos Químicos em Atributos de Jogo
+
+| Atributo de jogo | Conceito químico associado | Relação com o atributo |
+|---|---|---|
+| **HP (Vida)** | Estabilidade química | Representa a resistência do elemento a transformações químicas. Elementos mais estáveis tendem a apresentar maior capacidade de permanecer em seu estado químico. |
+| **Ataque** | Reatividade química | Representa a capacidade de um elemento participar de reações químicas. Elementos mais reativos recebem maior potencial ofensivo. |
+| **Defesa** | Energia de ionização | Representa a dificuldade de remover elétrons de um átomo. No jogo, uma energia de ionização elevada pode ser associada a maior resistência contra determinados efeitos. |
+| **Velocidade** | Eletronegatividade | Representa a tendência de um átomo atrair elétrons em uma ligação química. No jogo, essa propriedade pode influenciar a rapidez de determinadas ações ou interações. |
+
+**Nota:** As relações apresentadas são associações didáticas e lúdicas, não relações quantitativas universais da Química. As propriedades químicas servem como referência para a construção das regras de jogo, sem representar equivalências científicas diretas.
+
 
 ### 7.2 Fórmulas de atributos — [Parcial]
 
@@ -264,9 +275,9 @@ As instâncias recebem uma personalidade que aumenta um atributo em 10% e reduz 
 
 A personalidade é sorteada na criação da criatura e integra os dados individuais da instância.
 
-### 7.4 Energia de ação — [Parcial]
+### 7.4 Energia de ação — [OK]
 
-A energia é representada no combate por `valence_electrons`, com limite associado à ficha da espécie. Os ataques consomem energia conforme o custo cadastrado. O valor atual persiste entre combates e é restaurado pelo Enfermeiro.
+A energia é representada no combate por `valence_electrons`. Os ataques consomem energia conforme o custo cadastrado. O valor atual persiste entre combates e é restaurado pelo Enfermeiro.
 
 Quando a energia chega a zero, o ataque é substituído por Slap. Não foi identificado consumo adicional de energia ao receber dano.
 
@@ -345,8 +356,6 @@ As transições implementadas provocam dano calculado sobre o HP máximo:
 | Líquido → Sólido (solidificação) | 10% | +1 × nível |
 
 A mudança de estado pode percorrer mais de uma transição em um único aquecimento ou resfriamento, aplicando o dano de cada etapa atravessada.
-
-**Não implementado no comportamento consultado:** bônus ou penalidades diretas de Ataque, Defesa, Velocidade ou outros atributos por estado físico. O efeito atual é térmico e relacionado ao dano de transição.
 
 ### 8.3 Temperatura dos Compostos — [Parcial]
 
@@ -574,13 +583,11 @@ O resultado possui mínimo de 1 ponto de experiência.
 
 A implementação atual concede a experiência aos participantes vivos do lado responsável pela derrota do alvo, não apenas à criatura que executou o golpe final. Isso inclui os membros vivos da equipe do jogador e, conforme o lado que realizou a ação, os participantes vivos da equipe adversária.
 
-### 12.4 Efeitos do avanço de nível — [OK]/[Parcial]
+### 12.4 Efeitos do avanço de nível — [OK]
 
 O avanço recalcula Ataque, Defesa e Velocidade, aumenta o HP máximo e a energia máxima e aciona o sistema de aprendizado de ataques.
 
 O aumento de HP máximo também é acrescentado ao HP atual quando a criatura está viva. O aumento do limite de energia não restaura automaticamente a energia atual.
-
-**Pendente:** definir e implementar um teto de nível, caso o limite 20 previsto no design original continue desejado.
 
 ### 12.5 Insígnias e obediência — [Parcial]
 
