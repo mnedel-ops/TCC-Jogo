@@ -62,6 +62,12 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
 @export var octet_target: int = 8
 ## Eletronegatividade (escala de Pauling). 0 = deriva da categoria.
 @export var electronegativity: float = 0.0
+## Primeira energia de ionização I1 (kJ/mol). 0 = não definido. Gera a Defesa base.
+@export var first_ionization_energy: float = 0.0
+## Afinidade eletrônica (kJ/mol). Gera o Ataque base de ametais e metaloides.
+@export var electron_affinity: float = 0.0
+## Entalpia molar de atomização (kJ/mol). 0 = não definido. Gera o HP base.
+@export var atomization_enthalpy: float = 0.0
 ## Estados de oxidação possíveis. O primeiro é o preferido (ex.: Fe -> [3, 2]).
 ## Vazio = deriva da valência.
 @export var oxidation_states: Array[int] = []

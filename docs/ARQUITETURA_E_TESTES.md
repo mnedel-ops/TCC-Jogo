@@ -130,8 +130,9 @@ O fluxo de captura é:
 
 1. A interface envia um `ActionCommand` do tipo `capture`.
 2. `CombatRules._resolve_capture()` valida alvo e item, compara o tipo da
-   ferramenta com o tipo da criatura e calcula o valor `a` com
-   `AlchemonFormulas.compute_capture_value(max_hp, hp, x)`.
+   ferramenta com o tipo da criatura e calcula o valor `a = floor((3·HPmax − 2·HP) / (3·HPmax) · M)` com
+   `AlchemonFormulas.compute_capture_value(max_hp, hp, x)`, sendo M = 255
+   (compatível) ou 127 (incompatível). A chance é `a / 255 × 100`.
 3. Uma rolagem de `0` a `254` é bem-sucedida quando é menor que `a`; o
    valor é limitado entre `1` e `255`. Assim, reduzir o HP aumenta a chance,
    e `a = 255` garante a captura.
@@ -437,7 +438,7 @@ atuais em `test/` cobrem:
 | Suíte | Escopo |
 |---|---|
 | `test_alchemonGrowth.gd` | Fórmulas de atributos, evolução, energia e estado físico. |
-| `test_capture_formula.gd` | Valor de captura, limites, redução de oito bits, rolagem, ferramenta correta/incorreta e resolução probabilística. |
+| `test_capture_formula.gd` | Valor de captura, limites, ausência de redução de oito bits, chance percentual, rolagem, ferramenta correta/incorreta e resolução probabilística. |
 | `test_creature_persistence.gd` | UID, serialização JSON, saneamento de dados, atributos derivados, HP, sincronização de batalha e captura do indivíduo correto. |
 | `test_battle_rewards.gd` | Moedas, experiência, level up, textos da tela de recompensa, entrada de teclado/controle e ordem de encerramento do combate. |
 
@@ -485,9 +486,11 @@ arquivos e `GameSession`; **interface** verifica textos e entradas da tela;
 | `test_low_hp_raises_value` | Unitário de fórmula | Calcula a captura com HP reduzido a 1. Aprova se o valor subir para 249. |
 | `test_value_never_below_one` | Robustez / limite | Usa multiplicador mínimo e verifica o piso da fórmula. Aprova se o resultado nunca for menor que 1. |
 | `test_value_capped_at_255` | Robustez / limite | Usa multiplicador excessivo e HP mínimo. Aprova se o valor for limitado a 255. |
-| `test_eight_bit_reduction_changes_result` | Unitário de fórmula | Verifica a redução por deslocamentos de bits quando `3 * HP máximo` ultrapassa 255. Aprova se o resultado for 200. |
-| `test_reduction_is_two_floor_divisions_by_two` | Unitário de fórmula | Confirma que a redução utiliza duas divisões inteiras sucessivas por dois. Aprova se o resultado for 171. |
-| `test_no_reduction_at_exactly_255` | Unitário de limite | Testa o ponto exato 255. Aprova se a redução não ocorrer quando o valor for exatamente 255 e o resultado for 235. |
+| `test_no_bit_reduction_large_hp` | Unitário de fórmula | Garante que não há redução de bits quando `3 * HP máximo` ultrapassa 255. Aprova se o resultado for 198. |
+| `test_large_hp_matches_formula` | Unitário de fórmula | Confere `floor((3*HPmax - 2*HP)/(3*HPmax) * M)` com HP alto. Aprova se o resultado for 170. |
+| `test_exactly_255_term` | Unitário de limite | Testa `3 * HP máximo = 255`. Aprova se o resultado for 235. |
+| `test_wrong_tool_multiplier_127` | Unitário de fórmula | Ferramenta incompatível (M = 127) em HP cheio. Aprova se o resultado for 42. |
+| `test_capture_chance_percent` | Unitário de fórmula | Chance = a/255 × 100. Aprova com 100% para a = 255 e ≈ 33,3% para a = 85. |
 | `test_bad_input_does_not_crash` | Robustez | Usa HP máximo zero e HP atual acima do máximo. Aprova se a função não quebrar e normalizar o resultado para a faixa válida. |
 | `test_roll_rule` | Unitário de regra | Verifica que a rolagem é sucesso quando `roll < a` e falha quando `roll == a`; também confirma que 255 sempre vence. |
 | `test_tool_category` | Unitário de regra | Compara ferramenta do mesmo tipo e de tipo diferente. Aprova se os multiplicadores forem 255 e 127, respectivamente. |
@@ -601,7 +604,7 @@ incluindo UID, IV, personalidade e HP restante. Por isso, o fluxo passou a
 guardar `enemy_instances` no `CombatState`, aplicar o resultado em
 `CombatResultApplier` e só então transferir a instância para
 `CapturedStorage`. A fórmula também recebeu testes de limites para HP cheio,
-HP mínimo, valor máximo, redução de oito bits e ferramenta incompatível.
+HP mínimo, valor máximo, ferramenta incompatível.
 
 Na persistência, uma falha importante ocorria quando os resultados eram
 associados à equipe pela posição do vetor. Uma criatura inválida ou removida

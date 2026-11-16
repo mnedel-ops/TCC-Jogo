@@ -1,0 +1,293 @@
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+index 3b45ac9..623d1d9 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+@@ -62,6 +62,12 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
+ @export var octet_target: int = 8
+ ## Eletronegatividade (escala de Pauling). 0 = deriva da categoria.
+ @export var electronegativity: float = 0.0
++## Primeira energia de ionização I1 (kJ/mol). 0 = não definido. Gera a Defesa base.
++@export var first_ionization_energy: float = 0.0
++## Afinidade eletrônica (kJ/mol). Gera o Ataque base de ametais e metaloides.
++@export var electron_affinity: float = 0.0
++## Entalpia molar de atomização (kJ/mol). 0 = não definido. Gera o HP base.
++@export var atomization_enthalpy: float = 0.0
+ ## Estados de oxidação possíveis. O primeiro é o preferido (ex.: Fe -> [3, 2]).
+ ## Vazio = deriva da valência.
+ @export var oxidation_states: Array[int] = []
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
+new file mode 100644
+index 0000000..fe60e6e
+--- /dev/null
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
+@@ -0,0 +1,68 @@
++class_name AlchemonStatGenerator
++extends RefCounted
++## Gera os atributos base (30..110) a partir de propriedades químicas tabeladas.
++##   HP         <- entalpia de atomização (kJ/mol)
++##   Ataque     <- reatividade: metal = R_MAX * I_MIN / I1 ; ametal/metaloide = afinidade eletrônica
++##   Defesa     <- primeira energia de ionização I1 (kJ/mol)
++##   Velocidade <- eletronegatividade de Pauling / raiz(massa atômica)
++## Cada propriedade passa por normalização min-max e é mapeada para [BASE_MIN, BASE_MAX].
++
++const BASE_MIN := 30
++const BASE_MAX := 110
++
++# Limites de referência da Tabela Periódica.
++const I_MIN := 375.7   # Cs
++const I_MAX := 2372.3  # He
++const H_MIN := 0.0
++const H_MAX := 850.0   # W
++const R_MIN := 0.0
++const R_MAX := 350.0   # Cl (afinidade eletrônica)
++const K_MIN := 0.05    # Fr
++const K_MAX := 2.19    # H
++
++
++static func _norm(value: float, lo: float, hi: float) -> float:
++	return clampf((value - lo) / (hi - lo), 0.0, 1.0)
++
++
++static func _to_base(normalized: float) -> int:
++	return BASE_MIN + roundi(normalized * float(BASE_MAX - BASE_MIN))
++
++
++## Retorna {base_hp, base_attack, base_defense, base_mechanical_speed}.
++static func generate_base_stats(mass: float, ionization_energy: float, electron_affinity: float, electronegativity: float, atomization_enthalpy: float, is_metal: bool) -> Dictionary:
++	var reactivity: float = R_MAX * I_MIN / maxf(ionization_energy, 1.0) if is_metal else electron_affinity
++	var kinetic: float = electronegativity / sqrt(maxf(mass, 1.0))
++	return {
++		"base_hp": _to_base(_norm(atomization_enthalpy, H_MIN, H_MAX)),
++		"base_attack": _to_base(_norm(reactivity, R_MIN, R_MAX)),
++		"base_defense": _to_base(_norm(ionization_energy, I_MIN, I_MAX)),
++		"base_mechanical_speed": _to_base(_norm(kinetic, K_MIN, K_MAX)),
++	}
++
++
++## True se a ficha tem os dados químicos necessários.
++static func has_data(sheet: AlchemonSheet) -> bool:
++	return sheet.first_ionization_energy > 0.0 and sheet.atomization_enthalpy > 0.0 and sheet.electronegativity > 0.0 and sheet.atomic_mass > 0
++
++
++static func from_sheet(sheet: AlchemonSheet) -> Dictionary:
++	return generate_base_stats(
++		float(sheet.atomic_mass),
++		sheet.first_ionization_energy,
++		sheet.electron_affinity,
++		sheet.electronegativity,
++		sheet.atomization_enthalpy,
++		sheet.is_metal())
++
++
++## Escreve os atributos gerados na ficha. Retorna false se faltarem dados químicos.
++static func apply_to(sheet: AlchemonSheet) -> bool:
++	if not has_data(sheet):
++		return false
++	var s := from_sheet(sheet)
++	sheet.base_hp = s["base_hp"]
++	sheet.base_attack = s["base_attack"]
++	sheet.base_defense = s["base_defense"]
++	sheet.base_mechanical_speed = s["base_mechanical_speed"]
++	return true
+diff --git a/tcc-jogo/DATABASE/Alchemons/Arsenio.tres b/tcc-jogo/DATABASE/Alchemons/Arsenio.tres
+index df1ebf2..5dc8100 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Arsenio.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Arsenio.tres
+@@ -15,16 +15,19 @@ lore = "Empregado por alquimistas sob disfarces para alterar cores metálicas e
+ found_at = "Minérios sulfetados (arsenopirita) e jazidas minerais"
+ likes = "Ligas semicondutoras, sublimação, reações de redução"
+ dislikes = "Agentes redutores fortes e purificação extrema"
+-base_hp = 70
+-base_attack = 80
+-base_defense = 60
+-base_mechanical_speed = 60
++base_hp = 58
++base_attack = 48
++base_defense = 53
++base_mechanical_speed = 38
+ energia_de_acao = 5
+ xp_reward = 62
+ atomic_number = 33
+ symbol = "As"
+ valence_electrons = 5
+ electronegativity = 2.18
++first_ionization_energy = 947.0
++electron_affinity = 78.0
++atomization_enthalpy = 302.5
+ oxidation_states = Array[int]([5, 3, -3])
+ bonding_capacity = 3
+ element_category = 3
+diff --git a/tcc-jogo/DATABASE/Alchemons/Ferro.tres b/tcc-jogo/DATABASE/Alchemons/Ferro.tres
+index 70ba76d..9172e95 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Ferro.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Ferro.tres
+@@ -15,16 +15,19 @@ lore = "Espinha dorsal da siderurgia e das armas antigas, forma complexos octaé
+ found_at = "Mina de hematita, jazidas siderúrgicas e crateras meteoríticas"
+ likes = "Campos magnéticos, ligas com Carbono (aço), estruturas rígidas"
+ dislikes = "Umidade e Oxigênio combinados (corrosão/ferrugem), ácidos fortes"
+-base_hp = 95
+-base_attack = 55
+-base_defense = 90
+-base_mechanical_speed = 40
++base_hp = 69
++base_attack = 69
++base_defense = 45
++base_mechanical_speed = 37
+ energia_de_acao = 2
+ xp_reward = 61
+ atomic_number = 26
+ symbol = "Fe"
+ valence_electrons = 2
+ electronegativity = 1.83
++first_ionization_energy = 762.5
++electron_affinity = 14.6
++atomization_enthalpy = 416.3
+ oxidation_states = Array[int]([7, 0])
+ bonding_capacity = 6
+ element_category = 1
+diff --git a/tcc-jogo/DATABASE/Alchemons/Hidrogenio.tres b/tcc-jogo/DATABASE/Alchemons/Hidrogenio.tres
+index 0d4b8d1..00a672c 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Hidrogenio.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Hidrogenio.tres
+@@ -15,10 +15,10 @@ lore = "Abundante nas estrelas e na água, o Hidrogênio forma pontes moleculare
+ found_at = "Atmosfera superior e laboratórios de eletrólise"
+ likes = "Calor, eletricidade, formar ligações de hidrogênio e compostos moleculares"
+ dislikes = "Frio extremo, contenções rígidas e isolantes"
+-base_hp = 45
+-base_attack = 60
+-base_defense = 40
+-base_mechanical_speed = 95
++base_hp = 51
++base_attack = 47
++base_defense = 68
++base_mechanical_speed = 110
+ energia_de_acao = 1
+ max_valence_electrons = 2
+ xp_reward = 68
+@@ -27,6 +27,9 @@ symbol = "H"
+ valence_electrons = 1
+ octet_target = 2
+ electronegativity = 2.2
++first_ionization_energy = 1312.0
++electron_affinity = 72.8
++atomization_enthalpy = 218.0
+ oxidation_states = Array[int]([1, -1])
+ bonding_capacity = 1
+ element_category = 2
+diff --git a/tcc-jogo/DATABASE/Alchemons/Ouro.tres b/tcc-jogo/DATABASE/Alchemons/Ouro.tres
+index 42fcaf7..9a476de 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Ouro.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Ouro.tres
+@@ -15,9 +15,9 @@ lore = "O objetivo da alquímia e metal de cunhagem por excelência, imune à co
+ found_at = "Veios aluviais, minas nobres e cofres de alta precisão"
+ likes = "Inércia química, maleabilidade de folha, alta condutividade"
+ dislikes = "qua regia (mistura de ácidos) e soluções de cianeto"
+-base_hp = 110
+-base_attack = 50
+-base_defense = 95
++base_hp = 65
++base_attack = 64
++base_defense = 51
+ base_mechanical_speed = 35
+ energia_de_acao = 1
+ xp_reward = 66
+@@ -25,6 +25,9 @@ atomic_number = 79
+ symbol = "Au"
+ valence_electrons = 1
+ electronegativity = 2.54
++first_ionization_energy = 890.1
++electron_affinity = 222.8
++atomization_enthalpy = 368.2
+ oxidation_states = Array[int]([1, 7])
+ bonding_capacity = 4
+ element_category = 1
+diff --git a/tcc-jogo/DATABASE/Alchemons/Oxigenio.tres b/tcc-jogo/DATABASE/Alchemons/Oxigenio.tres
+index ba3a834..413617d 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Oxigenio.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Oxigenio.tres
+@@ -15,16 +15,19 @@ lore = "Presente na atmosfera e na água, o Oxigênio reage vorazmente com metai
+ found_at = "Atmosfera e zonas aquosas"
+ likes = "Combustão, metais alcalinos, oxidar oponentes"
+ dislikes = "Inércia química, gases nobres e ambientes rarefeitos"
+-base_hp = 60
+-base_attack = 85
+-base_defense = 45
+-base_mechanical_speed = 80
++base_hp = 53
++base_attack = 62
++base_defense = 68
++base_mechanical_speed = 60
+ energia_de_acao = 6
+ xp_reward = 64
+ atomic_number = 8
+ symbol = "O"
+ valence_electrons = 6
+ electronegativity = 3.44
++first_ionization_energy = 1313.9
++electron_affinity = 141.0
++atomization_enthalpy = 249.0
+ oxidation_states = Array[int]([-2, -1])
+ bonding_capacity = 2
+ element_category = 2
+diff --git a/tcc-jogo/DATABASE/Alchemons/Silicio.tres b/tcc-jogo/DATABASE/Alchemons/Silicio.tres
+index 4e8d8d5..1bbf5e8 100644
+--- a/tcc-jogo/DATABASE/Alchemons/Silicio.tres
++++ b/tcc-jogo/DATABASE/Alchemons/Silicio.tres
+@@ -15,16 +15,19 @@ lore = "ase das rochas e da tecnologia microeletrônica, constrói arranjos tetr
+ found_at = "Areias, depósitos minerais de sílica e laboratórios de chips"
+ likes = "Estruturas cristalinas, semicondutores, ligar-se ao Oxigênio"
+ dislikes = "Bases altamente concentradas e vibrações excessivas"
+-base_hp = 75
+-base_attack = 65
+-base_defense = 75
+-base_mechanical_speed = 55
++base_hp = 72
++base_attack = 61
++base_defense = 46
++base_mechanical_speed = 42
+ energia_de_acao = 4
+ xp_reward = 55
+ atomic_number = 14
+ symbol = "Si"
+ valence_electrons = 4
+ electronegativity = 1.9
++first_ionization_energy = 786.5
++electron_affinity = 134.1
++atomization_enthalpy = 450.0
+ oxidation_states = Array[int]([4, -4, 2])
+ bonding_capacity = 4
+ element_category = 3
+diff --git a/tcc-jogo/test/test_stat_generator.gd b/tcc-jogo/test/test_stat_generator.gd
+new file mode 100644
+index 0000000..1ae143e
+--- /dev/null
++++ b/tcc-jogo/test/test_stat_generator.gd
+@@ -0,0 +1,28 @@
++extends GdUnitTestSuite
++
++const DB_PATH := "res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres"
++
++
++func test_every_sheet_matches_generator() -> void:
++	var db: AlchemonDatabase = load(DB_PATH)
++	for sheet in db.alchemons:
++		if not AlchemonStatGenerator.has_data(sheet):
++			continue
++		var s := AlchemonStatGenerator.from_sheet(sheet)
++		assert_int(sheet.base_hp).is_equal(s["base_hp"])
++		assert_int(sheet.base_attack).is_equal(s["base_attack"])
++		assert_int(sheet.base_defense).is_equal(s["base_defense"])
++		assert_int(sheet.base_mechanical_speed).is_equal(s["base_mechanical_speed"])
++
++
++func test_stats_inside_range() -> void:
++	var s := AlchemonStatGenerator.generate_base_stats(1.0, 2372.3, 349.0, 4.0, 850.0, false)
++	for k in s:
++		assert_int(s[k]).is_between(AlchemonStatGenerator.BASE_MIN, AlchemonStatGenerator.BASE_MAX)
++
++
++func test_hydrogen_is_fastest_and_gold_slow() -> void:
++	var h := AlchemonStatGenerator.generate_base_stats(1.0, 1312.0, 72.8, 2.2, 218.0, false)
++	var au := AlchemonStatGenerator.generate_base_stats(197.0, 890.1, 222.8, 2.54, 368.2, true)
++	assert_int(h["base_mechanical_speed"]).is_equal(110)
++	assert_int(au["base_mechanical_speed"]).is_equal(35)

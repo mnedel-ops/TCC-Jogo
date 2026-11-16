@@ -35,16 +35,19 @@ static func scission_temperature_covalent(boiling_a: float, boiling_b: float, sh
 
 const CAPTURE_VALUE_MAX := 255
 
+## Valor de captura: a = floor((3*HPmax - 2*HPatual) / (3*HPmax) * M), limitado a 1..255.
+## M = 255 (ferramenta compatível) ou 127 (incompatível). Sem redução de 8 bits.
 static func compute_capture_value(hp_max: int, hp_current: int, tool_multiplier: float) -> int:
 	var hp_max_safe := maxi(hp_max, 1)
 	var max_term := 3 * hp_max_safe
 	var cur_term := 2 * clampi(hp_current, 0, hp_max_safe)
-	if max_term > CAPTURE_VALUE_MAX:
-		max_term = (max_term >> 1) >> 1
-		cur_term = (cur_term >> 1) >> 1
-	max_term = maxi(max_term, 1)
 	var a := int(floor(float(max_term - cur_term) * tool_multiplier / float(max_term)))
 	return clampi(a, 1, CAPTURE_VALUE_MAX)
+
+
+## Chance percentual de captura: a / 255 * 100.
+static func capture_chance(a: int) -> float:
+	return float(a) / float(CAPTURE_VALUE_MAX) * 100.0
 
 
 static func compute_stat(base: int, individual_value: int, level: int) -> int:

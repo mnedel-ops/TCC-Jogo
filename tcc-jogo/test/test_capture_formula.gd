@@ -18,16 +18,28 @@ func test_value_capped_at_255() -> void:
 	assert_int(AlchemonFormulas.compute_capture_value(30, 0, 255.0)).is_equal(255)
 
 
-func test_eight_bit_reduction_changes_result() -> void:
-	assert_int(AlchemonFormulas.compute_capture_value(100, 33, 255.0)).is_equal(200)
+func test_no_bit_reduction_large_hp() -> void:
+	# 3*100 > 255, mas a fórmula não reduz: floor(234/300*255) = 198
+	assert_int(AlchemonFormulas.compute_capture_value(100, 33, 255.0)).is_equal(198)
 
 
-func test_reduction_is_two_floor_divisions_by_two() -> void:
-	assert_int(AlchemonFormulas.compute_capture_value(90, 45, 255.0)).is_equal(171)
+func test_large_hp_matches_formula() -> void:
+	# floor(180/270*255) = 170
+	assert_int(AlchemonFormulas.compute_capture_value(90, 45, 255.0)).is_equal(170)
 
 
-func test_no_reduction_at_exactly_255() -> void:
+func test_exactly_255_term() -> void:
 	assert_int(AlchemonFormulas.compute_capture_value(85, 10, 255.0)).is_equal(235)
+
+
+func test_wrong_tool_multiplier_127() -> void:
+	# floor((90-60)/90*127) = 42
+	assert_int(AlchemonFormulas.compute_capture_value(30, 30, 127.0)).is_equal(42)
+
+
+func test_capture_chance_percent() -> void:
+	assert_float(AlchemonFormulas.capture_chance(255)).is_equal(100.0)
+	assert_float(AlchemonFormulas.capture_chance(85)).is_equal_approx(33.333, 0.01)
 
 
 func test_bad_input_does_not_crash() -> void:
