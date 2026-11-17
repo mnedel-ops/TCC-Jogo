@@ -1,0 +1,352 @@
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonDataBase.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonDataBase.gd
+index ab1c1f4..97c23f3 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonDataBase.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonDataBase.gd
+@@ -10,3 +10,19 @@ func get_by_id(id: int) -> AlchemonSheet:
+ 			return a
+ 	push_warning("AlchemonSheet com id %d nao encontrado no database." % id)
+ 	return null
++
++
++## Rotina de atualização: regenera os atributos base de todas as fichas que
++## têm dados químicos. Retorna {"updated": [nomes], "failed": {nome: erro}, "skipped": [nomes]}.
++func regenerate_all_base_stats() -> Dictionary:
++	var report := {"updated": [], "failed": {}, "skipped": []}
++	for a in alchemons:
++		if not a.uses_chemical_stats():
++			report["skipped"].append(a.creature_name)
++			continue
++		var problem := AlchemonStatGenerator.validate(a)
++		if problem != "":
++			report["failed"][a.creature_name] = problem
++		elif a.regenerate_base_stats():
++			report["updated"].append(a.creature_name)
++	return report
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+index 5c05716..a6927c0 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonSheet.gd
+@@ -9,6 +9,8 @@ const LIQUIDO := "liquido"
+ const GASOSO := "gasoso"
+ 
+ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
++## Marcador de "afinidade eletrônica ausente" (valores reais podem ser negativos).
++const EA_UNSET := -9999.0
+ 
+ 
+ @export_group("Identidade")
+@@ -65,10 +67,12 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
+ @export var electronegativity: float = 0.0
+ ## Primeira energia de ionização I1 (kJ/mol). 0 = não definido. Gera a Defesa base.
+ @export var first_ionization_energy: float = 0.0
+-## Afinidade eletrônica (kJ/mol). Gera o Ataque base de ametais e metaloides.
+-@export var electron_affinity: float = 0.0
+-## Entalpia molar de atomização (kJ/mol). 0 = não definido. Gera o HP base.
+-@export var atomization_enthalpy: float = 0.0
++## Afinidade eletrônica (kJ/mol). Pode ser negativa, 0 ou positiva.
++## EA_UNSET = ausente. Gera o Ataque base de ametais e metaloides.
++@export var electron_affinity: float = EA_UNSET
++## Entalpia molar de atomização (kJ/mol). Aceita 0 (valor válido).
++## -1 = não definido. Gera o HP base.
++@export var atomization_enthalpy: float = -1.0
+ ## Estados de oxidação possíveis. O primeiro é o preferido (ex.: Fe -> [3, 2]).
+ ## Vazio = deriva da valência.
+ @export var oxidation_states: Array[int] = []
+@@ -192,6 +196,28 @@ func chem_electronegativity() -> float:
+ 	return 3.0
+ 
+ 
++func has_electron_affinity() -> bool:
++	return electron_affinity > EA_UNSET
++
++
++func has_atomization_enthalpy() -> bool:
++	return atomization_enthalpy >= 0.0
++
++
++## True se a ficha traz propriedades químicas numéricas (ou seja, os atributos
++## base devem ser gerados a partir delas e não preenchidos à mão).
++func uses_chemical_stats() -> bool:
++	return first_ionization_energy > 0.0 or has_atomization_enthalpy() or electronegativity > 0.0 or has_electron_affinity()
++
++
++## Recalcula HP/Ataque/Defesa/Velocidade base a partir dos dados químicos.
++## Chamar ao cadastrar uma ficha, ao mudar dado químico ou numa rotina de
++## atualização. NUNCA a cada turno de combate. Retorna false (sem alterar a
++## ficha) se faltar dado; o erro é registrado com elemento e propriedade.
++func regenerate_base_stats() -> bool:
++	return AlchemonStatGenerator.apply_to(self)
++
++
+ ## Mensagem de erro se os dados químicos forem incoerentes; "" se estiver ok.
+ func chemistry_problem() -> String:
+ 	if octet_target > 8 or octet_target < 1:
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
+index fe60e6e..9386e46 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
+@@ -3,9 +3,14 @@ extends RefCounted
+ ## Gera os atributos base (30..110) a partir de propriedades químicas tabeladas.
+ ##   HP         <- entalpia de atomização (kJ/mol)
+ ##   Ataque     <- reatividade: metal = R_MAX * I_MIN / I1 ; ametal/metaloide = afinidade eletrônica
++##                 gás nobre = inerte (reatividade 0)
+ ##   Defesa     <- primeira energia de ionização I1 (kJ/mol)
+ ##   Velocidade <- eletronegatividade de Pauling / raiz(massa atômica)
++##                 sem eletronegatividade (gás nobre) = só a massa: 1 / raiz(massa)
+ ## Cada propriedade passa por normalização min-max e é mapeada para [BASE_MIN, BASE_MAX].
++##
++## Os dados químicos da ficha são a fonte oficial: esta classe só LÊ eles e
++## ESCREVE os atributos base. Nunca altera os dados químicos originais.
+ 
+ const BASE_MIN := 30
+ const BASE_MAX := 110
+@@ -19,6 +24,7 @@ const R_MIN := 0.0
+ const R_MAX := 350.0   # Cl (afinidade eletrônica)
+ const K_MIN := 0.05    # Fr
+ const K_MAX := 2.19    # H
++const M_MAX := 294.0   # Og (maior massa tabelada)
+ 
+ 
+ static func _norm(value: float, lo: float, hi: float) -> float:
+@@ -30,20 +36,57 @@ static func _to_base(normalized: float) -> int:
+ 
+ 
+ ## Retorna {base_hp, base_attack, base_defense, base_mechanical_speed}.
+-static func generate_base_stats(mass: float, ionization_energy: float, electron_affinity: float, electronegativity: float, atomization_enthalpy: float, is_metal: bool) -> Dictionary:
+-	var reactivity: float = R_MAX * I_MIN / maxf(ionization_energy, 1.0) if is_metal else electron_affinity
+-	var kinetic: float = electronegativity / sqrt(maxf(mass, 1.0))
++## electronegativity <= 0 = indisponível: a velocidade usa só a massa.
++## is_noble_gas = true: ataque fixo no mínimo (elemento inerte, sem afinidade usada).
++static func generate_base_stats(mass: float, ionization_energy: float, electron_affinity: float, electronegativity: float, atomization_enthalpy: float, is_metal: bool, is_noble_gas: bool = false) -> Dictionary:
++	var reactivity: float
++	if is_noble_gas:
++		reactivity = R_MIN
++	elif is_metal:
++		reactivity = R_MAX * I_MIN / maxf(ionization_energy, 1.0)
++	else:
++		reactivity = electron_affinity
++	var speed_norm: float
++	if electronegativity > 0.0:
++		speed_norm = _norm(electronegativity / sqrt(maxf(mass, 1.0)), K_MIN, K_MAX)
++	else:
++		speed_norm = _norm(1.0 / sqrt(maxf(mass, 1.0)), 1.0 / sqrt(M_MAX), 1.0)
+ 	return {
+ 		"base_hp": _to_base(_norm(atomization_enthalpy, H_MIN, H_MAX)),
+ 		"base_attack": _to_base(_norm(reactivity, R_MIN, R_MAX)),
+ 		"base_defense": _to_base(_norm(ionization_energy, I_MIN, I_MAX)),
+-		"base_mechanical_speed": _to_base(_norm(kinetic, K_MIN, K_MAX)),
++		"base_mechanical_speed": _to_base(speed_norm),
+ 	}
+ 
+ 
++## Mensagem de erro (elemento + propriedade) se faltar dado necessário; "" se ok.
++##   massa atômica ............ obrigatória, > 0
++##   energia de ionização ..... obrigatória, > 0
++##   entalpia de atomização ... obrigatória, aceita 0 (ex.: gases nobres)
++##   afinidade eletrônica ..... só ametal/metaloide; pode ser negativa, 0 ou positiva
++##   eletronegatividade ....... obrigatória, exceto gás nobre (indisponível em Pauling)
++static func validate(sheet: AlchemonSheet) -> String:
++	var who := sheet.chem_symbol()
++	if who == "":
++		who = "id %d" % sheet.id
++	if sheet.atomic_mass <= 0:
++		return "%s: atomic_mass missing (must be > 0)." % who
++	if sheet.first_ionization_energy <= 0.0:
++		return "%s: first_ionization_energy missing (must be > 0)." % who
++	if not sheet.has_atomization_enthalpy():
++		return "%s: atomization_enthalpy missing (use 0 if the value is really zero)." % who
++	var cat := sheet.chem_category()
++	if cat != AlchemonSheet.Category.GAS_NOBRE:
++		if sheet.electronegativity <= 0.0:
++			return "%s: electronegativity missing (only noble gases may omit it)." % who
++		if cat != AlchemonSheet.Category.METAL and not sheet.has_electron_affinity():
++			return "%s: electron_affinity missing (required for nonmetal/metalloid)." % who
++	return ""
++
++
+ ## True se a ficha tem os dados químicos necessários.
+ static func has_data(sheet: AlchemonSheet) -> bool:
+-	return sheet.first_ionization_energy > 0.0 and sheet.atomization_enthalpy > 0.0 and sheet.electronegativity > 0.0 and sheet.atomic_mass > 0
++	return validate(sheet) == ""
+ 
+ 
+ static func from_sheet(sheet: AlchemonSheet) -> Dictionary:
+@@ -53,12 +96,16 @@ static func from_sheet(sheet: AlchemonSheet) -> Dictionary:
+ 		sheet.electron_affinity,
+ 		sheet.electronegativity,
+ 		sheet.atomization_enthalpy,
+-		sheet.is_metal())
++		sheet.is_metal(),
++		sheet.chem_category() == AlchemonSheet.Category.GAS_NOBRE)
+ 
+ 
+-## Escreve os atributos gerados na ficha. Retorna false se faltarem dados químicos.
++## Escreve os atributos gerados na ficha. Se faltar dado, NÃO altera nada,
++## registra o erro (elemento + propriedade) e retorna false.
+ static func apply_to(sheet: AlchemonSheet) -> bool:
+-	if not has_data(sheet):
++	var problem := validate(sheet)
++	if problem != "":
++		push_error("AlchemonStatGenerator: " + problem)
+ 		return false
+ 	var s := from_sheet(sheet)
+ 	sheet.base_hp = s["base_hp"]
+diff --git a/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd b/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd
+index b535ad9..54fe6b0 100644
+--- a/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd
++++ b/tcc-jogo/DATABASE/Alchemons/alchemonBuilder.gd
+@@ -20,6 +20,10 @@ func alchemon_instance():
+ 		push_error("Sem sheet id %d" % id)
+ 		return
+ 	
++	# Dados químicos = fonte oficial dos atributos base. Gera uma vez, na criação.
++	if sheet.uses_chemical_stats():
++		sheet.regenerate_base_stats()
++	
+ 	instance = AlchemonInstance.new()
+ 	instance.init_from_template(sheet)
+ 	instance.level=alchemonLevel
+diff --git a/tcc-jogo/test/test_stat_generator.gd b/tcc-jogo/test/test_stat_generator.gd
+index 1ae143e..37a6868 100644
+--- a/tcc-jogo/test/test_stat_generator.gd
++++ b/tcc-jogo/test/test_stat_generator.gd
+@@ -26,3 +26,139 @@ func test_hydrogen_is_fastest_and_gold_slow() -> void:
+ 	var au := AlchemonStatGenerator.generate_base_stats(197.0, 890.1, 222.8, 2.54, 368.2, true)
+ 	assert_int(h["base_mechanical_speed"]).is_equal(110)
+ 	assert_int(au["base_mechanical_speed"]).is_equal(35)
++
++
++# ---------------------------------------------------------------------------
++# Integração: dados químicos -> atributos base -> instância -> progressão
++# ---------------------------------------------------------------------------
++
++const FERRO := "res://DATABASE/Alchemons/Ferro.tres"
++const HIDROGENIO := "res://DATABASE/Alchemons/Hidrogenio.tres"
++const SILICIO := "res://DATABASE/Alchemons/Silicio.tres"
++
++
++func _sheet(path: String) -> AlchemonSheet:
++	return (load(path) as AlchemonSheet).duplicate()
++
++
++func test_regenerate_changes_hp_when_enthalpy_changes() -> void:
++	var fe := _sheet(FERRO)
++	fe.atomization_enthalpy = 850.0
++	assert_bool(fe.regenerate_base_stats()).is_true()
++	assert_int(fe.base_hp).is_equal(AlchemonStatGenerator.BASE_MAX)
++	fe.atomization_enthalpy = 0.0
++	assert_bool(fe.regenerate_base_stats()).is_true()
++	assert_int(fe.base_hp).is_equal(AlchemonStatGenerator.BASE_MIN)
++
++
++func test_regenerate_changes_attack_and_defense_when_ionization_changes() -> void:
++	var fe := _sheet(FERRO)
++	fe.regenerate_base_stats()
++	var atk := fe.base_attack
++	var def := fe.base_defense
++	fe.first_ionization_energy = 1200.0
++	fe.regenerate_base_stats()
++	var s := AlchemonStatGenerator.generate_base_stats(56.0, 1200.0, 0.0, 1.83, fe.atomization_enthalpy, true)
++	assert_int(fe.base_attack).is_equal(s["base_attack"])
++	assert_int(fe.base_defense).is_equal(s["base_defense"])
++	assert_int(fe.base_attack).is_less(atk)
++	assert_int(fe.base_defense).is_greater(def)
++
++
++func test_regenerate_changes_speed_when_mass_or_electronegativity_change() -> void:
++	var fe := _sheet(FERRO)
++	fe.regenerate_base_stats()
++	var v := fe.base_mechanical_speed
++	fe.atomic_mass = 10
++	fe.regenerate_base_stats()
++	assert_int(fe.base_mechanical_speed).is_greater(v)
++	var v2 := fe.base_mechanical_speed
++	fe.electronegativity = 0.8
++	fe.regenerate_base_stats()
++	assert_int(fe.base_mechanical_speed).is_less(v2)
++
++
++func test_regeneration_keeps_chemical_data_untouched() -> void:
++	var fe := _sheet(FERRO)
++	var before := [fe.atomic_mass, fe.first_ionization_energy, fe.electron_affinity, fe.electronegativity, fe.atomization_enthalpy]
++	fe.regenerate_base_stats()
++	assert_array(before).is_equal([fe.atomic_mass, fe.first_ionization_energy, fe.electron_affinity, fe.electronegativity, fe.atomization_enthalpy])
++
++
++func test_zero_enthalpy_is_valid() -> void:
++	var he := AlchemonSheet.new("He", 30, 2)
++	he.symbol = "He"
++	he.atomic_mass = 4
++	he.first_ionization_energy = 2372.3
++	he.atomization_enthalpy = 0.0
++	he.valence_electrons = 2
++	he.octet_target = 2
++	he.element_type = AlchemonType.Type.AMETAL
++	assert_str(AlchemonStatGenerator.validate(he)).is_empty()
++
++
++func test_noble_gas_without_electronegativity_or_affinity() -> void:
++	var he := AlchemonSheet.new("He", 30, 2)
++	he.symbol = "He"
++	he.atomic_mass = 4
++	he.first_ionization_energy = 2372.3
++	he.atomization_enthalpy = 0.0
++	he.valence_electrons = 2
++	he.octet_target = 2
++	he.element_type = AlchemonType.Type.AMETAL
++	assert_bool(he.regenerate_base_stats()).is_true()
++	assert_int(he.base_attack).is_equal(AlchemonStatGenerator.BASE_MIN)
++	assert_int(he.base_defense).is_equal(AlchemonStatGenerator.BASE_MAX)
++	assert_int(he.base_mechanical_speed).is_between(AlchemonStatGenerator.BASE_MIN, AlchemonStatGenerator.BASE_MAX)
++
++
++func test_negative_electron_affinity_is_accepted() -> void:
++	var si := _sheet(SILICIO)
++	si.electron_affinity = -48.0
++	assert_str(AlchemonStatGenerator.validate(si)).is_empty()
++	si.regenerate_base_stats()
++	assert_int(si.base_attack).is_equal(AlchemonStatGenerator.BASE_MIN)
++
++
++func test_missing_data_returns_error_naming_element_and_property() -> void:
++	var h := _sheet(HIDROGENIO)
++	h.electron_affinity = AlchemonSheet.EA_UNSET
++	var msg := AlchemonStatGenerator.validate(h)
++	assert_str(msg).contains("H")
++	assert_str(msg).contains("electron_affinity")
++	var fe := _sheet(FERRO)
++	fe.atomization_enthalpy = -1.0
++	assert_str(AlchemonStatGenerator.validate(fe)).contains("atomization_enthalpy")
++	fe.atomization_enthalpy = 400.0
++	fe.atomic_mass = 0
++	assert_str(AlchemonStatGenerator.validate(fe)).contains("atomic_mass")
++
++
++func test_incomplete_sheet_is_not_silently_changed() -> void:
++	var fe := _sheet(FERRO)
++	var hp := fe.base_hp
++	fe.first_ionization_energy = 0.0
++	assert_bool(AlchemonStatGenerator.has_data(fe)).is_false()
++	assert_bool(AlchemonStatGenerator.validate(fe) != "").is_true()
++	assert_int(fe.base_hp).is_equal(hp)
++
++
++func test_instance_stats_match_sheet_and_progression_formula() -> void:
++	var fe := _sheet(FERRO)
++	fe.regenerate_base_stats()
++	var inst := AlchemonInstance.new()
++	inst.individual_value = 10
++	inst.level = 30
++	inst.personality = AlchemonPersonality.NEUTRAL
++	var st := inst.compute_stats(fe)
++	assert_int(st["attack"]).is_equal(int(floor(0.01 * (2 * fe.base_attack + 10) * 30)) + 5)
++	assert_int(st["defense"]).is_equal(int(floor(0.01 * (2 * fe.base_defense + 10) * 30)) + 5)
++	assert_int(st["max_hp"]).is_equal(int(floor(0.01 * (2 * fe.base_hp + 10) * 30)) + 5)
++	assert_int(st["mechanical_speed"]).is_equal(int(floor(0.01 * (2 * fe.base_mechanical_speed + 10) * 30)) + 5)
++
++
++func test_database_regeneration_report() -> void:
++	var db: AlchemonDatabase = load(DB_PATH).duplicate()
++	var report := db.regenerate_all_base_stats()
++	assert_dict(report["failed"]).is_empty()
++	assert_int(report["updated"].size()).is_equal(db.alchemons.size())

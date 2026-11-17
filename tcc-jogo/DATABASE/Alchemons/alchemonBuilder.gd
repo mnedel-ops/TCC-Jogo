@@ -20,6 +20,10 @@ func alchemon_instance():
 		push_error("Sem sheet id %d" % id)
 		return
 	
+	# Dados químicos = fonte oficial dos atributos base. Gera uma vez, na criação.
+	if sheet.uses_chemical_stats():
+		sheet.regenerate_base_stats()
+	
 	instance = AlchemonInstance.new()
 	instance.init_from_template(sheet)
 	instance.level=alchemonLevel

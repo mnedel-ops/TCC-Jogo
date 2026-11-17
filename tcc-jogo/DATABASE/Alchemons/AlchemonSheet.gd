@@ -9,6 +9,8 @@ const LIQUIDO := "liquido"
 const GASOSO := "gasoso"
 
 enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
+## Marcador de "afinidade eletrônica ausente" (valores reais podem ser negativos).
+const EA_UNSET := -9999.0
 
 
 @export_group("Identidade")
@@ -65,10 +67,12 @@ enum Category { AUTO, METAL, AMETAL, METALOIDE, GAS_NOBRE }
 @export var electronegativity: float = 0.0
 ## Primeira energia de ionização I1 (kJ/mol). 0 = não definido. Gera a Defesa base.
 @export var first_ionization_energy: float = 0.0
-## Afinidade eletrônica (kJ/mol). Gera o Ataque base de ametais e metaloides.
-@export var electron_affinity: float = 0.0
-## Entalpia molar de atomização (kJ/mol). 0 = não definido. Gera o HP base.
-@export var atomization_enthalpy: float = 0.0
+## Afinidade eletrônica (kJ/mol). Pode ser negativa, 0 ou positiva.
+## EA_UNSET = ausente. Gera o Ataque base de ametais e metaloides.
+@export var electron_affinity: float = EA_UNSET
+## Entalpia molar de atomização (kJ/mol). Aceita 0 (valor válido).
+## -1 = não definido. Gera o HP base.
+@export var atomization_enthalpy: float = -1.0
 ## Estados de oxidação possíveis. O primeiro é o preferido (ex.: Fe -> [3, 2]).
 ## Vazio = deriva da valência.
 @export var oxidation_states: Array[int] = []
@@ -190,6 +194,28 @@ func chem_electronegativity() -> float:
 		Category.METALOIDE:
 			return 1.9
 	return 3.0
+
+
+func has_electron_affinity() -> bool:
+	return electron_affinity > EA_UNSET
+
+
+func has_atomization_enthalpy() -> bool:
+	return atomization_enthalpy >= 0.0
+
+
+## True se a ficha traz propriedades químicas numéricas (ou seja, os atributos
+## base devem ser gerados a partir delas e não preenchidos à mão).
+func uses_chemical_stats() -> bool:
+	return first_ionization_energy > 0.0 or has_atomization_enthalpy() or electronegativity > 0.0 or has_electron_affinity()
+
+
+## Recalcula HP/Ataque/Defesa/Velocidade base a partir dos dados químicos.
+## Chamar ao cadastrar uma ficha, ao mudar dado químico ou numa rotina de
+## atualização. NUNCA a cada turno de combate. Retorna false (sem alterar a
+## ficha) se faltar dado; o erro é registrado com elemento e propriedade.
+func regenerate_base_stats() -> bool:
+	return AlchemonStatGenerator.apply_to(self)
 
 
 ## Mensagem de erro se os dados químicos forem incoerentes; "" se estiver ok.
