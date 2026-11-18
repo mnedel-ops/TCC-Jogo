@@ -64,6 +64,56 @@ static func stat_for(base: int, iv: int, at_level: int, personality_id: String, 
 	return v if m == 1.0 else maxi(1, int(round(v * m)))
 
 
+const STAT_PERSONALITY_KEYS := {
+	"hp": "max_hp",
+	"attack": "attack",
+	"defense": "defense",
+	"speed": "mechanical_speed",
+	"energy": "action_energy",
+}
+
+
+## Base da ficha usada pelo jogo para o atributo (stat: hp|attack|defense|speed|energy).
+func base_for_stat(sheet: AlchemonSheet, stat: String) -> int:
+	match stat:
+		"hp":
+			return sheet.base_hp
+		"attack":
+			return sheet.base_attack
+		"defense":
+			return sheet.base_defense
+		"speed":
+			return sheet.base_mechanical_speed
+		"energy":
+			return sheet.energia_de_acao
+	return 0
+
+
+## Etapa final do cálculo (base + IV + nível + personalidade), para exibição.
+## Usa as mesmas funções de compute_stats, então "result" é o valor real do jogo.
+## Retorna {base, iv, level, raw, multiplier, result, formulas: Array, steps: Array}.
+func stat_breakdown(sheet: AlchemonSheet, stat: String) -> Dictionary:
+	var base := base_for_stat(sheet, stat)
+	var pkey: String = STAT_PERSONALITY_KEYS.get(stat, stat)
+	var raw := AlchemonFormulas.compute_stat(base, individual_value, level)
+	var mult := AlchemonPersonality.multiplier(personality, pkey)
+	var result := stat_for(base, individual_value, level, personality, pkey)
+	var pname := AlchemonPersonality.display_name(personality)
+	var formulas: Array = ["X = piso(0,01 · (2B + IV) · L) + 5"]
+	var steps: Array = ["X = piso(0,01 · (2 · %d + %d) · %d) + 5 = %d" % [base, individual_value, level, raw]]
+	if mult == 1.0:
+		steps.append("Personalidade %s: sem efeito neste atributo (M = 1,00)." % pname)
+		steps.append("Valor final = X = %d" % result)
+	else:
+		formulas.append("X_final = arred(X · M), mínimo 1")
+		steps.append("Personalidade %s: M = %s neste atributo." % [pname, AlchemonStatGenerator.fmt(mult, 2)])
+		steps.append("X_final = arred(%d · %s) = %d" % [raw, AlchemonStatGenerator.fmt(mult, 2), result])
+	return {
+		"base": base, "iv": individual_value, "level": level, "raw": raw,
+		"multiplier": mult, "result": result, "formulas": formulas, "steps": steps,
+	}
+
+
 func _stat(base: int, key: String) -> int:
 	return stat_for(base, individual_value, level, personality, key)
 

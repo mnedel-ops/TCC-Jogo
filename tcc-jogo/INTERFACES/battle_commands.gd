@@ -16,12 +16,13 @@ var capture_blocked := false
 enum Cmd { ATTACK, ITEM, FLEE }
 enum Mode { LOCKED, ICONS, DROPDOWN, TARGET }
 
-const ICON_SHEET := "res://INTERFACES/assets/comandos.png"
 const CMD_NAMES: Array[String] = ["Ataque", "Item", "Fugir"]
+const CMD_ICONS: Array[String] = [
+	"res://INTERFACES/assets/ComandoAtaque.png",
+	"res://INTERFACES/assets/ComandoItem.png",
+	"res://INTERFACES/assets/ComandoFugir.png",
+]
 
-@export var attack_icon_region := Rect2(6, 6, 98, 84)
-@export var item_icon_region := Rect2(78, 66, 80, 90)
-@export var flee_icon_region := Rect2(136, 18, 90, 86)
 @export var icon_size := Vector2(56, 56)
 @export var screen_margin := Vector2(16, 16)
 @export var name_expand_time := 0.12
@@ -103,11 +104,6 @@ func _build_bar() -> void:
 	hbox.add_theme_constant_override("separation", 10)
 	_bar.add_child(hbox)
 
-	var sheet := load(ICON_SHEET) as Texture2D
-	if sheet == null:
-		push_warning("BattleCommands: %s not found." % ICON_SHEET)
-	var regions := [attack_icon_region, item_icon_region, flee_icon_region]
-
 	for i in CMD_NAMES.size():
 		var slot := PanelContainer.new()
 		slot.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -122,11 +118,11 @@ func _build_bar() -> void:
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if sheet != null:
-			var atlas := AtlasTexture.new()
-			atlas.atlas = sheet
-			atlas.region = regions[i]
-			icon.texture = atlas
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		var tex := load(CMD_ICONS[i]) as Texture2D
+		if tex == null:
+			push_warning("BattleCommands: %s not found." % CMD_ICONS[i])
+		icon.texture = tex
 		h.add_child(icon)
 
 		var lbl := Label.new()

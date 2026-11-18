@@ -15,6 +15,20 @@ const TABLE := {
 }
 
 
+const NAMES := {
+	"neutral": "Neutra",
+	"bold": "Ousada",
+	"stoic": "Estoica",
+	"hasty": "Apressada",
+	"calm": "Calma",
+	"keen": "Aguçada",
+}
+
+
+static func display_name(id: String) -> String:
+	return NAMES.get(id, NAMES["neutral"])
+
+
 static func is_valid(id: String) -> bool:
 	return TABLE.has(id)
 
