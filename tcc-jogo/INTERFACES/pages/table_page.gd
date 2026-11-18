@@ -405,16 +405,16 @@ func _fill_stats(s: AlchemonSheet) -> void:
 
 	var rows: Array = [
 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
-		["Massa atômica", str(s.base_hp)],
-		["Eletronegatividade", str(s.base_attack)],
-		["Energia de ionização", str(s.base_defense)],
-		["Velocidade cinética", str(s.base_mechanical_speed)],
+		["Estabilidade química", str(s.base_hp), AlchemonStatGenerator.stat_tooltip("hp", s)],
+		["Reatividade química", str(s.base_attack), AlchemonStatGenerator.stat_tooltip("attack", s)],
+		["Energia de ionização", str(s.base_defense), AlchemonStatGenerator.stat_tooltip("defense", s)],
+		["Eletronegatividade", str(s.base_mechanical_speed), AlchemonStatGenerator.stat_tooltip("speed", s)],
 		["Elétrons de valência", str(s.energia_de_acao)],
 		["Camada de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
 		["Estado fisico", s.state_at(298.15).capitalize()],
 		["Fusao", "%.1f K" % s.melting_point],
 		["Ebulicao", "%.1f K" % s.boiling_point],
-		["Ataques", ", ".join(attack_names) if not attack_names.is_empty() else "-"],
+
 	]
 	for r in rows:
 		var key := Label.new()
@@ -426,6 +426,11 @@ func _fill_stats(s: AlchemonSheet) -> void:
 		val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		val.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_stats_grid.add_child(val)
+		if r.size() > 2:
+			# Tooltip no nome e no valor; Label ignora o mouse por padrão.
+			for lbl in [key, val]:
+				lbl.tooltip_text = r[2]
+				lbl.mouse_filter = Control.MOUSE_FILTER_PASS
 
 
 func _set_model(sheet: AlchemonSheet) -> void:

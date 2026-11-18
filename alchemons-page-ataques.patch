@@ -1,0 +1,50 @@
+diff --git a/tcc-jogo/INTERFACES/pages/alchemons_page.gd b/tcc-jogo/INTERFACES/pages/alchemons_page.gd
+index 6517a10..2364f0b 100644
+--- a/tcc-jogo/INTERFACES/pages/alchemons_page.gd
++++ b/tcc-jogo/INTERFACES/pages/alchemons_page.gd
+@@ -287,7 +287,7 @@ func _show_detail() -> void:
+ 	var inst: AlchemonInstance = _entries[_selected].inst
+ 	var sheet: AlchemonSheet = _entries[_selected].sheet
+ 	_fill_stats(inst, sheet)
+-	_fill_attacks(sheet)
++	_fill_attacks(inst, sheet)
+ 	_fill_info(sheet)
+ 
+ 
+@@ -339,14 +339,18 @@ func _fill_stats(inst: AlchemonInstance, s: AlchemonSheet) -> void:
+ 		_add_pair(_stats_grid, r[0], r[1])
+ 
+ 
+-func _fill_attacks(s: AlchemonSheet) -> void:
++func _fill_attacks(inst: AlchemonInstance, s: AlchemonSheet) -> void:
+ 	_clear(_attacks_grid)
+-	var any := false
+-	for a in s.attacks:
+-		if a != null:
+-			any = true
+-			break
+-	if not any:
++	# Golpes reais da criatura (attack_ids), não a lista legada da ficha da espécie.
++	var ids: Array[int] = inst.attack_ids
++	if ids.is_empty():
++		ids = AttackLearning.initial_attack_ids(s, inst.level)
++	var attacks: Array[AttackData] = []
++	for id in ids:
++		var a := AttackLearning.resolve(s, id)
++		if a != null and a not in attacks:
++			attacks.append(a)
++	if attacks.is_empty():
+ 		_add_pair(_attacks_grid, "Ataques", "-")
+ 		return
+ 
+@@ -356,9 +360,7 @@ func _fill_attacks(s: AlchemonSheet) -> void:
+ 		head.modulate.a = 0.7
+ 		head.size_flags_horizontal = Control.SIZE_EXPAND_FILL if h == "Nome" else Control.SIZE_FILL
+ 		_attacks_grid.add_child(head)
+-	for a in s.attacks:
+-		if a == null:
+-			continue
++	for a in attacks:
+ 		var name_lbl := Label.new()
+ 		name_lbl.text = a.attack_name
+ 		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL

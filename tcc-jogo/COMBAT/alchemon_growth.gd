@@ -20,24 +20,26 @@ static func xp_between(from_level: int, to_level: int) -> int:
 	return total
 
 
+## Sobe de nível usando o cálculo central de AlchemonInstance (mesmo da criação):
+## base + IV + nível + personalidade. Sem fórmulas próprias aqui.
 static func level_up(combatant: CombatantState, template: AlchemonSheet, levels: int = 1) -> void:
 	for i in levels:
-		var old_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, combatant.individual_value, combatant.level)
-		var old_hp_max := AlchemonFormulas.compute_stat(template.base_hp, combatant.individual_value, combatant.level)
-		combatant.level += 1
 		var iv := combatant.individual_value
-		combatant.attack = AlchemonFormulas.compute_stat(template.base_attack, iv, combatant.level)
-		combatant.defense = AlchemonFormulas.compute_stat(template.base_defense, iv, combatant.level)
-		combatant.mechanical_speed = AlchemonFormulas.compute_stat(template.base_mechanical_speed, iv, combatant.level)
-		var new_energy_max := AlchemonFormulas.compute_stat(template.energia_de_acao, iv, combatant.level)
-		var energy_gain := new_energy_max - old_energy_max
+		var old_stats := AlchemonInstance.compute_stats_for(template, iv, combatant.personality, combatant.level)
+		combatant.level += 1
+		var new_stats := AlchemonInstance.compute_stats_for(template, iv, combatant.personality, combatant.level)
+		combatant.attack = new_stats.attack
+		combatant.defense = new_stats.defense
+		combatant.mechanical_speed = new_stats.mechanical_speed
+		var energy_gain: int = new_stats.action_energy - old_stats.action_energy
 		combatant.action_energy += energy_gain
 		combatant.max_valence_electrons += energy_gain
-		combatant.valence_electrons += energy_gain
-		var hp_gain := AlchemonFormulas.compute_stat(template.base_hp, iv, combatant.level) - old_hp_max
+		combatant.valence_electrons = clampi(combatant.valence_electrons + energy_gain, 0, combatant.max_valence_electrons)
+		var hp_gain: int = new_stats.max_hp - old_stats.max_hp
 		combatant.max_hp += hp_gain
+		# Derrotada (HP 0) continua derrotada: sem cura por subir de nível.
 		if combatant.hp > 0:
-			combatant.hp += hp_gain
+			combatant.hp = clampi(combatant.hp + hp_gain, 1, combatant.max_hp)
 		AttackLearning.on_level_reached(combatant, template, combatant.level)
 		print("LVUP %s Lv%d atk=%d def=%d spd=%d en=%d" % [combatant.id, combatant.level, combatant.attack, combatant.defense, combatant.mechanical_speed, combatant.action_energy])
 

@@ -18,6 +18,7 @@ signal arena_hotter_than_myself(slot: int)
 @export var start_level: int = 1
 @export var start_experience: int = 0
 @export var individual_value: int = 1
+@export var personality: String = AlchemonPersonality.NEUTRAL
 @export var attack: int = 1
 @export var defense: int = 1
 @export var mechanical_speed: int = 1

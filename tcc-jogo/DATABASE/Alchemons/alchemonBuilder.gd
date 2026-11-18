@@ -33,12 +33,11 @@ func alchemon_instance():
 	stats = apply_level(sheet,instance)
 	
 func apply_level(sheet:AlchemonSheet, inst:AlchemonInstance) -> Dictionary:
-	var iv := inst.individual_value
-	var lv := inst.level
+	var st := inst.compute_stats(sheet)
 	return {
-		"attack": AlchemonFormulas.compute_stat(sheet.base_attack, iv, lv),
-		"defense": AlchemonFormulas.compute_stat(sheet.base_defense, iv, lv),
-		"speed": AlchemonFormulas.compute_stat(sheet.base_mechanical_speed, iv, lv),
-		"energy": AlchemonFormulas.compute_stat(sheet.energia_de_acao, iv, lv),
-		"max_hp": AlchemonFormulas.compute_stat(sheet.base_hp, iv, lv),
+		"attack": st.attack,
+		"defense": st.defense,
+		"speed": st.mechanical_speed,
+		"energy": st.action_energy,
+		"max_hp": st.max_hp,
 	}

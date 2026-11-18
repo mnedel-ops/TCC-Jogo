@@ -35,20 +35,37 @@ func max_hp_for(sheet: AlchemonSheet) -> int:
 	return _stat(sheet.base_hp, "max_hp")
 
 
+## Atributos desta instância no nível atual.
 func compute_stats(sheet: AlchemonSheet) -> Dictionary:
+	return compute_stats_at(sheet, level)
+
+
+## Atributos desta instância em um nível qualquer (ex.: nível de destino).
+func compute_stats_at(sheet: AlchemonSheet, at_level: int) -> Dictionary:
+	return compute_stats_for(sheet, individual_value, personality, at_level)
+
+
+## Fonte única do cálculo: base químico + IV + nível, depois multiplicador de personalidade.
+## Estático para quem ainda não tem uma AlchemonInstance (ex.: CombatantState).
+static func compute_stats_for(sheet: AlchemonSheet, iv: int, personality_id: String, at_level: int) -> Dictionary:
 	return {
-		"max_hp": max_hp_for(sheet),
-		"attack": _stat(sheet.base_attack, "attack"),
-		"defense": _stat(sheet.base_defense, "defense"),
-		"mechanical_speed": _stat(sheet.base_mechanical_speed, "mechanical_speed"),
-		"action_energy": _stat(sheet.energia_de_acao, "action_energy"),
+		"max_hp": stat_for(sheet.base_hp, iv, at_level, personality_id, "max_hp"),
+		"attack": stat_for(sheet.base_attack, iv, at_level, personality_id, "attack"),
+		"defense": stat_for(sheet.base_defense, iv, at_level, personality_id, "defense"),
+		"mechanical_speed": stat_for(sheet.base_mechanical_speed, iv, at_level, personality_id, "mechanical_speed"),
+		"action_energy": stat_for(sheet.energia_de_acao, iv, at_level, personality_id, "action_energy"),
 	}
 
 
-func _stat(base: int, key: String) -> int:
-	var v := AlchemonFormulas.compute_stat(base, individual_value, level)
-	var m := AlchemonPersonality.multiplier(personality, key)
+## X = floor(0,01 * (2B + IV) * L) + 5; X_final = round(X * M), mínimo 1.
+static func stat_for(base: int, iv: int, at_level: int, personality_id: String, key: String) -> int:
+	var v := AlchemonFormulas.compute_stat(base, iv, at_level)
+	var m := AlchemonPersonality.multiplier(personality_id, key)
 	return v if m == 1.0 else maxi(1, int(round(v * m)))
+
+
+func _stat(base: int, key: String) -> int:
+	return stat_for(base, individual_value, level, personality, key)
 
 
 func hp_or_full(max_hp: int) -> int:

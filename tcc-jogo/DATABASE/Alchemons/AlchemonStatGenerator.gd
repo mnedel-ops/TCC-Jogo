@@ -113,3 +113,24 @@ static func apply_to(sheet: AlchemonSheet) -> bool:
 	sheet.base_defense = s["base_defense"]
 	sheet.base_mechanical_speed = s["base_mechanical_speed"]
 	return true
+
+
+## Texto de tooltip (propriedade química + relação com o atributo de jogo).
+## stat: "hp" | "attack" | "defense" | "speed". Descreve as fórmulas de generate_base_stats;
+## lê da ficha só para mostrar o valor químico, sem recalcular nada.
+static func stat_tooltip(stat: String, sheet: AlchemonSheet) -> String:
+	var note := "\n\nAtributo de jogo derivado da propriedade química (normalizada para a faixa %d–%d), não a propriedade medida." % [BASE_MIN, BASE_MAX]
+	match stat:
+		"hp":
+			return "HP — Entalpia molar de atomização (ΔH°at)\nEnergia necessária para separar os átomos de uma substância em átomos isolados no estado gasoso. Fundamenta a resistência do Alchemon.\nValor: %.1f kJ/mol%s" % [sheet.atomization_enthalpy, note]
+		"attack":
+			if sheet.chem_category() == AlchemonSheet.Category.GAS_NOBRE:
+				return "Ataque — Reatividade\nGás nobre é inerte: o ataque fica no mínimo.%s" % note
+			if sheet.is_metal():
+				return "Ataque — Primeira energia de ionização (metal)\nPara metais, o potencial ofensivo cresce quanto menor a I₁ (maior facilidade de perder elétron).\nValor de I₁: %.1f kJ/mol%s" % [sheet.first_ionization_energy, note]
+			return "Ataque — Afinidade eletrônica (ametal/metaloide)\nEnergia associada ao ganho de um elétron por um átomo isolado no estado gasoso. Fundamenta o potencial ofensivo do Alchemon.\nValor: %.1f kJ/mol%s" % [sheet.electron_affinity, note]
+		"defense":
+			return "Defesa — Primeira energia de ionização (I₁)\nEnergia necessária para remover o primeiro elétron de um átomo isolado no estado gasoso. Fundamenta a capacidade defensiva do Alchemon.\nValor: %.1f kJ/mol%s" % [sheet.first_ionization_energy, note]
+		"speed":
+			return "Velocidade — Índice cinético (K = χ/√M)\nÍndice derivado da eletronegatividade de Pauling (χ) e da massa atômica (M). Fundamenta a velocidade do Alchemon.\nχ = %.2f | M = %s%s" % [sheet.electronegativity, str(sheet.atomic_mass), note]
+	return ""
