@@ -33,7 +33,9 @@ transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.
 script = ExtResource("3_dgjff")
 npc_scene = ExtResource("2_7g0a3")
 alchemons_ids = Array[int]([3, 3])
-dialogue = "Marie Curie eh minha cientista favorita!"
+level = 23
+is_fighter = true
+dialogue_defeated = "Marie Curie é minha cientista favorita!"
 
 [node name="Environment" type="Node3D" parent="." unique_id=915643647]
 
