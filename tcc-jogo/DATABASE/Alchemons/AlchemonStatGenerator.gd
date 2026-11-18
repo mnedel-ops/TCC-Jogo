@@ -184,8 +184,8 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 	var problem := validate(sheet)
 	match stat:
 		"hp":
-			d["title"] = "Estabilidade química"
-			d["origin"] = "Representa a resistência do elemento a transformações químicas. Elementos mais estáveis tendem a apresentar maior capacidade de permanecer em seu estado químico."
+			d["title"] = "Entalpia Molar- Pontos de vida"
+			d["origin"] = "Quantidade de energia necessária para romper a rede cristalina/covalente e separar 1 mol da substância em átomos gasosos isolados."
 			d["source"] = "%s kJ/mol" % fmt(sheet.atomization_enthalpy)
 			if problem == "":
 				var h := sheet.atomization_enthalpy
@@ -196,7 +196,7 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 				]
 				d["base"] = _to_base(n)
 		"attack":
-			d["title"] = "Reatividade química"
+			d["title"] = "Reatividade química - Poder ofensivo"
 			var cat := sheet.chem_category()
 			var r_text := ""
 			var r: float = 0.0
@@ -211,7 +211,7 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 				r = R_MAX * I_MIN / maxf(sheet.first_ionization_energy, 1.0)
 				r_text = "R = %s · %s / %s = %s" % [fmt(R_MAX, 0), fmt(I_MIN), fmt(sheet.first_ionization_energy), fmt(r)]
 			else:
-				d["origin"] = "Representa a capacidade de um elemento participar de reações químicas. Elementos mais reativos recebem maior potencial ofensivo."
+				d["origin"] = "Avidez do elemento em transformar sua estrutura eletrônica, dada pela Afinidade Eletrônica em ametais ou pelo inverso da Energia de Ionização em metais."
 				d["source"] = "EA = %s kJ/mol" % (fmt(sheet.electron_affinity) if sheet.has_electron_affinity() else "indisponível")
 				r = sheet.electron_affinity
 				r_text = "R = EA = %s" % fmt(r)
@@ -224,8 +224,8 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 				]
 				d["base"] = _to_base(n)
 		"defense":
-			d["title"] = "Defesa — Resistência ao dano"
-			d["origin"] = "Primeira energia de ionização (I₁)."
+			d["title"] = "Energia de ionização - Resistência ao dano"
+			d["origin"] = "Quantidade mínima de energia necessária para remover o elétron de valência mais externo de um átomo neutro no estado gasoso."
 			d["source"] = "%s kJ/mol" % fmt(sheet.first_ionization_energy)
 			if problem == "":
 				var i1 := sheet.first_ionization_energy
@@ -236,11 +236,11 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 				]
 				d["base"] = _to_base(n)
 		"speed":
-			d["title"] = "Velocidade — Iniciativa"
+			d["title"] = "Fator Cinético-Eletrônico - Iniciativa"
 			var mass := float(sheet.atomic_mass)
 			d["source"] = "χ = %s | M = %s u" % [fmt(sheet.electronegativity, 2) if sheet.electronegativity > 0.0 else "indisponível", str(sheet.atomic_mass)]
 			if sheet.electronegativity > 0.0:
-				d["origin"] = "Eletronegatividade (χ) e massa atômica (M): K = χ / √M."
+				d["origin"] = "Razão entre a Eletronegatividade de Pauling (rapidez de atração eletrônica) e a raiz da Massa Atômica (inércia cinética). Eletronegatividade (χ) e massa atômica (M): K = χ / √M."
 				if problem == "":
 					var k := sheet.electronegativity / sqrt(maxf(mass, 1.0))
 					var n := _norm(k, K_MIN, K_MAX)
@@ -263,8 +263,8 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 					]
 					d["base"] = _to_base(n)
 		"energy":
-			d["title"] = "Energia de ação — Recurso de golpes"
-			d["origin"] = "Não deriva de química: valor base definido na ficha da espécie."
+			d["title"] = "Elétrons na Camada de Valência - Energia para golpes"
+			d["origin"] = "Número de elétrons presentes no nível energético ocupado mais externo do átomo, responsáveis diretos pelas ligações e reações."
 			d["source"] = "Base da ficha: %d" % sheet.energia_de_acao
 			return d
 	if problem != "":

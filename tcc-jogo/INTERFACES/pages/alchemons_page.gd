@@ -16,11 +16,11 @@ const STATS_FONT := 14
 const STATS_TITLE_FONT := 18
 const STATS_VALUE_FONT := 26
 const ATTRS: Array[Dictionary] = [
-	{"key": "hp", "label": "HP"},
-	{"key": "attack", "label": "Ataque"},
-	{"key": "defense", "label": "Defesa"},
-	{"key": "speed", "label": "Velocidade"},
-	{"key": "energy", "label": "Energia de ação"},
+	{"key": "hp", "label": "Entalpia Molar de Atomização"},
+	{"key": "attack", "label": "Reatividade Química"},
+	{"key": "defense", "label": "Energia de Ionização"},
+	{"key": "speed", "label": "Fator Cinético-Eletrônico"},
+	{"key": "energy", "label": "Elétrons de Valência"},
 ]
 
 @export var party: PlayerPartyData
