@@ -2,13 +2,19 @@
 
 [ext_resource type="Script" uid="uid://cxa3w5e5vyolr" path="res://EXPLORATION/wilderness_encounter.gd" id="1_we"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_hy4a2"]
+
 [node name="WildernessEncounter" type="Area3D" unique_id=1096219808]
 collision_layer = 0
 script = ExtResource("1_we")
 polygon = PackedVector2Array(-3, -3, 3, -3, 3, 3, -3, 3)
 
 [node name="CollisionPolygon3D" type="CollisionPolygon3D" parent="." unique_id=1545173158]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0)
-depth = 4.0
+transform = Transform3D(0.755, 0, 0, 0, -3.30021e-08, -0.755, 0, 0.755, -3.30021e-08, 0, 0, 0)
 polygon = PackedVector2Array(-3, -3, 3, -3, 3, 3, -3, 3)
+margin = 0.001
 debug_color = Color(0, 0.6624799, 0.78196025, 1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=33987115]
+transform = Transform3D(6.123769, 0, 0, 0, 0.31532192, 0, 0, 0, 5.985118, 0, 0, 0)
+mesh = SubResource("BoxMesh_hy4a2")

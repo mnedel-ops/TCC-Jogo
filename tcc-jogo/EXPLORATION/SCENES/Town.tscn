@@ -76,12 +76,28 @@ is_fighter = true
 dialogue = "Ei, você! Meus Alchemons estão com vontade de brigar. Prepare-se!"
 dialogue_defeated = "Você é forte mesmo... Meus Alchemons precisam treinar mais."
 
+[node name="Badguy2" type="Marker3D" parent="NPCHolder" unique_id=935422982]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 51.003326, 1.9073486e-06, 17.785578)
+script = ExtResource("3_ea8wx")
+npc_scene = ExtResource("2_beapv")
+alchemons_ids = Array[int]([1, 2])
+level = 8
+dialogue = "Cuidado! Tem uns Alchemons selvagens bem fortes aqui!"
+dialogue_defeated = "Você é forte mesmo... Meus Alchemons precisam treinar mais."
+
 [node name="Kid" type="Marker3D" parent="NPCHolder" unique_id=483256078]
-transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 0.24816227, 0, 7.091034)
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 5.9282856, 0, -5.4145823)
 script = ExtResource("3_ea8wx")
 npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([1, 1])
 dialogue = "Aquele predio baixo eh o laboratorio! Mal vejo a hora de trabalhar la!"
+
+[node name="Kid2" type="Marker3D" parent="NPCHolder" unique_id=969283772]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, -18.818752, 0, 12.881841)
+script = ExtResource("3_ea8wx")
+npc_scene = ExtResource("2_beapv")
+alchemons_ids = Array[int]([1, 1])
+dialogue = "Eu gostaria de brincar nesta grama, mas meu Alchemon esta doente."
 
 [node name="OldMan" type="Marker3D" parent="NPCHolder" unique_id=2017377792]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 25.308487, 0, 0.2997818)
@@ -236,10 +252,32 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.27523708, 1, 0)
 mesh = SubResource("BoxMesh_ceq6u")
 
 [node name="WildernessEncounter" parent="." unique_id=1096219808 instance=ExtResource("6_ea8wx")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.791673, 0, 17.913042)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.791673, 0.12906396, 21.635319)
 min_level = 1
-polygon = PackedVector2Array(-10, -10, 10, -10, 10, 10, -10, 10)
-alchemons = Array[int]([1, 2, 3])
+alchemons = Array[int]([0, 1, 2])
+
+[node name="WildernessEncounter4" parent="." unique_id=669772820 instance=ExtResource("6_ea8wx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.523361, 0.12906396, 21.635319)
+min_level = 1
+alchemons = Array[int]([0, 1, 2])
+
+[node name="WildernessEncounter2" parent="." unique_id=162534960 instance=ExtResource("6_ea8wx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.293072, 0.12906396, -8.733463)
+min_level = 4
+max_level = 9
+alchemons = Array[int]([3, 4, 5])
+
+[node name="WildernessEncounter3" parent="." unique_id=1069289718 instance=ExtResource("6_ea8wx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61.207695, 0.12906396, 24.089964)
+min_level = 8
+max_level = 12
+alchemons = Array[int]([2, 3, 4, 1])
+
+[node name="WildernessEncounter5" parent="." unique_id=1143663161 instance=ExtResource("6_ea8wx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.602566, 0.12906396, 24.089964)
+min_level = 8
+max_level = 12
+alchemons = Array[int]([2, 3, 4, 1])
 
 [node name="GymOut" type="Marker3D" parent="." unique_id=472358257]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.903618, 0, 0)

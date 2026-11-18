@@ -1,0 +1,71 @@
+diff --git a/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd b/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
+index bc5f53f..db7c321 100644
+--- a/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
++++ b/tcc-jogo/DATABASE/Alchemons/AlchemonStatGenerator.gd
+@@ -115,24 +115,32 @@ static func apply_to(sheet: AlchemonSheet) -> bool:
+ 	return true
+ 
+ 
+-## Texto de tooltip (propriedade química + relação com o atributo de jogo).
+-## stat: "hp" | "attack" | "defense" | "speed". Descreve as fórmulas de generate_base_stats;
+-## lê da ficha só para mostrar o valor químico, sem recalcular nada.
++## Texto de tooltip (seção 7 do GDD): nome, uso no jogo, conceito químico e valor real.
++## stat: "hp" | "attack" | "defense" | "speed" | "energy".
++## Só LÊ a ficha para mostrar o valor químico; não recalcula nada.
+ static func stat_tooltip(stat: String, sheet: AlchemonSheet) -> String:
+ 	var note := "\n\nAtributo de jogo derivado da propriedade química (normalizada para a faixa %d–%d), não a propriedade medida." % [BASE_MIN, BASE_MAX]
+ 	match stat:
+ 		"hp":
+-			return "HP — Entalpia molar de atomização (ΔH°at)\nEnergia necessária para separar os átomos de uma substância em átomos isolados no estado gasoso. Fundamenta a resistência do Alchemon.\nValor: %.1f kJ/mol%s" % [sheet.atomization_enthalpy, note]
++			return "HP Base — Entalpia Molar de Atomização (ΔH°at)\n\nNo jogo: reservatório de integridade física; mede a resistência do Alchemon a ser nocauteado ou desestruturado por ataques na arena.\n\nConceito químico: a entalpia de atomização quantifica a variação de energia necessária para separar completamente 1 mol de uma substância, em seu estado padrão, em átomos gasosos neutros e isolados. Elementos com forte coesão reticular metálica ou redes covalentes estendidas exigem grande aporte de energia para quebrar sua estrutura, resultando em HP elevado.\n\nValor: %s kJ/mol%s" % [fmt(sheet.atomization_enthalpy), note]
+ 		"attack":
+-			if sheet.chem_category() == AlchemonSheet.Category.GAS_NOBRE:
+-				return "Ataque — Reatividade\nGás nobre é inerte: o ataque fica no mínimo.%s" % note
+-			if sheet.is_metal():
+-				return "Ataque — Primeira energia de ionização (metal)\nPara metais, o potencial ofensivo cresce quanto menor a I₁ (maior facilidade de perder elétron).\nValor de I₁: %.1f kJ/mol%s" % [sheet.first_ionization_energy, note]
+-			return "Ataque — Afinidade eletrônica (ametal/metaloide)\nEnergia associada ao ganho de um elétron por um átomo isolado no estado gasoso. Fundamenta o potencial ofensivo do Alchemon.\nValor: %.1f kJ/mol%s" % [sheet.electron_affinity, note]
++			var head := "Ataque Base — Índice de Reatividade Química\n\nNo jogo: define o potencial de causar dano direto e forçar transformações bruscas de estado no oponente.\n\nConceito químico: a reatividade reflete a tendência espontânea do átomo de alterar sua configuração eletrônica para atingir maior estabilidade."
++			match sheet.chem_category():
++				AlchemonSheet.Category.GAS_NOBRE:
++					return "%s Gás nobre é inerte: camada completa, reatividade 0, e o ataque fica no mínimo.\n\nValor: R = 0 (sem afinidade eletrônica usada)%s" % [head, note]
++				AlchemonSheet.Category.METAL:
++					return "%s Em metais, é impulsionada pela facilidade de oxidar e doar elétrons, associada à baixa energia de ionização: quanto menor a I₁, maior a reatividade.\n\nValor de I₁: %s kJ/mol%s" % [head, fmt(sheet.first_ionization_energy), note]
++				AlchemonSheet.Category.METALOIDE:
++					return "%s Em metaloides, é impulsionada pela Afinidade Eletrônica: energia associada ao ganho de um elétron por um átomo isolado no estado gasoso.\n\nValor: AE = %s kJ/mol%s" % [head, fmt(sheet.electron_affinity) if sheet.has_electron_affinity() else "indisponível", note]
++				_:
++					return "%s Em ametais, é impulsionada pela Afinidade Eletrônica: energia associada ao ganho de um elétron por um átomo isolado no estado gasoso.\n\nValor: AE = %s kJ/mol%s" % [head, fmt(sheet.electron_affinity) if sheet.has_electron_affinity() else "indisponível", note]
+ 		"defense":
+-			return "Defesa — Primeira energia de ionização (I₁)\nEnergia necessária para remover o primeiro elétron de um átomo isolado no estado gasoso. Fundamenta a capacidade defensiva do Alchemon.\nValor: %.1f kJ/mol%s" % [sheet.first_ionization_energy, note]
++			return "Defesa Base — Primeira Energia de Ionização (I₁)\n\nNo jogo: suprime o dano sofrido e protege contra a remoção forçada de carga ou indução de efeitos de status.\n\nConceito químico: é a quantidade de energia necessária para remover o elétron menos fortemente preso ao núcleo de um átomo isolado no estado gasoso. Elementos com elevada energia de ionização, como os gases nobres, mantêm seus elétrons fortemente atraídos e resistem a perturbações externas, garantindo Defesa elevada.\n\nValor: I₁ = %s kJ/mol%s" % [fmt(sheet.first_ionization_energy), note]
+ 		"speed":
+-			return "Velocidade — Índice cinético (K = χ/√M)\nÍndice derivado da eletronegatividade de Pauling (χ) e da massa atômica (M). Fundamenta a velocidade do Alchemon.\nχ = %.2f | M = %s%s" % [sheet.electronegativity, str(sheet.atomic_mass), note]
++			var chi := "%s (escala de Pauling)" % fmt(sheet.electronegativity, 2) if sheet.electronegativity > 0.0 else "indisponível (usa só a massa)"
++			return "Velocidade Base — Fator Cinético-Eletrônico (K = χ/√M)\n\nNo jogo: determina a prioridade de iniciativa na rodada e amplia a taxa de esquiva passiva da criatura.\n\nConceito químico: integra a eletronegatividade (capacidade de atrair densidade eletrônica em uma ligação) com o princípio da Teoria Cinética dos Gases e da efusão de Graham, no qual a velocidade de dispersão molecular é inversamente proporcional à raiz da massa. Átomos leves e fortemente eletronegativos têm alta mobilidade e velocidade de reação.\n\nχ = %s | M = %s u%s" % [chi, str(sheet.atomic_mass), note]
++		"energy":
++			return "Energia de Ação (EV) — Elétrons na Camada de Valência\n\nNo jogo: estabelece o teto de recursos gastos por turno para executar habilidades de combate e sustentar a fusão em Composto.\n\nConceito químico: são os elétrons que ocupam a camada eletrônica principal mais externa. Por serem os elétrons envolvidos na formação de ligações iônicas e covalentes, fornecem a referência conceitual para a capacidade de interação do átomo com outros elementos.\n\nValor: Energia de Ação = %d | Elétrons de valência = %d (alvo de preenchimento: %d)\n\nObservação: a associação entre Energia de Ação e elétrons de valência é conceitual. O limite usado no combate fica em energia_de_acao e não é calculado diretamente pelo número de elétrons." % [sheet.energia_de_acao, sheet.chem_valence(), sheet.octet_target]
+ 	return ""
+ 
+ 
+diff --git a/tcc-jogo/INTERFACES/pages/table_page.gd b/tcc-jogo/INTERFACES/pages/table_page.gd
+index db5eec8..263bc11 100644
+--- a/tcc-jogo/INTERFACES/pages/table_page.gd
++++ b/tcc-jogo/INTERFACES/pages/table_page.gd
+@@ -405,12 +405,12 @@ func _fill_stats(s: AlchemonSheet) -> void:
+ 
+ 	var rows: Array = [
+ 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
+-		["Estabilidade química", str(s.base_hp), AlchemonStatGenerator.stat_tooltip("hp", s)],
+-		["Reatividade química", str(s.base_attack), AlchemonStatGenerator.stat_tooltip("attack", s)],
+-		["Energia de ionização", str(s.base_defense), AlchemonStatGenerator.stat_tooltip("defense", s)],
+-		["Eletronegatividade", str(s.base_mechanical_speed), AlchemonStatGenerator.stat_tooltip("speed", s)],
+-		["Elétrons de valência", str(s.energia_de_acao)],
+-		["Camada de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
++		["HP Base", str(s.base_hp), AlchemonStatGenerator.stat_tooltip("hp", s)],
++		["Ataque Base", str(s.base_attack), AlchemonStatGenerator.stat_tooltip("attack", s)],
++		["Defesa Base", str(s.base_defense), AlchemonStatGenerator.stat_tooltip("defense", s)],
++		["Velocidade Base", str(s.base_mechanical_speed), AlchemonStatGenerator.stat_tooltip("speed", s)],
++		["Energia de Ação (EV)", str(s.energia_de_acao), AlchemonStatGenerator.stat_tooltip("energy", s)],
++		["Elétrons de valência", "%d / %d" % [s.chem_valence(), s.octet_target]],
+ 		["Estado fisico", s.state_at(298.15).capitalize()],
+ 		["Fusao", "%.1f K" % s.melting_point],
+ 		["Ebulicao", "%.1f K" % s.boiling_point],

@@ -405,12 +405,12 @@ func _fill_stats(s: AlchemonSheet) -> void:
 
 	var rows: Array = [
 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
-		["Estabilidade química", str(s.base_hp), AlchemonStatGenerator.stat_tooltip("hp", s)],
-		["Reatividade química", str(s.base_attack), AlchemonStatGenerator.stat_tooltip("attack", s)],
-		["Energia de ionização", str(s.base_defense), AlchemonStatGenerator.stat_tooltip("defense", s)],
-		["Eletronegatividade", str(s.base_mechanical_speed), AlchemonStatGenerator.stat_tooltip("speed", s)],
-		["Elétrons de valência", str(s.energia_de_acao)],
-		["Camada de valencia", "%d / %d" % [s.max_valence_electrons, s.octet_target]],
+		["HP Base", str(s.base_hp), AlchemonStatGenerator.stat_tooltip("hp", s)],
+		["Ataque Base", str(s.base_attack), AlchemonStatGenerator.stat_tooltip("attack", s)],
+		["Defesa Base", str(s.base_defense), AlchemonStatGenerator.stat_tooltip("defense", s)],
+		["Velocidade Base", str(s.base_mechanical_speed), AlchemonStatGenerator.stat_tooltip("speed", s)],
+		["Energia de Ação (EV)", str(s.energia_de_acao), AlchemonStatGenerator.stat_tooltip("energy", s)],
+		["Elétrons de valência", "%d / %d" % [s.chem_valence(), s.octet_target]],
 		["Estado fisico", s.state_at(298.15).capitalize()],
 		["Fusao", "%.1f K" % s.melting_point],
 		["Ebulicao", "%.1f K" % s.boiling_point],
