@@ -12,6 +12,9 @@ const DEFAULT_PARTY := "res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres"
 const DEFAULT_DATABASE := "res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres"
 const DEFAULT_PLAYER := "res://DATABASE/Player/player.tres"
 const STATS_TAB := 0
+const STATS_FONT := 14
+const STATS_TITLE_FONT := 18
+const STATS_VALUE_FONT := 26
 const ATTRS: Array[Dictionary] = [
 	{"key": "hp", "label": "HP"},
 	{"key": "attack", "label": "Ataque"},
@@ -115,7 +118,7 @@ func _build() -> void:
 
 	var top := Control.new()
 	top.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	top.size_flags_stretch_ratio = 1.2
+	top.size_flags_stretch_ratio = 0.6
 	root.add_child(top)
 
 	_cards_box = HBoxContainer.new()
@@ -331,6 +334,19 @@ func _add_pair(grid: GridContainer, key_text: String, value_text: String) -> voi
 	grid.add_child(val)
 
 
+func _stats_theme() -> Theme:
+	var t := Theme.new()
+	t.default_font_size = STATS_FONT
+	return t
+
+
+func _compact_box(bg: Color, border: Color) -> StyleBoxFlat:
+	var b := _box(bg, border, 6)
+	b.content_margin_top = 2
+	b.content_margin_bottom = 2
+	return b
+
+
 func _make_stats_tab() -> void:
 	var split := HBoxContainer.new()
 	split.name = "Stats"
@@ -344,7 +360,8 @@ func _make_stats_tab() -> void:
 	split.add_child(left_scroll)
 	_stats_left = VBoxContainer.new()
 	_stats_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_stats_left.add_theme_constant_override("separation", 4)
+	_stats_left.add_theme_constant_override("separation", 2)
+	_stats_left.theme = _stats_theme()
 	left_scroll.add_child(_stats_left)
 
 	var right := PanelContainer.new()
@@ -362,10 +379,12 @@ func _make_stats_tab() -> void:
 	right_v.add_child(right_scroll)
 	_detail_box = VBoxContainer.new()
 	_detail_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_detail_box.add_theme_constant_override("separation", 4)
+	_detail_box.add_theme_constant_override("separation", 2)
+	_detail_box.theme = _stats_theme()
 	right_scroll.add_child(_detail_box)
 
 	_hint_label = Label.new()
+	_hint_label.theme = _stats_theme()
 	_hint_label.modulate.a = 0.7
 	right_v.add_child(_hint_label)
 
@@ -418,7 +437,7 @@ func _section_label(text: String) -> Label:
 func _make_attr_row(i: int, value_text: String) -> PanelContainer:
 	var row := PanelContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_STOP
-	row.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 6))
+	row.add_theme_stylebox_override("panel", _compact_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0)))
 	var h := HBoxContainer.new()
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(h)
@@ -441,9 +460,9 @@ func _make_attr_row(i: int, value_text: String) -> PanelContainer:
 func _refresh_attr_rows() -> void:
 	for i in _attr_rows.size():
 		var on := _consulting and i == _attr_cursor
-		_attr_rows[i].add_theme_stylebox_override("panel", _box(
+		_attr_rows[i].add_theme_stylebox_override("panel", _compact_box(
 			Color(GOLD, 0.18) if on else Color(0, 0, 0, 0),
-			GOLD if on else Color(0, 0, 0, 0), 6))
+			GOLD if on else Color(0, 0, 0, 0)))
 		_attr_names[i].add_theme_color_override("font_color", GOLD if on else Color.WHITE)
 
 
@@ -527,7 +546,7 @@ func _refresh_detail() -> void:
 	if _selected < 0 or _selected >= _entries.size():
 		return
 	if not _consulting:
-		_detail_box.add_child(_detail_text("Pressione E para consultar a origem química e o cálculo de cada atributo desta criatura.", 0.7))
+		_detail_box.add_child(_detail_text("Pressione E para consultar a origem e o cálculo dos atributos.", 0.7))
 		return
 
 	var inst: AlchemonInstance = _entries[_selected].inst
@@ -536,10 +555,13 @@ func _refresh_detail() -> void:
 	var chem := AlchemonStatGenerator.describe_stat(key, sheet)
 	var fin := inst.stat_breakdown(sheet, key)
 
-	_detail_box.add_child(_detail_text("Selecionado", 0.7))
-	_detail_box.add_child(_detail_text(chem["title"], 1.0, 22, GOLD))
-	_detail_box.add_child(_detail_text(str(fin["result"]), 1.0, 40))
-	_detail_box.add_child(_detail_text(chem["description"]))
+	var header := HBoxContainer.new()
+	var title := _detail_text(chem["title"], 1.0, STATS_TITLE_FONT, GOLD)
+	header.add_child(title)
+	var value := _detail_text(str(fin["result"]), 1.0, STATS_VALUE_FONT)
+	value.size_flags_horizontal = Control.SIZE_SHRINK_END
+	header.add_child(value)
+	_detail_box.add_child(header)
 
 	_detail_box.add_child(_detail_text("Origem química", 0.7))
 	_detail_box.add_child(_detail_text(chem["origin"]))
@@ -549,21 +571,15 @@ func _refresh_detail() -> void:
 	_detail_box.add_child(_detail_text("Cálculo", 0.7))
 	var problem: String = chem["problem"]
 	if problem != "":
-		_detail_box.add_child(_detail_text("Dados químicos incompletos: %s A base abaixo vem direto da ficha." % problem, 1.0, 0, Color(1, 0.6, 0.4)))
-
-	var formulas: Array = chem["formulas"] + fin["formulas"]
-	for line in formulas:
-		_detail_box.add_child(_detail_text(str(line), 0.7))
-
-	_detail_box.add_child(_detail_text("Com os valores desta criatura:", 0.7))
+		_detail_box.add_child(_detail_text("Dados químicos incompletos. Base direto da ficha.", 1.0, 0, Color(1, 0.6, 0.4)))
 	for line in chem["steps"]:
 		_detail_box.add_child(_detail_text(str(line)))
 	var generated: int = chem["base"]
 	var stored: int = fin["base"]
 	if generated >= 0 and generated != stored:
-		_detail_box.add_child(_detail_text("A ficha guarda B = %d (o gerado seria %d). O jogo usa o valor da ficha." % [stored, generated], 1.0, 0, Color(1, 0.6, 0.4)))
+		_detail_box.add_child(_detail_text("Ficha guarda B = %d (gerado: %d). Jogo usa a ficha." % [stored, generated], 1.0, 0, Color(1, 0.6, 0.4)))
 	elif generated < 0:
-		_detail_box.add_child(_detail_text("B = %d (valor base da ficha)" % stored))
+		_detail_box.add_child(_detail_text("B = %d (base da ficha)" % stored))
 	for line in fin["steps"]:
 		_detail_box.add_child(_detail_text(str(line)))
 

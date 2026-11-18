@@ -1,8 +1,11 @@
 # ALCHEMON — Documento de Design de Jogo (GDD)
 
 **Versão:** atualização de estado do protótipo  
+**Referência de código:** repositório `mnedel-ops/TCC-Jogo`, branch `main`, snapshot consultado em 16/11/2026  
+**Commit identificado na indexação do repositório:** `ac112fe8094e117201e857bd6a93d7ad74999f22`  
 **Engine declarada no GDD existente:** Godot 4.6, renderer GL Compatibility e física Jolt.
 
+> Este documento registra o comportamento encontrado no código consultado. A existência de uma regra em um arquivo não comprova, por si só, que todo o fluxo esteja validado visualmente em uma partida. Os estados abaixo distinguem implementação de integração e de funcionalidades ainda planejadas.
 
 ## Legenda de status
 
@@ -22,19 +25,20 @@
 | Encontros | [Parcial] | Encontros por tempo e áreas de colisão; não por passos ou cone de visão. |
 | Combate 2×2 por turnos | [OK] | Máquina de fases, iniciativa, comandos, resolução e encerramento. |
 | Tipos e efetividade | [OK] | Ciclo Metal > Metaloide > Ametal > Metal; multiplicadores 1,5 / 0,66 / 1,0. |
-| Atributos e IV | [OK] | Fórmulas de atributos e IV implementados |
+| Atributos e IV | [Parcial] | Fórmulas de atributos e IV implementados; correspondência química dos atributos-base ainda não consolidada. |
 | Personalidades | [Extra] | Modificadores de +10% e −10% em atributos. |
 | Temperatura e estados físicos | [Parcial] | Aquecimento do alvo, transições, dano térmico e estados do Composto; a temperatura global da arena não propaga o calor para todos os combatentes. |
+| Misturas | [Parcial] | Vínculo entre exatamente dois Alchemons; bônus em HP e energia, não em todos os atributos. |
 | Compostos iônicos e covalentes | [Parcial] | Regras químicas suportam grupos de até quatro Alchemons e até quatro elementos distintos; transferência de atributos ainda usa 70% fixos. |
 | Captura | [Parcial] | Fórmula e preservação da instância implementadas; métodos de captura ainda são categorias provisórias. |
-| Ataques por nível | [OK]/[Parcial] | Desbloqueio por nível e limite de quatro golpes implementados. |
+| Ataques por nível | [OK]/[Parcial] | Desbloqueio por nível e limite de quatro golpes implementados; a escolha de substituição depende da interface. |
 | XP e níveis | [OK] | Curva de XP acumulada N³, recompensa por derrota e distribuição ao grupo vivo do lado que venceu a ação. |
 | Insígnias e obediência | [Parcial] | Insígnia do Metal é concedida; regras de obediência não foram identificadas. |
 | Economia e loja | [OK]/[Parcial] | Compra e venda implementadas; itens e valores ainda precisam de balanceamento. |
-| PC e armazenamento | [Parcial] | Troca de equipe, armazenamento e configuração de vínculos. |
+| PC e armazenamento | [Parcial] | Troca de equipe, armazenamento e configuração de vínculos; sem caixas organizadas. |
 | Cura | [Parcial] | NPC Enfermeiro restaura HP e energia; não há cena de hospital ou teleporte após derrota. |
 | Salvamento | [OK] | JSON, gravação atômica, backup, posição, inventário e progresso de NPCs. |
-| Menus | [OK] | Menu unificado e páginas funcionais. |
+| Menus | [Parcial] | Menu unificado e páginas funcionais; opções previstas originalmente não estão todas presentes. |
 | Testes automatizados | [Extra] | Há suítes GdUnit4. A contagem de testes diverge entre o GDD e a documentação técnica e precisa ser reconciliada. |
 
 ---
@@ -127,7 +131,7 @@ O jogador utiliza colisões do cenário para impedir a passagem por obstáculos.
 
 ### 3.5 Estruturas do mapa — [Parcial]
 
-Loja, cura e ginásio são representados por NPCs e pontos de interação dentro das fases. Não foram identificadas cenas independentes completas para hospital e loja.
+Loja, cura e ginásio são representados por NPCs e pontos de interação dentro das fases. Não foram identificadas cenas independentes completas para hospital, loja ou ginásio.
 
 ---
 
@@ -228,19 +232,39 @@ A efetividade é calculada entre o tipo do ataque e o tipo da espécie atingida.
 
 ### 7.1 Atributos-base e propriedades químicas — [Parcial]
 
-`AlchemonSheet` armazena os dados de cada espécie, incluindo massa atômica, atributos-base, energia de ação, propriedades de valência e propriedades térmicas.
+Os atributos-base dos Alchemons estabelecem correspondências entre parâmetros de combate e propriedades químicas dos elementos. Essas relações traduzem grandezas da Química em valores utilizados pelas regras do jogo; os valores-base resultantes também dependem das faixas de normalização e das decisões de balanceamento do sistema.
 
-
-## Conversão de Conceitos Químicos em Atributos de Jogo
-
-| Atributo de jogo | Conceito químico associado | Relação com o atributo |
+| Atributo no Jogo | Equivalência Química | Conceito Químico Representado |
 |---|---|---|
-| **HP (Vida)** | Estabilidade química | Representa a resistência do elemento a transformações químicas. Elementos mais estáveis tendem a apresentar maior capacidade de permanecer em seu estado químico. |
-| **Ataque** | Reatividade química | Representa a capacidade de um elemento participar de reações químicas. Elementos mais reativos recebem maior potencial ofensivo. |
-| **Defesa** | Energia de ionização | Representa a dificuldade de remover elétrons de um átomo. No jogo, uma energia de ionização elevada pode ser associada a maior resistência contra determinados efeitos. |
-| **Velocidade** | Eletronegatividade | Representa a tendência de um átomo atrair elétrons em uma ligação química. No jogo, essa propriedade pode influenciar a rapidez de determinadas ações ou interações. |
+| **HP Base** | **Entalpia Molar de Atomização (\(\Delta H^\circ_{at}\))** / **Energia de Coesão** | Quantidade de energia necessária para romper a rede cristalina/covalente e separar 1 mol da substância em átomos gasosos isolados. |
+| **Ataque Base** | **Índice de Reatividade Química (\(R_{quim}\))** | Avidez do elemento em transformar sua estrutura eletrônica — dada pela **Afinidade Eletrônica** em ametais ou pelo inverso da **Energia de Ionização** em metais. |
+| **Defesa Base** | **Primeira Energia de Ionização (\(I_1\))** | Quantidade mínima de energia necessária para remover o elétron de valência mais externo de um átomo neutro no estado gasoso. |
+| **Velocidade Base** | **Fator Cinético-Eletrônico (\(K_{cin} = \frac{\chi}{\sqrt{M}}\))** | Razão entre a **Eletronegatividade de Pauling** (\(\chi\), rapidez de atração eletrônica) e a raiz da **Massa Atômica** (\(M\), inércia cinética). |
+| **Energia de Ação (EV)** | **Elétrons na Camada de Valência** | Número de elétrons presentes no nível energético ocupado mais externo do átomo, responsáveis diretos pelas ligações e reações. |
 
-**Nota:** As relações apresentadas são associações didáticas e lúdicas, não relações quantitativas universais da Química. As propriedades químicas servem como referência para a construção das regras de jogo, sem representar equivalências científicas diretas.
+#### Detalhamento dos conceitos químicos
+
+1. **HP Base → Entalpia Molar de Atomização (\(\Delta H^\circ_{at}\))**
+   - **No jogo:** mede o reservatório de integridade física e a resistência do Alchemon a ser nocauteado ou desestruturado por ataques na arena.
+   - **Conceito químico:** a entalpia de atomização quantifica a variação de energia necessária para separar completamente 1 mol de uma substância em seu estado padrão em átomos gasosos neutros e isolados. Elementos com forte coesão reticular metálica ou redes de ligações covalentes estendidas exigem grande aporte energético para quebrar sua estrutura, resultando em um **HP elevado**.
+
+2. **Ataque Base → Índice de Reatividade Química (\(R_{quim}\))**
+   - **No jogo:** define o potencial de causar dano direto e forçar transformações bruscas de estado no oponente.
+   - **Conceito químico:** a reatividade reflete a tendência espontânea do átomo de alterar sua configuração eletrônica para atingir maior estabilidade. Em ametais, é impulsionada pela **Afinidade Eletrônica** (energia liberada ao capturar um elétron no estado gasoso); em metais, pela facilidade de oxidar e doar elétrons (baixa energia de ionização).
+
+3. **Defesa Base → Primeira Energia de Ionização (\(I_1\))**
+   - **No jogo:** suprime o dano sofrido e protege contra a remoção forçada de carga ou indução de efeitos de status.
+   - **Conceito químico:** é a quantidade de energia necessária para remover o elétron menos fortemente preso ao núcleo de um átomo isolado no estado gasoso. Elementos com elevada \(I_1\) (como os gases nobres) mantêm seus elétrons fortemente atraídos e resistem a perturbações externas, garantindo uma **Defesa elevada**.
+
+4. **Velocidade Base → Fator Cinético-Eletrônico (\(K_{cin} = \frac{\chi}{\sqrt{M}}\))**
+   - **No jogo:** determina a prioridade de iniciativa na rodada e amplia a taxa de esquiva passiva da criatura.
+   - **Conceito químico:** integra a **Eletronegatividade** (capacidade de atrair densidade eletrônica em uma ligação) com o princípio da Teoria Cinética dos Gases e da efusão de Graham, no qual a velocidade de dispersão molecular é inversamente proporcional à raiz da **Massa Atômica** (\(M\)). Átomos leves e fortemente eletronegativos (como o Hidrogênio) possuem alta mobilidade e velocidade de reação.
+
+5. **Energia de Ação (EV) → Elétrons na Camada de Valência**
+   - **No jogo:** estabelece o teto de recursos gastos por turno para executar habilidades de combate e sustentar a fusão em Composto.
+   - **Conceito químico:** são os elétrons que ocupam a camada eletrônica principal \(n\) mais externa. Por serem os elétrons envolvidos na formação de ligações iônicas e covalentes, eles fornecem a referência conceitual para a capacidade de interação do átomo com outros elementos.
+
+**Nota de implementação:** a correspondência entre Energia de Ação e elétrons de valência é conceitual. No código, o limite de energia utilizado pelo combate é armazenado no campo próprio da ficha da espécie (`energia_de_acao`); não se deve afirmar que esse limite é recalculado automaticamente a partir da contagem de elétrons de valência sem que essa integração esteja efetivamente implementada.
 
 
 ### 7.2 Fórmulas de atributos — [Parcial]
@@ -275,9 +299,9 @@ As instâncias recebem uma personalidade que aumenta um atributo em 10% e reduz 
 
 A personalidade é sorteada na criação da criatura e integra os dados individuais da instância.
 
-### 7.4 Energia de ação — [OK]
+### 7.4 Energia de ação — [Parcial]
 
-A energia é representada no combate por `valence_electrons`. Os ataques consomem energia conforme o custo cadastrado. O valor atual persiste entre combates e é restaurado pelo Enfermeiro.
+A energia é representada no combate por `valence_electrons`, com limite associado à ficha da espécie. Os ataques consomem energia conforme o custo cadastrado. O valor atual persiste entre combates e é restaurado pelo Enfermeiro.
 
 Quando a energia chega a zero, o ataque é substituído por Slap. Não foi identificado consumo adicional de energia ao receber dano.
 
@@ -356,6 +380,8 @@ As transições implementadas provocam dano calculado sobre o HP máximo:
 | Líquido → Sólido (solidificação) | 10% | +1 × nível |
 
 A mudança de estado pode percorrer mais de uma transição em um único aquecimento ou resfriamento, aplicando o dano de cada etapa atravessada.
+
+**Não implementado no comportamento consultado:** bônus ou penalidades diretas de Ataque, Defesa, Velocidade ou outros atributos por estado físico. O efeito atual é térmico e relacionado ao dano de transição.
 
 ### 8.3 Temperatura dos Compostos — [Parcial]
 
@@ -583,11 +609,13 @@ O resultado possui mínimo de 1 ponto de experiência.
 
 A implementação atual concede a experiência aos participantes vivos do lado responsável pela derrota do alvo, não apenas à criatura que executou o golpe final. Isso inclui os membros vivos da equipe do jogador e, conforme o lado que realizou a ação, os participantes vivos da equipe adversária.
 
-### 12.4 Efeitos do avanço de nível — [OK]
+### 12.4 Efeitos do avanço de nível — [OK]/[Parcial]
 
 O avanço recalcula Ataque, Defesa e Velocidade, aumenta o HP máximo e a energia máxima e aciona o sistema de aprendizado de ataques.
 
 O aumento de HP máximo também é acrescentado ao HP atual quando a criatura está viva. O aumento do limite de energia não restaura automaticamente a energia atual.
+
+**Pendente:** definir e implementar um teto de nível, caso o limite 20 previsto no design original continue desejado.
 
 ### 12.5 Insígnias e obediência — [Parcial]
 

@@ -91,7 +91,7 @@ func base_for_stat(sheet: AlchemonSheet, stat: String) -> int:
 
 ## Etapa final do cálculo (base + IV + nível + personalidade), para exibição.
 ## Usa as mesmas funções de compute_stats, então "result" é o valor real do jogo.
-## Retorna {base, iv, level, raw, multiplier, result, formulas: Array, steps: Array}.
+## Retorna {base, iv, level, raw, multiplier, result, steps: Array}.
 func stat_breakdown(sheet: AlchemonSheet, stat: String) -> Dictionary:
 	var base := base_for_stat(sheet, stat)
 	var pkey: String = STAT_PERSONALITY_KEYS.get(stat, stat)
@@ -99,18 +99,14 @@ func stat_breakdown(sheet: AlchemonSheet, stat: String) -> Dictionary:
 	var mult := AlchemonPersonality.multiplier(personality, pkey)
 	var result := stat_for(base, individual_value, level, personality, pkey)
 	var pname := AlchemonPersonality.display_name(personality)
-	var formulas: Array = ["X = piso(0,01 · (2B + IV) · L) + 5"]
 	var steps: Array = ["X = piso(0,01 · (2 · %d + %d) · %d) + 5 = %d" % [base, individual_value, level, raw]]
-	if mult == 1.0:
-		steps.append("Personalidade %s: sem efeito neste atributo (M = 1,00)." % pname)
-		steps.append("Valor final = X = %d" % result)
-	else:
-		formulas.append("X_final = arred(X · M), mínimo 1")
-		steps.append("Personalidade %s: M = %s neste atributo." % [pname, AlchemonStatGenerator.fmt(mult, 2)])
-		steps.append("X_final = arred(%d · %s) = %d" % [raw, AlchemonStatGenerator.fmt(mult, 2), result])
+	if mult != 1.0:
+		var m_txt := AlchemonStatGenerator.fmt(mult, 2)
+		steps.append("Personalidade %s: M = %s" % [pname, m_txt])
+		steps.append("Final = arred(%d · %s) = %d" % [raw, m_txt, result])
 	return {
 		"base": base, "iv": individual_value, "level": level, "raw": raw,
-		"multiplier": mult, "result": result, "formulas": formulas, "steps": steps,
+		"multiplier": mult, "result": result, "steps": steps,
 	}
 
 

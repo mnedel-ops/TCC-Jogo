@@ -173,64 +173,50 @@ static func category_name(cat: AlchemonSheet.Category) -> String:
 
 ## Explica a parte QUÍMICA de um atributo base.
 ## stat: "hp" | "attack" | "defense" | "speed" | "energy".
-## Retorna {title, description, origin, source, formulas: Array, steps: Array,
+## Retorna {title, origin, source, steps: Array,
 ##          base: int (gerado; -1 se não deriva de química), problem: String}.
-## "problem" != "" = faltam dados químicos; formulas/steps ficam vazios.
+## "problem" != "" = faltam dados químicos; steps fica vazio.
 static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 	var d := {
-		"title": "", "description": "", "origin": "", "source": "",
-		"formulas": [], "steps": [], "base": -1, "problem": "",
+		"title": "", "origin": "", "source": "", "steps": [], "base": -1, "problem": "",
 	}
 	var span := BASE_MAX - BASE_MIN
 	var problem := validate(sheet)
 	match stat:
 		"hp":
-			d["title"] = "HP — Pontos de vida"
-			d["description"] = "Quanto dano o Alchemon aguenta antes de desmaiar."
-			d["origin"] = "Entalpia molar de atomização (ΔH°at): energia necessária para separar os átomos de uma substância em átomos isolados no estado gasoso."
+			d["title"] = "Estabilidade química"
+			d["origin"] = "Representa a resistência do elemento a transformações químicas. Elementos mais estáveis tendem a apresentar maior capacidade de permanecer em seu estado químico."
 			d["source"] = "%s kJ/mol" % fmt(sheet.atomization_enthalpy)
 			if problem == "":
 				var h := sheet.atomization_enthalpy
 				var n := _norm(h, H_MIN, H_MAX)
-				d["formulas"] = [
-					"norm = (ΔH - %s) / (%s - %s)" % [fmt(H_MIN, 0), fmt(H_MAX, 0), fmt(H_MIN, 0)],
-					"B = %d + arred(norm · %d)" % [BASE_MIN, span],
-				]
 				d["steps"] = [
 					"norm = (%s - %s) / (%s - %s) = %s" % [fmt(h), fmt(H_MIN, 0), fmt(H_MAX, 0), fmt(H_MIN, 0), _norm_txt(h, H_MIN, H_MAX)],
 					"B = %d + arred(%s · %d) = %d" % [BASE_MIN, fmt(n, 3), span, _to_base(n)],
 				]
 				d["base"] = _to_base(n)
 		"attack":
-			d["title"] = "Ataque — Poder ofensivo"
-			d["description"] = "Escala o dano dos golpes: o dano cresce com o Ataque de quem bate e cai com a Defesa de quem apanha."
+			d["title"] = "Reatividade química"
 			var cat := sheet.chem_category()
 			var r_text := ""
 			var r: float = 0.0
 			if cat == AlchemonSheet.Category.GAS_NOBRE:
-				d["origin"] = "Categoria química: gás nobre. Regra de reatividade: gás nobre é inerte, então a reatividade é 0 (nenhuma propriedade medida é usada)."
-				d["source"] = "Sem valor tabelado (inerte)"
+				d["origin"] = "Gás nobre: inerte, reatividade 0."
+				d["source"] = "Sem valor (inerte)"
 				r = R_MIN
 				r_text = "R = 0 (gás nobre é inerte)"
-				d["formulas"] = ["R = 0 (gás nobre)"]
 			elif cat == AlchemonSheet.Category.METAL:
-				d["origin"] = "Categoria química: metal. Regra de reatividade: quanto menor a primeira energia de ionização (I₁), mais fácil perder elétron e maior a reatividade. R = Rmax · Imin / I₁."
+				d["origin"] = "Metal: reatividade pela 1ª energia de ionização (menor I₁, mais reativo)."
 				d["source"] = "I₁ = %s kJ/mol" % fmt(sheet.first_ionization_energy)
 				r = R_MAX * I_MIN / maxf(sheet.first_ionization_energy, 1.0)
 				r_text = "R = %s · %s / %s = %s" % [fmt(R_MAX, 0), fmt(I_MIN), fmt(sheet.first_ionization_energy), fmt(r)]
-				d["formulas"] = ["R = %s · %s / I₁" % [fmt(R_MAX, 0), fmt(I_MIN)]]
 			else:
-				d["origin"] = "Categoria química: %s. Regra de reatividade: a reatividade é a afinidade eletrônica (EA), energia associada ao ganho de um elétron por um átomo isolado no estado gasoso." % category_name(cat)
+				d["origin"] = "Representa a capacidade de um elemento participar de reações químicas. Elementos mais reativos recebem maior potencial ofensivo."
 				d["source"] = "EA = %s kJ/mol" % (fmt(sheet.electron_affinity) if sheet.has_electron_affinity() else "indisponível")
 				r = sheet.electron_affinity
 				r_text = "R = EA = %s" % fmt(r)
-				d["formulas"] = ["R = EA"]
 			if problem == "":
 				var n := _norm(r, R_MIN, R_MAX)
-				d["formulas"] = d["formulas"] + [
-					"norm = (R - %s) / (%s - %s)" % [fmt(R_MIN, 0), fmt(R_MAX, 0), fmt(R_MIN, 0)],
-					"B = %d + arred(norm · %d)" % [BASE_MIN, span],
-				]
 				d["steps"] = [
 					r_text,
 					"norm = (%s - %s) / (%s - %s) = %s" % [fmt(r), fmt(R_MIN, 0), fmt(R_MAX, 0), fmt(R_MIN, 0), _norm_txt(r, R_MIN, R_MAX)],
@@ -239,16 +225,11 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 				d["base"] = _to_base(n)
 		"defense":
 			d["title"] = "Defesa — Resistência ao dano"
-			d["description"] = "Reduz o dano recebido: o dano é proporcional a Ataque ÷ Defesa."
-			d["origin"] = "Primeira energia de ionização (I₁): energia necessária para remover o primeiro elétron de um átomo isolado no estado gasoso."
+			d["origin"] = "Primeira energia de ionização (I₁)."
 			d["source"] = "%s kJ/mol" % fmt(sheet.first_ionization_energy)
 			if problem == "":
 				var i1 := sheet.first_ionization_energy
 				var n := _norm(i1, I_MIN, I_MAX)
-				d["formulas"] = [
-					"norm = (I₁ - %s) / (%s - %s)" % [fmt(I_MIN), fmt(I_MAX), fmt(I_MIN)],
-					"B = %d + arred(norm · %d)" % [BASE_MIN, span],
-				]
 				d["steps"] = [
 					"norm = (%s - %s) / (%s - %s) = %s" % [fmt(i1), fmt(I_MIN), fmt(I_MAX), fmt(I_MIN), _norm_txt(i1, I_MIN, I_MAX)],
 					"B = %d + arred(%s · %d) = %d" % [BASE_MIN, fmt(n, 3), span, _to_base(n)],
@@ -256,19 +237,13 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 				d["base"] = _to_base(n)
 		"speed":
 			d["title"] = "Velocidade — Iniciativa"
-			d["description"] = "Define a iniciativa: quem tem mais velocidade tende a agir antes na rodada."
 			var mass := float(sheet.atomic_mass)
 			d["source"] = "χ = %s | M = %s u" % [fmt(sheet.electronegativity, 2) if sheet.electronegativity > 0.0 else "indisponível", str(sheet.atomic_mass)]
 			if sheet.electronegativity > 0.0:
-				d["origin"] = "Eletronegatividade de Pauling (χ) e massa atômica (M). Índice cinético K = χ / √M: átomos leves e muito eletronegativos têm K alto."
+				d["origin"] = "Eletronegatividade (χ) e massa atômica (M): K = χ / √M."
 				if problem == "":
 					var k := sheet.electronegativity / sqrt(maxf(mass, 1.0))
 					var n := _norm(k, K_MIN, K_MAX)
-					d["formulas"] = [
-						"K = χ / √M",
-						"norm = (K - %s) / (%s - %s)" % [fmt(K_MIN, 2), fmt(K_MAX, 2), fmt(K_MIN, 2)],
-						"B = %d + arred(norm · %d)" % [BASE_MIN, span],
-					]
 					d["steps"] = [
 						"K = %s / √%s = %s" % [fmt(sheet.electronegativity, 2), fmt(mass, 0), fmt(k, 3)],
 						"norm = (%s - %s) / (%s - %s) = %s" % [fmt(k, 3), fmt(K_MIN, 2), fmt(K_MAX, 2), fmt(K_MIN, 2), _norm_txt(k, K_MIN, K_MAX)],
@@ -276,16 +251,11 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 					]
 					d["base"] = _to_base(n)
 			else:
-				d["origin"] = "Eletronegatividade indisponível na escala de Pauling (gás nobre): o índice cinético usa só a massa atômica, K = 1 / √M."
+				d["origin"] = "Gás nobre sem χ: K = 1 / √M (só a massa)."
 				if problem == "":
 					var k := 1.0 / sqrt(maxf(mass, 1.0))
 					var k_lo := 1.0 / sqrt(M_MAX)
 					var n := _norm(k, k_lo, 1.0)
-					d["formulas"] = [
-						"K = 1 / √M",
-						"norm = (K - 1/√%s) / (1 - 1/√%s)" % [fmt(M_MAX, 0), fmt(M_MAX, 0)],
-						"B = %d + arred(norm · %d)" % [BASE_MIN, span],
-					]
 					d["steps"] = [
 						"K = 1 / √%s = %s" % [fmt(mass, 0), fmt(k, 3)],
 						"norm = (%s - %s) / (1 - %s) = %s" % [fmt(k, 3), fmt(k_lo, 3), fmt(k_lo, 3), _norm_txt(k, k_lo, 1.0)],
@@ -294,11 +264,9 @@ static func describe_stat(stat: String, sheet: AlchemonSheet) -> Dictionary:
 					d["base"] = _to_base(n)
 		"energy":
 			d["title"] = "Energia de ação — Recurso de golpes"
-			d["description"] = "Energia gasta para usar golpes; cada golpe tem um custo."
-			d["origin"] = "Não deriva de propriedade química na implementação atual. É um valor base definido na ficha da espécie (parâmetro de design do jogo)."
-			d["source"] = "Base da ficha: %d (sem valor químico tabelado)" % sheet.energia_de_acao
+			d["origin"] = "Não deriva de química: valor base definido na ficha da espécie."
+			d["source"] = "Base da ficha: %d" % sheet.energia_de_acao
 			return d
 	if problem != "":
 		d["problem"] = problem
 	return d
-
