@@ -1,7 +1,6 @@
 extends Control
 
 
-@onready var ui: Combat_UI_states = $VBoxContainer
 @onready var hud: CombatBalloons = $Hud
 
 @export var database: AlchemonDatabase
@@ -15,7 +14,6 @@ var state: CombatState
 var _selection_order: Array[int] = []
 var _current_player_index := 0
 
-const COMMANDS_AREA_HEIGHT := 200.0
 var inventory: InventoryData
 var item_database: ItemDatabase
 var commands: BattleCommands
@@ -30,16 +28,19 @@ var _highlighted: Node3D = null
 
 
 func _ready() -> void:
+	log_box = CombatLogBox.new()
+	add_child(log_box)
+
 	state = CombatStateFactory.build(database, player_species_ids, enemy_species_ids, enemy_level, player_bond)
 	state.is_trainer_battle = is_trainer_battle
 	if state.player_ids.is_empty():
 		push_error("Time do jogador: time vazio. Confere database e os arrays de species ids.")
-		ui.set_turn_text("Erro de configuracao - veja o console.")
+		log_box.show_prompt("Erro de configuracao - veja o console.")
 		return
 
 	if state.enemy_ids.is_empty():
 		push_error("Time do inimigo: time vazio. Confere database e os arrays de species ids.")
-		ui.set_turn_text("Erro de configuracao - veja o console.")
+		log_box.show_prompt("Erro de configuracao - veja o console.")
 		return
 		
 	CombatRules.roll_initiative(state)
@@ -48,9 +49,8 @@ func _ready() -> void:
 
 	hud.anchors = anchors
 	_refresh_hp_display()
-	ui.log_message("Combate comecou!")
+	log_box.add_line("Combate comecou!")
 
-	ui.position.y = COMMANDS_AREA_HEIGHT
 	commands = BattleCommands.new()
 	add_child(commands)
 	commands.capture_blocked = is_trainer_battle
@@ -60,9 +60,7 @@ func _ready() -> void:
 	commands.flee_confirmed.connect(_on_flee_pressed)
 	commands.target_hovered.connect(_on_target_hovered)
 
-	log_box = CombatLogBox.new()
 	log_box.commands = commands
-	add_child(log_box)
 
 	_start_action_selection()
 
@@ -76,7 +74,7 @@ func _log_initiative_order() -> void:
 	var text := ""
 	for id in state.turn_order_ids:
 		text += "%s (%d)  " % [_name_of(id), state.get_combatant(id).initiative]
-	ui.log_message("Ordem de iniciativa: " + text)
+	log_box.add_line("Ordem de iniciativa: " + text)
 
 
 func _wild_tag(c: CombatantState) -> String:
@@ -132,8 +130,7 @@ func _refresh_hp_display() -> void:
 		if arena_temperature > c.temperature:
 			state.get_temperature(c.id)
 
-	ui.update_temperature(arena_temperature)
-	ui.update_hp_dict(player_entries, enemy_entries)
+	log_box.set_temperature(arena_temperature)
 
 	var all_entries: Array[Dictionary] = []
 	all_entries.append_array(player_entries)
@@ -173,8 +170,6 @@ func _prompt_action_for_current() -> void:
 
 	var actor_id := _selection_order[_current_player_index]
 	_command_actor_id = actor_id
-	ui.clear_options()
-	ui.set_turn_text("Acao de %s:" % _name_of(actor_id))
 	log_box.reset_anchor()
 	log_box.show_prompt("Turno de %s..." % _name_of(actor_id))
 	commands.open_for(
@@ -236,7 +231,7 @@ func _on_command_attack(attack_index: int, target_id: int) -> void:
 
 func _on_command_capture(item_index: int, target_id: int) -> void:
 	if is_trainer_battle:
-		ui.log_message(BattleCommands.CAPTURE_BLOCKED_TEXT)
+		log_box.add_line(BattleCommands.CAPTURE_BLOCKED_TEXT)
 		_prompt_action_for_current()
 		return
 	_confirm_action(_command_actor_id, "capture", target_id, -1, item_index)
@@ -289,7 +284,6 @@ func _try_resolve_round() -> void:
 func _resolve_round() -> void:
 	if not _advance_phase(BattlePhaseRules.RESOLVING_ACTIONS):
 		return
-	ui.clear_options()
 	commands.hide_menu()
 	log_box.begin_round()
 
@@ -305,7 +299,6 @@ func _resolve_round() -> void:
 		if command == null:
 			continue
 
-		ui.set_turn_text("Turno: %s" % _name_of(actor_id))
 		var uses_bag_item := command.kind == "item" or command.kind == "capture"
 		if uses_bag_item and (inventory == null or inventory.get_quantity(command.item_index) <= 0):
 			_say("Sem esse item na mochila! Acao cancelada.")
@@ -340,9 +333,7 @@ func _on_flee_pressed() -> void:
 func _resolve_flee() -> void:
 	if not _advance_phase(BattlePhaseRules.RESOLVING_ACTIONS):
 		return
-	ui.clear_options()
 	commands.hide_menu()
-	ui.set_turn_text("Equipe tenta fugir...")
 	log_box.begin_round()
 	_say("A equipe tenta fugir...")
 
@@ -368,7 +359,6 @@ func _resolve_flee() -> void:
 		if attack_index == -1:
 			continue
 
-		ui.set_turn_text("Turno: %s" % _name_of(enemy_id))
 		var command := ActionCommand.new(enemy_id, "attack", target_id, attack_index)
 		var result := CombatRules.resolve_action(state, command, database)
 		CombatResultApplier.apply(state, result, database)
@@ -406,7 +396,6 @@ func _show_combat_end() -> void:
 	if player_data != null and rewards.money > 0:
 		player_data.add_money(rewards.money)
 	_sync_party_state()
-	ui.show_combat_end(state.player_won)
 	log_box.add_line("Vitoria!" if state.player_won else "Derrota!")
 
 	var screen := BattleRewardsScreen.new()
@@ -447,7 +436,6 @@ func _resolve_pending_attacks() -> void:
 
 
 func _say(text: String) -> void:
-	ui.log_message(text)
 	log_box.add_line(text)
 
 

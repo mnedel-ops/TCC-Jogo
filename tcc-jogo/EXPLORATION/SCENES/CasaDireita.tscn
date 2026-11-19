@@ -4,6 +4,8 @@
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="2_qjhp6"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_gjvjj"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="4_gf852"]
+[ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://DATABASE/Inventory/interactable_item.tscn" id="5_gjvjj"]
+[ext_resource type="Resource" uid="uid://fhcne48rwxjc" path="res://DATABASE/Inventory/Itens/MetaloideMethod.tres" id="6_gf852"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_gxx1f"]
 size = Vector3(60, 0.5, 60)
@@ -107,3 +109,7 @@ shape = SubResource("BoxShape3D_7sr14")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="SegundoAndar" unique_id=2035487963]
 transform = Transform3D(1, 9.412888e-08, 3.8989466e-08, -9.4128886e-08, 0.70710677, 0.70710677, 3.898947e-08, -0.70710677, 0.70710677, 0.79307747, 1.2519922, -0.24269676)
 mesh = SubResource("BoxMesh_vdwhx")
+
+[node name="MetaloideMet" parent="." unique_id=1606038511 instance=ExtResource("5_gjvjj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3943367, 9.536743e-07, -9.289728)
+item_data = ExtResource("6_gf852")

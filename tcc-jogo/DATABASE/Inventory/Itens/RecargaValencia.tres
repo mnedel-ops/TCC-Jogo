@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cfwlvyoilecef"]
+
+[ext_resource type="Script" uid="uid://dkvjbbo1yc74m" path="res://DATABASE/Inventory/itemdata.gd" id="1_m21ix"]
+
+[resource]
+script = ExtResource("1_m21ix")
+index = 6
+nome = "Recarga de Valência "
+descricao = "Um agente redutor brando que fornece densidade eletrônica pontual, recompondo os elétrons de valência afetados."
+heal_amount = 30
+valorVenda = 125
+metadata/_custom_type_script = "uid://dkvjbbo1yc74m"

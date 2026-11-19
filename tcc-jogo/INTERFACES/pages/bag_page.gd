@@ -4,9 +4,16 @@ extends MenuPage
 
 signal item_activated(item_index: int)
 
-const GOLD := Color(1, 0.85, 0.2)
-const PANEL_BG := Color(0.07, 0.07, 0.11, 0.94)
-const PANEL_BORDER := Color(0.5, 0.5, 0.6)
+const GOLD := UIStyle.GOLD
+const PANEL_BG := UIStyle.PANEL_BG
+const PANEL_BORDER := UIStyle.PANEL_BORDER
+const HINT_TEXT := "Cima/Baixo: selecionar     E: usar item     Esquerda/Esc: voltar"
+const CATEGORY_ORDER: Array[String] = ["heal", "capture", "other"]
+const CATEGORIES := {
+	"heal": {"label": "Cura", "color": Color(0.4, 0.85, 0.5)},
+	"capture": {"label": "Captura", "color": Color(0.45, 0.7, 1.0)},
+	"other": {"label": "Outros", "color": Color(0.72, 0.72, 0.8)},
+}
 
 @export var mochila: InventoryData
 @export var inventory_database: ItemDatabase
@@ -15,6 +22,8 @@ const PANEL_BORDER := Color(0.5, 0.5, 0.6)
 
 var _stacks: Array[Dictionary] = []
 var _rows: Array[PanelContainer] = []
+var _headers: Array[Control] = []
+var _name_labels: Array[Label] = []
 var _cursor := 0
 
 var _count_label: Label
@@ -24,8 +33,9 @@ var _empty_label: Label
 var _detail_box: VBoxContainer
 var _detail_icon_holder: Control
 var _detail_name: Label
-var _detail_qty: Label
+var _detail_chips: HBoxContainer
 var _detail_desc: Label
+var _detail_effect: Label
 
 
 func _ready() -> void:
@@ -63,6 +73,20 @@ func handle_input(event: InputEvent) -> bool:
 	return true
 
 
+static func category_of(data: ItemData) -> String:
+	if data == null:
+		return "other"
+	if data.is_capture_method:
+		return "capture"
+	if data.heal_amount > 0:
+		return "heal"
+	return "other"
+
+
+static func category_color(cat: String) -> Color:
+	return CATEGORIES[cat]["color"]
+
+
 func _build() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -95,7 +119,7 @@ func _build() -> void:
 	var list_panel := PanelContainer.new()
 	list_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list_panel.size_flags_stretch_ratio = 1.3
-	list_panel.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
+	list_panel.add_theme_stylebox_override("panel", UIStyle.box(PANEL_BG, PANEL_BORDER, 8))
 	body.add_child(list_panel)
 
 	var list_stack := Control.new()
@@ -122,7 +146,7 @@ func _build() -> void:
 
 	var detail_panel := PanelContainer.new()
 	detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	detail_panel.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
+	detail_panel.add_theme_stylebox_override("panel", UIStyle.box(UIStyle.PANEL_BG_ACTIVE, PANEL_BORDER, 8))
 	body.add_child(detail_panel)
 
 	_detail_box = VBoxContainer.new()
@@ -138,10 +162,11 @@ func _build() -> void:
 	_detail_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail_box.add_child(_detail_name)
 
-	_detail_qty = Label.new()
-	_detail_qty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_detail_qty.modulate.a = 0.7
-	_detail_box.add_child(_detail_qty)
+	var chips_center := CenterContainer.new()
+	_detail_box.add_child(chips_center)
+	_detail_chips = HBoxContainer.new()
+	_detail_chips.add_theme_constant_override("separation", 8)
+	chips_center.add_child(_detail_chips)
 
 	_detail_box.add_child(HSeparator.new())
 
@@ -151,41 +176,42 @@ func _build() -> void:
 	_detail_desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail_box.add_child(_detail_desc)
 
+	_detail_effect = Label.new()
+	_detail_effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_detail_effect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_detail_effect.add_theme_color_override("font_color", GOLD)
+	_detail_box.add_child(_detail_effect)
 
-func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(2 if border.a > 0.0 else 0)
-	s.set_corner_radius_all(radius)
-	s.content_margin_left = 8
-	s.content_margin_right = 8
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	return s
+	root.add_child(UIStyle.hint_label(HINT_TEXT))
 
 
-func _make_icon(data: ItemData, size: Vector2, fallback_name: String) -> Control:
+func _make_icon(data: ItemData, size: Vector2, fallback_name: String, accent: Color) -> Control:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = size
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fs := UIStyle.box(Color(0.12, 0.12, 0.18), Color(accent, 0.9), 6)
+	fs.content_margin_left = 2
+	fs.content_margin_right = 2
+	fs.content_margin_top = 2
+	fs.content_margin_bottom = 2
+	frame.add_theme_stylebox_override("panel", fs)
 	if data != null and data.icone != null:
 		var tex := TextureRect.new()
 		tex.texture = data.icone
-		tex.custom_minimum_size = size
 		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		return tex
-	var box := PanelContainer.new()
-	box.custom_minimum_size = size
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_theme_stylebox_override("panel", _box(Color(0.2, 0.2, 0.28), PANEL_BORDER, 6))
+		frame.add_child(tex)
+		return frame
 	var l := Label.new()
 	l.text = fallback_name.left(1)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	l.add_theme_font_size_override("font_size", int(size.y * 0.5))
+	l.add_theme_color_override("font_color", accent)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(l)
-	return box
+	frame.add_child(l)
+	return frame
 
 
 func refresh() -> void:
@@ -193,10 +219,14 @@ func refresh() -> void:
 	if _cursor >= 0 and _cursor < _stacks.size():
 		previous_index = _stacks[_cursor].index
 
-	if mochila == null:
-		_stacks.clear()
-	else:
-		_stacks = mochila.get_stacked_view(inventory_database)
+	_stacks.clear()
+	if mochila != null:
+		var view := mochila.get_stacked_view(inventory_database)
+		for cat in CATEGORY_ORDER:
+			for stack in view:
+				if category_of(stack.get("data")) == cat:
+					stack["category"] = cat
+					_stacks.append(stack)
 
 	_cursor = clampi(_cursor, 0, maxi(_stacks.size() - 1, 0))
 	for i in _stacks.size():
@@ -204,12 +234,21 @@ func refresh() -> void:
 			_cursor = i
 			break
 
-	for row in _rows:
-		_list.remove_child(row)
-		row.queue_free()
+	for c in _list.get_children():
+		_list.remove_child(c)
+		c.queue_free()
 	_rows.clear()
+	_headers.clear()
+	_name_labels.clear()
 
+	var last_cat := ""
 	for i in _stacks.size():
+		var cat: String = _stacks[i].category
+		if cat != last_cat:
+			var h := _make_header(cat)
+			_list.add_child(h)
+			_headers.append(h)
+			last_cat = cat
 		var row := _make_row(i, _stacks[i])
 		_list.add_child(row)
 		_rows.append(row)
@@ -221,19 +260,29 @@ func refresh() -> void:
 	_refresh_cursor()
 
 
+func _make_header(cat: String) -> Control:
+	var l := Label.new()
+	l.text = CATEGORIES[cat]["label"].to_upper()
+	l.add_theme_font_size_override("font_size", 14)
+	l.add_theme_color_override("font_color", category_color(cat))
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
+
+
 func _make_row(i: int, stack: Dictionary) -> PanelContainer:
 	var data: ItemData = stack.get("data")
+	var accent := category_color(stack.category)
 
 	var row := PanelContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_STOP
-	row.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 6))
+	row.add_theme_stylebox_override("panel", UIStyle.row_box(false, accent))
 
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 12)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(h)
 
-	h.add_child(_make_icon(data, icon_size, stack.nome))
+	h.add_child(_make_icon(data, icon_size, stack.nome, accent))
 
 	var name_lbl := Label.new()
 	name_lbl.text = stack.nome
@@ -242,12 +291,11 @@ func _make_row(i: int, stack: Dictionary) -> PanelContainer:
 	name_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(name_lbl)
+	_name_labels.append(name_lbl)
 
-	var qty_lbl := Label.new()
-	qty_lbl.text = "x%d" % stack.quantidade
-	qty_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	qty_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	h.add_child(qty_lbl)
+	var qty := UIStyle.chip("x%d" % stack.quantidade, Color(0.85, 0.85, 0.9))
+	qty.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(qty)
 
 	row.mouse_entered.connect(_on_row_hover.bind(i))
 	row.gui_input.connect(_on_row_gui_input.bind(i))
@@ -257,9 +305,8 @@ func _make_row(i: int, stack: Dictionary) -> PanelContainer:
 func _refresh_cursor() -> void:
 	for i in _rows.size():
 		var on := (i == _cursor)
-		_rows[i].add_theme_stylebox_override("panel", _box(
-			Color(GOLD, 0.18) if on else Color(0, 0, 0, 0),
-			GOLD if on else Color(0, 0, 0, 0), 6))
+		_rows[i].add_theme_stylebox_override("panel", UIStyle.row_box(on, category_color(_stacks[i].category)))
+		_name_labels[i].add_theme_color_override("font_color", GOLD if on else Color.WHITE)
 	if _cursor < _rows.size():
 		_scroll_to_cursor.call_deferred()
 	_show_detail()
@@ -280,20 +327,40 @@ func _move_cursor(delta: int) -> void:
 	_refresh_cursor()
 
 
+func _effect_text(data: ItemData) -> String:
+	if data == null:
+		return ""
+	if data.is_capture_method:
+		return "Captura Alchemons do tipo %s." % AlchemonType.type_name(data.capture_type)
+	if data.heal_amount > 0:
+		return "Recupera %d HP." % data.heal_amount
+	return ""
+
+
 func _show_detail() -> void:
 	if _cursor < 0 or _cursor >= _stacks.size():
 		return
 	var stack := _stacks[_cursor]
 	var data: ItemData = stack.get("data")
+	var cat: String = stack.category
+	var accent := category_color(cat)
 
 	for c in _detail_icon_holder.get_children():
 		_detail_icon_holder.remove_child(c)
 		c.queue_free()
-	_detail_icon_holder.add_child(_make_icon(data, detail_icon_size, stack.nome))
+	_detail_icon_holder.add_child(_make_icon(data, detail_icon_size, stack.nome, accent))
+
+	for c in _detail_chips.get_children():
+		_detail_chips.remove_child(c)
+		c.queue_free()
+	_detail_chips.add_child(UIStyle.chip(CATEGORIES[cat]["label"], accent))
+	_detail_chips.add_child(UIStyle.chip("Quantidade: %d" % stack.quantidade, Color(0.85, 0.85, 0.9)))
 
 	_detail_name.text = stack.nome
-	_detail_qty.text = "Quantidade: %d" % stack.quantidade
 	_detail_desc.text = data.descricao if data != null and data.descricao != "" else "Sem descricao."
+	var effect := _effect_text(data)
+	_detail_effect.text = effect
+	_detail_effect.visible = effect != ""
 
 
 func _activate(i: int) -> void:

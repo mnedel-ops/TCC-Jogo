@@ -4,7 +4,10 @@
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="2_beapv"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_ea8wx"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="5_beapv"]
+[ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://DATABASE/Inventory/interactable_item.tscn" id="6_ceq6u"]
 [ext_resource type="PackedScene" uid="uid://dn5kkw48uiw21" path="res://EXPLORATION/wilderness_encounter.tscn" id="6_ea8wx"]
+[ext_resource type="Resource" uid="uid://cfwlvyoilecef" path="res://DATABASE/Inventory/Itens/RecargaValencia.tres" id="7_uxhkt"]
+[ext_resource type="Resource" uid="uid://dac5jkcot5oem" path="res://DATABASE/Inventory/Itens/7RecargaValênciaG.tres" id="8_7hgg1"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_csqnk"]
 size = Vector3(78.961426, 0.5, 60)
@@ -83,7 +86,7 @@ npc_scene = ExtResource("2_beapv")
 alchemons_ids = Array[int]([1, 2])
 level = 8
 dialogue = "Cuidado! Tem uns Alchemons selvagens bem fortes aqui!"
-dialogue_defeated = "Você é forte mesmo... Meus Alchemons precisam treinar mais."
+dialogue_defeated = "Mas parece que voce eh mais..."
 
 [node name="Kid" type="Marker3D" parent="NPCHolder" unique_id=483256078]
 transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 5.9282856, 0, -5.4145823)
@@ -304,3 +307,19 @@ shape = SubResource("SphereShape3D_ea8wx")
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="Ginasio" unique_id=1161335681]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5272903, 1, 0)
 mesh = SubResource("BoxMesh_7hgg1")
+
+[node name="RecargaValencia" parent="." unique_id=1606038511 instance=ExtResource("6_ceq6u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.561487, 0.08903551, 25.66074)
+item_data = ExtResource("7_uxhkt")
+
+[node name="RecargaValencia2" parent="." unique_id=1701411194 instance=ExtResource("6_ceq6u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.002367, 0.08903551, -14.168842)
+item_data = ExtResource("7_uxhkt")
+
+[node name="RecargaValencia3" parent="." unique_id=1684554416 instance=ExtResource("6_ceq6u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.574392, 0.08903551, -14.168842)
+item_data = ExtResource("7_uxhkt")
+
+[node name="RecargaValenciaG" parent="." unique_id=1065377265 instance=ExtResource("6_ceq6u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64.90551, 0.08903551, -0.39368725)
+item_data = ExtResource("8_7hgg1")

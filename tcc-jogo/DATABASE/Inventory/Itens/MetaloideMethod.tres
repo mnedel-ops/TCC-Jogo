@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_item")
 index = 5
-nome = "Metaloide method"
-descricao = "Placeholder. Captura criaturas do tipo Metaloide."
+nome = "Frasco de Cristalização Fracionada"
+descricao = "Aproveita a tendência de certos metaloides de passarem do estado sólido direto para o gasoso por aquecimento (sublimação), aprisionando o vapor em uma câmara de resfriamento instantâneo."
 is_capture_method = true
 capture_type = 2
 valorVenda = 100

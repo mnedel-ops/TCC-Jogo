@@ -73,7 +73,7 @@ var window_mode: int = WindowMode.WINDOWED
 var resolution := BASE_RESOLUTION
 var fps_limit := -1
 var show_fps := false
-# Atalhos on/off (usados pela SettingsPage): ligado = volume > 0.
+# Atalhos on/off: ligado = volume > 0.
 var music_on: bool:
 	get: return music_volume > 0
 var sfx_on: bool:

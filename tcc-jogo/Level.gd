@@ -28,6 +28,7 @@ func  place_npcs():
 		npc_scene_guy.npc_id = id
 		npc_scene_guy.dialogue = marker.dialogue
 		npc_scene_guy.dialogue_defeated = marker.dialogue_defeated
+		npc_scene_guy.dialogue_pre_battle = marker.dialogue_pre_battle
 		npc_scene_guy.dialogue_healed = marker.dialogue_healed
 		npc_scene_guy.is_shopkeeper = marker.is_shopkeeper
 		npc_scene_guy.shop_stock = marker.shop_stock

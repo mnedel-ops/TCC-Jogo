@@ -2,6 +2,8 @@ class_name DialogueBox
 extends Control
 
 signal choice_made(index: int)
+## Emitido quando uma fala de say() termina (jogador avançou) ou a caixa foi fechada.
+signal dismissed
 
 @export var chars_per_second := 45.0
 @export var left_action: StringName = &"menu_left"
@@ -15,6 +17,7 @@ const TOP_MARGIN := 16.0
 const MAX_WIDTH := 760.0
 const MIN_HEIGHT := 84.0
 const FONT_SIZE := 20
+const HINT_TEXT := "E: continuar"
 const CHOICE_COLOR := Color(0.35, 0.35, 0.4)
 const CHOICE_SELECTED_COLOR := Color(0.75, 0.25, 0.1)
 const BG_COLOR := Color(0.97, 0.97, 0.94)
@@ -30,6 +33,9 @@ var _option_texts: Array[String] = []
 var _choosing := false
 var _armed := false
 var _cursor := 0
+var _waiting := false
+var _wait_armed := false
+var _hint: Label
 
 
 func _ready() -> void:
@@ -68,13 +74,39 @@ func _ready() -> void:
 	_choice_row.visible = false
 	column.add_child(_choice_row)
 
+	_hint = Label.new()
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint.text = HINT_TEXT
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hint.add_theme_font_size_override("font_size", 14)
+	_hint.add_theme_color_override("font_color", CHOICE_COLOR)
+	_hint.visible = false
+	column.add_child(_hint)
+
 
 func show_text(text: String) -> void:
+	_release_wait()
 	_end_choices()
 	_open_text(text)
 
 
+## Mostra uma fala e só retorna quando o jogador a dispensar (E / interagir).
+## 1º aperto completa a digitação, 2º fecha. Reutilizável por qualquer NPC.
+func say(text: String) -> void:
+	_release_wait()
+	_end_choices()
+	_open_text(text)
+	_waiting = true
+	_wait_armed = false
+	# Espera um frame para o aperto que abriu a fala não fechá-la em seguida.
+	await get_tree().process_frame
+	_wait_armed = true
+	if _waiting:
+		await dismissed
+
+
 func ask(text: String, options: Array[String]) -> void:
+	_release_wait()
 	_end_choices()
 	_choice_labels.clear()
 	for c in _choice_row.get_children():
@@ -118,14 +150,25 @@ func close() -> void:
 	visible = false
 	var was_choosing := _choosing
 	_end_choices()
+	_release_wait()
 	if was_choosing:
 		choice_made.emit(-1)
+
+
+func _release_wait() -> void:
+	_hint.visible = false
+	if not _waiting:
+		return
+	_waiting = false
+	_wait_armed = false
+	dismissed.emit()
 
 
 func _open_text(text: String) -> void:
 	_label.custom_minimum_size.x = _width() - 24.0
 	_label.text = text
 	_label.visible_characters = 0
+	_hint.visible = false
 	_panel.reset_size()
 	_place()
 	visible = true
@@ -140,6 +183,8 @@ func _open_text(text: String) -> void:
 
 func _on_typing_done() -> void:
 	_choice_row.modulate.a = 1.0
+	_hint.visible = _waiting
+	_panel.reset_size()
 
 
 func _end_choices() -> void:
@@ -161,6 +206,17 @@ func _pick(index: int) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _waiting and _wait_armed and visible:
+		if event is InputEventKey and event.echo:
+			return
+		if event.is_action_pressed(select_action) or event.is_action_pressed(&"ui_interact"):
+			get_viewport().set_input_as_handled()
+			if is_typing():
+				skip_typing()
+			else:
+				visible = false
+				_release_wait()
+		return
 	if not _choosing or not _armed or not visible:
 		return
 	if event is InputEventKey and event.echo:

@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_item")
 index = 3
-nome = "Metal method"
-descricao = "Placeholder. Captura criaturas do tipo Metal."
+nome = "Célula de Eletrólise Portátil"
+descricao = "Fornece elétrons para reduzir elemento ao seu estado neutro sólido e estável, além de forçar o desfazimento de compostos iônicos."
 is_capture_method = true
 valorVenda = 100

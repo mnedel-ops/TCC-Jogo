@@ -13,7 +13,6 @@ enum Mode { CLOSED, LIST, PAGE }
 	{"name": "Mochila", "icon": "", "page": "res://INTERFACES/pages/bag_page.tscn"},
 	{"name": "Alchemons", "icon": "", "page": "res://INTERFACES/pages/alchemons_page.tscn"},
 	{"name": "Jogador", "icon": "", "page": "res://INTERFACES/pages/player_page.tscn"},
-	{"name": "Configuracoes", "icon": "", "page": "res://INTERFACES/pages/settings_page.tscn"},
 	{"name": "Salvar", "icon": "", "page": "", "action": "save"},
 	{"name": "Sair do Jogo", "icon": "", "page": "", "action": "exit"},
 ]

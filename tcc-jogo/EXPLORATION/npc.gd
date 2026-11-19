@@ -6,6 +6,7 @@ class_name NPC
 
 var dialogue: String = ""
 var dialogue_defeated: String = ""
+var dialogue_pre_battle: String = ""
 var is_trainer: bool = false
 var is_gym_trainer: bool = false
 var badge: BadgeData
@@ -15,6 +16,7 @@ var _dialogue_box: DialogueBox
 
 var is_shopkeeper: bool = false
 var shop_stock: Array[ItemData] = []
+const PRE_BATTLE_FALLBACK := "Prepare-se para a batalha!"
 const SHOP_FALLBACK_GREETING := "Bem-vindo! O que deseja?"
 var _shop: ShopDialogueBox
 
@@ -27,6 +29,10 @@ const HEAL_WAIT_SECONDS := 2.5
 var _healing_busy := false
 var _locked_player: Player
 var _ui_closed_frame: int = -1
+
+# Só um NPC por vez pode estar na fala pré-combate (evita duas batalhas / dois balões).
+static var _intro_active := false
+var _owns_intro := false
 
 @export var figther : bool = false
 @onready var combat_collision: Area3D = $CombatCollision
@@ -101,6 +107,12 @@ func _create_dialogue_box() -> void:
 	add_child(layer)
 	_dialogue_box = DialogueBox.new()
 	layer.add_child(_dialogue_box)
+
+
+func get_pre_battle_dialogue() -> String:
+	if dialogue_pre_battle != "":
+		return dialogue_pre_battle
+	return dialogue if dialogue != "" else PRE_BATTLE_FALLBACK
 
 
 func get_dialogue() -> String:
@@ -207,23 +219,48 @@ func mark_defeated() -> void:
 
 
 func _on_combat_area_entered(area: Area3D) -> void:
-	if not figther:
+	if not figther or CombatSignal.in_combat or _intro_active:
 		return
-	if CombatSignal.in_combat:
-		return
-	if area.is_in_group("player") and is_combat_zone !=true:
+	if area.is_in_group("player") and not is_combat_zone:
 		if not GameSession.can_fight():
 			return
 		is_combat_zone = true
-		print("Vou te quebrar na porrada")
-		print_debug(alchemon1, alchemon2)
+		_battle_intro()
 
-		CombatSignal.enemy_node = self
-		CombatSignal.enemy_level = alchemon_level
-		CombatSignal.is_trainer_battle = true
-		CombatSignal.combat_start.emit(alchemon1, alchemon2)
-		
+
+## Fala do NPC -> jogador avança -> batalha. O jogador fica parado durante a fala
+## e a batalha só começa depois que ela termina.
+func _battle_intro() -> void:
+	_intro_active = true
+	_owns_intro = true
+	_dialogue_box.close()
+	_lock_player(true)
+	await _dialogue_box.say(get_pre_battle_dialogue())
+	_dialogue_box.close()
+	_lock_player(false)
+	_release_intro()
+	if not is_inside_tree() or not figther or CombatSignal.in_combat:
+		return
+	_start_battle()
+
+
+func _release_intro() -> void:
+	if _owns_intro:
+		_owns_intro = false
+		_intro_active = false
+
+
+func _exit_tree() -> void:
+	_release_intro()
+
+
+func _start_battle() -> void:
+	CombatSignal.enemy_node = self
+	CombatSignal.enemy_level = alchemon_level
+	CombatSignal.is_trainer_battle = true
+	CombatSignal.combat_start.emit(alchemon1, alchemon2)
+
+
 func _on_combat_area_exited(area: Area3D) -> void:
 	if area.is_in_group("player"):
 		is_combat_zone = false
-		print("Cansei de te espancar. Vaza")

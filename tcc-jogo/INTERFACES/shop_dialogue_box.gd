@@ -19,7 +19,7 @@ const EMPTY_SELL_TEXT := "Você não tem nada que eu queira comprar."
 const MAX_ROWS := 6
 
 const BOX_WIDTH := 640.0
-const BOTTOM_MARGIN := 24.0
+const TOP_MARGIN := 16.0
 const FONT_SIZE := 20
 const BG_COLOR := Color(0.97, 0.97, 0.94)
 const BORDER_COLOR := Color(0.1, 0.1, 0.12)
@@ -90,15 +90,16 @@ func _build_ui() -> void:
 
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Topo da tela, centralizado: não cobre o personagem nem o cenário embaixo.
 	panel.anchor_left = 0.5
 	panel.anchor_right = 0.5
-	panel.anchor_top = 1.0
-	panel.anchor_bottom = 1.0
+	panel.anchor_top = 0.0
+	panel.anchor_bottom = 0.0
 	panel.offset_left = -BOX_WIDTH * 0.5
 	panel.offset_right = BOX_WIDTH * 0.5
-	panel.offset_top = -BOTTOM_MARGIN
-	panel.offset_bottom = -BOTTOM_MARGIN
-	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	panel.offset_top = TOP_MARGIN
+	panel.offset_bottom = TOP_MARGIN
+	panel.grow_vertical = Control.GROW_DIRECTION_END
 	var box := StyleBoxFlat.new()
 	box.bg_color = BG_COLOR
 	box.border_color = BORDER_COLOR

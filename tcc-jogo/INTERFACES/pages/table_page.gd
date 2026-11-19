@@ -7,7 +7,17 @@ signal entry_selected(species_id: int)
 const GOLD := Color(1, 0.85, 0.2)
 const PANEL_BG := Color(0.07, 0.07, 0.11, 0.94)
 const PANEL_BORDER := Color(0.5, 0.5, 0.6)
+const PANEL_BG_ACTIVE := Color(0.14, 0.13, 0.08, 0.96)
 const DEFAULT_DATABASE := "res://DATABASE/Alchemons/AlchemonDataBaseComplete.tres"
+const STATS_TAB := 0
+const DETAIL_TITLE_FONT := 20
+const ATTRS: Array[Dictionary] = [
+	{"key": "hp", "label": "HP Base"},
+	{"key": "attack", "label": "Ataque Base"},
+	{"key": "defense", "label": "Defesa Base"},
+	{"key": "speed", "label": "Velocidade Base"},
+	{"key": "energy", "label": "Energia de Ação (EV)"},
+]
 
 @export var database: AlchemonDatabase
 @export var spin_speed := 0.8
@@ -30,7 +40,16 @@ var _mass_label: Label
 var _pivot: Node3D
 var _model_holder: Node3D
 var _tabs: TabContainer
-var _stats_grid: GridContainer
+var _info_grid: GridContainer
+var _attr_box: VBoxContainer
+var _stats_scroll: ScrollContainer
+var _attr_rows: Array[PanelContainer] = []
+var _attr_names: Array[Label] = []
+var _detail_box: VBoxContainer
+var _hint_label: Label
+var _current_sheet: AlchemonSheet
+var _consulting := false
+var _attr_cursor := 0
 var _desc_label: Label
 var _lore_label: Label
 
@@ -48,16 +67,21 @@ func _process(delta: float) -> void:
 
 
 func on_open() -> void:
+	_consulting = false
+	_attr_cursor = 0
 	_populate()
 
 
 func handle_input(event: InputEvent) -> bool:
+	if _consulting:
+		return _handle_consult_input(event)
 	if event.is_action_pressed("menu_down"):
 		_move_cursor(1)
 	elif event.is_action_pressed("menu_up"):
 		_move_cursor(-1)
 	elif event.is_action_pressed("menu_interact"):
 		_select(_cursor)
+		_begin_consult()
 	elif event.is_action_pressed("menu_right") or event.is_action_pressed("ui_page_down"):
 		_step_tab(1)
 	elif event.is_action_pressed("ui_page_up"):
@@ -141,7 +165,7 @@ func _build_right(body: Control) -> void:
 
 	var top := PanelContainer.new()
 	top.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	top.size_flags_stretch_ratio = 1.2
+	top.size_flags_stretch_ratio = 0.8
 	top.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
 	_right.add_child(top)
 
@@ -174,16 +198,65 @@ func _build_right(body: Control) -> void:
 	_tabs.add_theme_color_override("font_selected_color", GOLD)
 	bottom.add_child(_tabs)
 
-	var stats_scroll := _make_tab("Stats")
-	_stats_grid = GridContainer.new()
-	_stats_grid.columns = 2
-	_stats_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_stats_grid.add_theme_constant_override("h_separation", 24)
-	_stats_grid.add_theme_constant_override("v_separation", 4)
-	stats_scroll.add_child(_stats_grid)
+	_make_stats_tab()
+	_tabs.tab_changed.connect(_on_tab_changed)
 
 	_desc_label = _make_text_tab("Descricao")
 	_lore_label = _make_text_tab("Sobre")
+
+
+func _make_stats_tab() -> void:
+	var split := HBoxContainer.new()
+	split.name = "Stats"
+	split.add_theme_constant_override("separation", 16)
+	_tabs.add_child(split)
+
+	var left_scroll := ScrollContainer.new()
+	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_scroll.size_flags_stretch_ratio = 1.0
+	split.add_child(left_scroll)
+	_stats_scroll = left_scroll
+
+	var left := VBoxContainer.new()
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.add_theme_constant_override("separation", 2)
+	left_scroll.add_child(left)
+
+	left.add_child(_section_label("Propriedades"))
+	_info_grid = GridContainer.new()
+	_info_grid.columns = 2
+	_info_grid.add_theme_constant_override("h_separation", 24)
+	_info_grid.add_theme_constant_override("v_separation", 4)
+	left.add_child(_info_grid)
+
+	left.add_child(HSeparator.new())
+	left.add_child(_section_label("Atributos"))
+	_attr_box = VBoxContainer.new()
+	_attr_box.add_theme_constant_override("separation", 2)
+	left.add_child(_attr_box)
+
+	var right := PanelContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 1.4
+	right.add_theme_stylebox_override("panel", _box(Color(0.04, 0.04, 0.07, 0.9), Color(PANEL_BORDER, 0.5), 8))
+	split.add_child(right)
+	var right_v := VBoxContainer.new()
+	right_v.add_theme_constant_override("separation", 6)
+	right.add_child(right_v)
+
+	var right_scroll := ScrollContainer.new()
+	right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_v.add_child(right_scroll)
+	_detail_box = VBoxContainer.new()
+	_detail_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_detail_box.add_theme_constant_override("separation", 6)
+	right_scroll.add_child(_detail_box)
+
+	_hint_label = Label.new()
+	_hint_label.modulate.a = 0.7
+	right_v.add_child(_hint_label)
 
 
 func _make_tab(tab_name: String) -> ScrollContainer:
@@ -393,44 +466,191 @@ func _show_detail(sheet: AlchemonSheet) -> void:
 	_lore_label.text = sheet.lore if sheet.lore != "" else "Sem lore."
 
 
+func _section_label(text: String) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_color_override("font_color", GOLD)
+	return l
+
+
 func _fill_stats(s: AlchemonSheet) -> void:
-	for c in _stats_grid.get_children():
-		_stats_grid.remove_child(c)
+	_current_sheet = s
+	for c in _info_grid.get_children():
+		_info_grid.remove_child(c)
 		c.queue_free()
+	for c in _attr_box.get_children():
+		_attr_box.remove_child(c)
+		c.queue_free()
+	_attr_rows.clear()
+	_attr_names.clear()
 
-	var attack_names: PackedStringArray = []
-	for a in s.attacks:
-		if a != null:
-			attack_names.append(a.attack_name)
-
-	var rows: Array = [
+	var info: Array = [
 		["Tipo", AlchemonType.Type.keys()[s.element_type].capitalize()],
-		["HP Base", str(s.base_hp), AlchemonStatGenerator.stat_tooltip("hp", s)],
-		["Ataque Base", str(s.base_attack), AlchemonStatGenerator.stat_tooltip("attack", s)],
-		["Defesa Base", str(s.base_defense), AlchemonStatGenerator.stat_tooltip("defense", s)],
-		["Velocidade Base", str(s.base_mechanical_speed), AlchemonStatGenerator.stat_tooltip("speed", s)],
-		["Energia de Ação (EV)", str(s.energia_de_acao), AlchemonStatGenerator.stat_tooltip("energy", s)],
 		["Elétrons de valência", "%d / %d" % [s.chem_valence(), s.octet_target]],
 		["Estado fisico", s.state_at(298.15).capitalize()],
 		["Fusao", "%.1f K" % s.melting_point],
 		["Ebulicao", "%.1f K" % s.boiling_point],
-
 	]
-	for r in rows:
+	for r in info:
 		var key := Label.new()
 		key.text = r[0]
 		key.modulate.a = 0.7
-		_stats_grid.add_child(key)
+		_info_grid.add_child(key)
 		var val := Label.new()
 		val.text = r[1]
 		val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		val.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_stats_grid.add_child(val)
-		if r.size() > 2:
-			# Tooltip no nome e no valor; Label ignora o mouse por padrão.
-			for lbl in [key, val]:
-				lbl.tooltip_text = r[2]
-				lbl.mouse_filter = Control.MOUSE_FILTER_PASS
+		_info_grid.add_child(val)
+
+	var values := {
+		"hp": str(s.base_hp),
+		"attack": str(s.base_attack),
+		"defense": str(s.base_defense),
+		"speed": str(s.base_mechanical_speed),
+		"energy": str(s.energia_de_acao),
+	}
+	for i in ATTRS.size():
+		_attr_box.add_child(_make_attr_row(i, values[ATTRS[i].key]))
+
+	_refresh_attr_rows()
+	_refresh_detail()
+
+
+func _compact_box(bg: Color, border: Color) -> StyleBoxFlat:
+	var b := _box(bg, border, 6)
+	b.content_margin_top = 2
+	b.content_margin_bottom = 2
+	return b
+
+
+func _make_attr_row(i: int, value_text: String) -> PanelContainer:
+	var row := PanelContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_STOP
+	row.add_theme_stylebox_override("panel", _compact_box(Color(0, 0, 0, 0), Color(0, 0, 0, 0)))
+	var h := HBoxContainer.new()
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(h)
+	var name_lbl := Label.new()
+	name_lbl.text = ATTRS[i].label
+	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(name_lbl)
+	var val_lbl := Label.new()
+	val_lbl.text = value_text
+	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(val_lbl)
+	row.gui_input.connect(_on_attr_gui_input.bind(i))
+	_attr_rows.append(row)
+	_attr_names.append(name_lbl)
+	return row
+
+
+func _refresh_attr_rows() -> void:
+	for i in _attr_rows.size():
+		var on := _consulting and i == _attr_cursor
+		_attr_rows[i].add_theme_stylebox_override("panel", _compact_box(
+			Color(GOLD, 0.18) if on else Color(0, 0, 0, 0),
+			GOLD if on else Color(0, 0, 0, 0)))
+		_attr_names[i].add_theme_color_override("font_color", GOLD if on else Color.WHITE)
+	if _consulting:
+		_scroll_to_attr.call_deferred()
+
+
+func _scroll_to_attr() -> void:
+	if _attr_cursor < 0 or _attr_cursor >= _attr_rows.size():
+		return
+	var row := _attr_rows[_attr_cursor]
+	if is_instance_valid(row) and _stats_scroll.is_ancestor_of(row):
+		_stats_scroll.ensure_control_visible(row)
+
+
+func _on_attr_gui_input(event: InputEvent, i: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _current_sheet == null:
+			return
+		_consulting = true
+		_attr_cursor = i
+		_refresh_attr_rows()
+		_refresh_detail()
+
+
+func _on_tab_changed(_tab: int) -> void:
+	if _consulting:
+		_end_consult()
+
+
+## E na lista: seleciona o elemento sob o cursor e abre a consulta dos atributos (aba Stats).
+func _begin_consult() -> void:
+	if _entries.is_empty() or _current_sheet == null:
+		return
+	_tabs.current_tab = STATS_TAB
+	_consulting = true
+	_attr_cursor = 0
+	_refresh_attr_rows()
+	_refresh_detail()
+
+
+func _end_consult() -> void:
+	_consulting = false
+	_refresh_attr_rows()
+	_refresh_detail()
+
+
+func _move_attr(delta: int) -> void:
+	_attr_cursor = wrapi(_attr_cursor + delta, 0, ATTRS.size())
+	_refresh_attr_rows()
+	_refresh_detail()
+
+
+## Durante a consulta: cima/baixo trocam o atributo; E ou Esc saem.
+## Esquerda/direita e troca de aba ficam bloqueadas (sem sair da consulta por engano).
+func _handle_consult_input(event: InputEvent) -> bool:
+	if event.is_action_pressed("menu_down"):
+		_move_attr(1)
+	elif event.is_action_pressed("menu_up"):
+		_move_attr(-1)
+	elif event.is_action_pressed("menu_interact") or event.is_action_pressed("ui_cancel"):
+		_end_consult()
+	elif event.is_action_pressed("menu_left") or event.is_action_pressed("menu_right") \
+			or event.is_action_pressed("ui_page_down") or event.is_action_pressed("ui_page_up"):
+		pass
+	else:
+		return false
+	return true
+
+
+func _detail_text(text: String, alpha := 1.0, font_size := 0, color := Color.WHITE) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.modulate.a = alpha
+	if font_size > 0:
+		l.add_theme_font_size_override("font_size", font_size)
+	if color != Color.WHITE:
+		l.add_theme_color_override("font_color", color)
+	return l
+
+
+func _refresh_detail() -> void:
+	if _detail_box == null:
+		return
+	for c in _detail_box.get_children():
+		_detail_box.remove_child(c)
+		c.queue_free()
+	_hint_label.text = "E: consultar atributos" if not _consulting \
+			else "Cima/Baixo: trocar atributo     E ou Esc: sair da consulta"
+	if _current_sheet == null:
+		return
+	if not _consulting:
+		_detail_box.add_child(_detail_text("Pressione E para consultar o significado químico dos atributos.", 0.7))
+		return
+	# O texto do gerador segue o padrão "Título\n\nNo jogo...\n\nConceito químico...\n\nValor...".
+	var parts := AlchemonStatGenerator.stat_tooltip(ATTRS[_attr_cursor].key, _current_sheet).split("\n\n")
+	_detail_box.add_child(_detail_text(parts[0], 1.0, DETAIL_TITLE_FONT, GOLD))
+	for k in range(1, parts.size()):
+		_detail_box.add_child(_detail_text(parts[k]))
 
 
 func _set_model(sheet: AlchemonSheet) -> void:

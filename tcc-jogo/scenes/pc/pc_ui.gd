@@ -19,12 +19,18 @@ const DESCRIPTIONS := {
 	"Exit": "Fechar o PC.",
 }
 
-# Estilo igual ao do combate (battle_commands.gd / game_menu.gd)
-const GOLD := Color(1, 0.85, 0.2)
+# Mesmo padrão visual das páginas de Alchemons / Mochila (ui_style.gd)
+const GOLD := UIStyle.GOLD
 const TITLE_GOLD := Color(1, 0.85, 0.3)
-const PANEL_BG := Color(0.07, 0.07, 0.11, 0.94)
-const PANEL_BORDER := Color(0.5, 0.5, 0.6)
-const TEXT_COLOR := Color(0.92, 0.92, 0.95)
+const PANEL_BG := UIStyle.PANEL_BG
+const PANEL_BORDER := UIStyle.PANEL_BORDER
+const TEXT_COLOR := UIStyle.TEXT
+const MUTED := Color(1, 1, 1, 0.6)
+const SEND_COLOR := Color(1, 0.62, 0.3)
+const TAKE_COLOR := Color(0.4, 0.85, 0.5)
+const TAG_PARTY := Color(0.45, 0.7, 1.0)
+const TAG_STORED := Color(0.72, 0.72, 0.8)
+const PANEL_SIZE := Vector2(1180, 740)
 
 var _party_data: PlayerPartyData
 var _storage: CapturedStorage
@@ -37,26 +43,30 @@ var _ready_to_input := false
 const COMPONENT_CREATED_TEXT := "Seu Composto foi criado!"
 var _popup: Control
 
-var _menu: ItemList
+var _menu: PCList
 var _pages: Dictionary = {}
 var _hint: Label
 
 var _alch_header: Label
-var _alch_list: ItemList
+var _alch_list: PCList
 var _alch_rows: Array = []
 var _alch_picked: Array[AlchemonInstance] = []
 var _alch_info: Label
+var _alch_action: Label
 
 const ST_TITLE_PARTY := "Seu time"
 const ST_TITLE_STORED := "Armazenados"
-var _st_party_list: ItemList
-var _st_stored_list: ItemList
+var _st_party_list: PCList
+var _st_stored_list: PCList
 var _st_party_rows: Array = []
 var _st_stored_rows: Array = []
-var _st_focus: ItemList
+var _st_focus: PCList
 var _st_info: Label
-var _st_stats: Label
-var _alch_stats: Label
+var _st_action: Label
+var _st_party_title: Label
+var _st_stored_title: Label
+var _st_stats: PCStatsCard
+var _alch_stats: PCStatsCard
 
 var _exit_yes: Button
 var _exit_no: Button
@@ -105,16 +115,6 @@ func _purge_nulls() -> void:
 			_storage.instances.erase(null)
 
 
-func _label_of(inst: AlchemonInstance) -> String:
-	if inst == null:
-		return "(vazio)"
-	var n := inst.creature_name
-	if n == "" and _db != null:
-		var sheet := _db.get_by_id(inst.species_id)
-		n = sheet.creature_name if sheet != null else "???"
-	return "%s  Nv.%d" % [n, inst.level]
-
-
 func _short_name(inst: AlchemonInstance) -> String:
 	if inst == null:
 		return "(empty)"
@@ -156,65 +156,22 @@ func _bond_formula() -> String:
 	return "" if data == null else "%s (%s)" % [data.chemical_formula, data.bond_type_label()]
 
 
-func _stats_text(inst: AlchemonInstance) -> String:
-	if inst == null:
-		return ""
-	var sheet: AlchemonSheet = _db.get_by_id(inst.species_id) if _db != null else null
-	var n := _short_name(inst)
-	if sheet == null:
-		return "%s\nNv.%d\n(sem dados da espécie)" % [n, inst.level]
-
-	var iv := inst.individual_value
-	var stats := inst.compute_stats(sheet)
-	var atk: int = stats.attack
-	var def: int = stats.defense
-	var spd: int = stats.mechanical_speed
-	var en: int = stats.action_energy
-	var max_hp: int = stats.max_hp
-	var hp := inst.hp_or_full(max_hp)
-
-	return "%s\nNv.%d   (%s)\n\nPV: %d/%d\nXP: %d/%d\nElétrons de valência: %d\n\nAtaque: %d\nDefesa: %d\nVel. mecânica: %d\nEnergia de ação: %d\nIV: %d" % [
-		n, inst.level, AlchemonType.type_name(sheet.element_type),
-		hp, max_hp,
-		inst.experience, AlchemonGrowth.xp_to_next(inst.level),
-		sheet.max_valence_electrons,
-		atk, def, spd, en, iv]
+func _sheet_of(inst: AlchemonInstance) -> AlchemonSheet:
+	if inst == null or _db == null:
+		return null
+	return _db.get_by_id(inst.species_id)
 
 
 func _box(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = border
-	sb.set_border_width_all(2 if border.a > 0.0 else 0)
-	sb.set_corner_radius_all(radius)
-	sb.content_margin_left = 8
-	sb.content_margin_right = 8
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
-	return sb
+	return UIStyle.box(bg, border, radius)
 
 
 func _style_panel(pc: PanelContainer) -> void:
 	pc.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
 
 
-func _style_list(list: ItemList) -> void:
-	var empty := _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 4)
-	var on := _box(Color(GOLD, 0.25), Color(0, 0, 0, 0), 4)
-	var on_off := _box(Color(GOLD, 0.10), Color(0, 0, 0, 0), 4)
-	list.add_theme_stylebox_override("panel", _box(PANEL_BG, PANEL_BORDER, 8))
-	list.add_theme_stylebox_override("focus", empty)
-	list.add_theme_stylebox_override("selected", on_off)
-	list.add_theme_stylebox_override("selected_focus", on)
-	list.add_theme_stylebox_override("cursor", empty)
-	list.add_theme_stylebox_override("cursor_unfocused", empty)
-	list.add_theme_color_override("font_color", TEXT_COLOR)
-	list.add_theme_color_override("font_selected_color", GOLD)
-	list.add_theme_color_override("font_hovered_color", GOLD)
-	list.add_theme_constant_override("v_separation", 6)
-
-
 func _style_button(b: Button) -> void:
+	b.custom_minimum_size = Vector2(120, 40)
 	b.add_theme_stylebox_override("normal", _box(Color(0, 0, 0, 0), PANEL_BORDER, 6))
 	b.add_theme_stylebox_override("hover", _box(Color(GOLD, 0.18), GOLD, 6))
 	b.add_theme_stylebox_override("pressed", _box(Color(GOLD, 0.25), GOLD, 6))
@@ -228,43 +185,150 @@ func _gold_label(l: Label) -> void:
 	l.add_theme_color_override("font_color", TITLE_GOLD)
 
 
-func _make_stats_label() -> Label:
-	var l := Label.new()
-	l.custom_minimum_size = Vector2(230, 0)
-	l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	l.add_theme_color_override("font_color", TEXT_COLOR)
-	return l
+func _make_list() -> PCList:
+	return PCList.new()
 
 
-func _stats_panel(l: Label) -> PanelContainer:
+## Moldura com a lista dentro (o ScrollContainer não desenha borda por conta própria).
+func _framed(list: PCList) -> PanelContainer:
 	var pc := PanelContainer.new()
+	pc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_style_panel(pc)
-	pc.add_child(l)
+	pc.add_child(list)
 	return pc
 
 
-func _update_stats(list: ItemList, rows: Array, label: Label, inst_key := "inst") -> void:
-	if list == null or label == null:
+func _action_chip(label: Label, text: String, color: Color) -> void:
+	label.text = text
+	label.add_theme_color_override("font_color", color)
+
+
+## Retrato quadrado na cor do tipo, com o símbolo químico.
+func _portrait(sheet: AlchemonSheet, inst: AlchemonInstance) -> Control:
+	var accent := UIStyle.type_color(sheet.element_type) if sheet != null else PANEL_BORDER
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(46, 46)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fs := _box(Color(accent, 0.16), Color(accent, 0.9), 6)
+	fs.content_margin_left = 2
+	fs.content_margin_right = 2
+	fs.content_margin_top = 2
+	fs.content_margin_bottom = 2
+	frame.add_theme_stylebox_override("panel", fs)
+	var l := Label.new()
+	var sym := ""
+	if sheet != null:
+		sym = sheet.symbol if sheet.symbol != "" else sheet.creature_name.left(2)
+	l.text = sym if sym != "" else "?"
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 20)
+	l.add_theme_color_override("font_color", accent)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(l)
+	return frame
+
+
+## Cartão de um Alchemon: retrato, nome, nível/tipo e uma etiqueta (Time / Armazenado / Marcado).
+func _add_mon_entry(list: PCList, inst: AlchemonInstance, tag := "", tag_color := TAG_STORED, picked := false) -> void:
+	var sheet := _sheet_of(inst)
+	var accent := UIStyle.type_color(sheet.element_type) if sheet != null else UIStyle.CLEAR
+
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 10)
+	h.add_child(_portrait(sheet, inst))
+
+	var v := VBoxContainer.new()
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	v.add_theme_constant_override("separation", 0)
+	h.add_child(v)
+	var name_lbl := Label.new()
+	name_lbl.text = _short_name(inst)
+	name_lbl.add_theme_font_size_override("font_size", 18)
+	name_lbl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	v.add_child(name_lbl)
+	var sub := Label.new()
+	sub.text = "Nv.%d" % inst.level
+	if sheet != null:
+		sub.text += "   %s" % AlchemonType.type_name(sheet.element_type)
+	sub.add_theme_font_size_override("font_size", 13)
+	sub.modulate.a = 0.7
+	v.add_child(sub)
+
+	if picked:
+		var mark := UIStyle.chip("MARCADO", GOLD, 12)
+		mark.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(mark)
+	elif tag != "":
+		var chip := UIStyle.chip(tag, tag_color, 12)
+		chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(chip)
+	list.add_entry(h, accent, name_lbl)
+
+
+## Linha de ação simples (Formar Composto, Romper, Voltar...).
+func _add_action_entry(list: PCList, text: String, color := TEXT_COLOR) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 18)
+	l.add_theme_color_override("font_color", color)
+	var h := HBoxContainer.new()
+	h.custom_minimum_size = Vector2(0, 34)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	h.add_child(l)
+	list.add_entry(h, color if (color != TEXT_COLOR and color != MUTED) else UIStyle.CLEAR, l)
+
+
+func _update_card(list: PCList, rows: Array, card: PCStatsCard, inst_key := "inst") -> void:
+	if list == null or card == null:
 		return
 	var sel := list.get_selected_items()
-	if sel.is_empty() or sel[0] >= rows.size():
-		label.text = ""
+	if sel.is_empty() or sel[0] >= rows.size() or rows[sel[0]].get(inst_key) == null:
+		card.clear()
 		return
-	var row: Dictionary = rows[sel[0]]
-	label.text = _stats_text(row.get(inst_key)) if row.get(inst_key) != null else ""
+	var inst: AlchemonInstance = rows[sel[0]].get(inst_key)
+	card.show_instance(inst, _sheet_of(inst), _short_name(inst))
 
 
 func _on_st_selected(_i: int) -> void:
 	_update_st_stats()
 
 
-func _st_rows_of(list: ItemList) -> Array:
+func _st_rows_of(list: PCList) -> Array:
 	return _st_party_rows if list == _st_party_list else _st_stored_rows
 
 
 func _update_st_stats() -> void:
 	if _st_focus != null:
-		_update_stats(_st_focus, _st_rows_of(_st_focus), _st_stats)
+		_update_card(_st_focus, _st_rows_of(_st_focus), _st_stats)
+	_update_st_action()
+
+
+## Ação que o E vai executar no item selecionado: enviar / levar / voltar.
+func _update_st_action() -> void:
+	if _st_action == null or _st_focus == null:
+		return
+	var sel := _st_focus.get_selected_items()
+	var rows := _st_rows_of(_st_focus)
+	if sel.is_empty() or sel[0] >= rows.size():
+		_action_chip(_st_action, "", MUTED)
+		return
+	var row: Dictionary = rows[sel[0]]
+	match row.src:
+		"back":
+			_action_chip(_st_action, "[E] Voltar ao menu", MUTED)
+		"party":
+			if _party().size() <= 1:
+				_action_chip(_st_action, "O time precisa de pelo menos 1 Alchemon", MUTED)
+			else:
+				_action_chip(_st_action, "[E] Enviar %s para o armazenamento" % _short_name(row.inst), SEND_COLOR)
+		_:
+			if _party().size() >= max_party_size:
+				_action_chip(_st_action, "Time cheio: envie um Alchemon para o armazenamento antes", MUTED)
+			else:
+				_action_chip(_st_action, "[E] Levar %s para o time" % _short_name(row.inst), TAKE_COLOR)
 
 
 func _st_switch_column(to_stored: bool) -> void:
@@ -277,7 +341,30 @@ func _st_switch_column(to_stored: bool) -> void:
 
 
 func _on_alch_selected(_i: int) -> void:
-	_update_stats(_alch_list, _alch_rows, _alch_stats)
+	_update_card(_alch_list, _alch_rows, _alch_stats)
+	_update_alch_action()
+
+
+func _update_alch_action() -> void:
+	if _alch_action == null or _alch_list == null:
+		return
+	var sel := _alch_list.get_selected_items()
+	if sel.is_empty() or sel[0] >= _alch_rows.size():
+		_action_chip(_alch_action, "", MUTED)
+		return
+	var row: Dictionary = _alch_rows[sel[0]]
+	match row.kind:
+		"mon":
+			if _alch_picked.has(row.inst):
+				_action_chip(_alch_action, "[E] Desmarcar %s" % _short_name(row.inst), SEND_COLOR)
+			else:
+				_action_chip(_alch_action, "[E] Marcar %s para o Composto" % _short_name(row.inst), TAKE_COLOR)
+		"make":
+			_action_chip(_alch_action, "[E] Formar Composto com os selecionados", TAKE_COLOR)
+		"break":
+			_action_chip(_alch_action, "[E] Romper o Composto atual", SEND_COLOR)
+		_:
+			_action_chip(_alch_action, "[E] Voltar ao menu", MUTED)
 
 
 func _build_ui() -> void:
@@ -288,7 +375,7 @@ func _build_ui() -> void:
 
 	var panel := PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.custom_minimum_size = Vector2(900, 520)
+	panel.custom_minimum_size = PANEL_SIZE
 	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_style_panel(panel)
@@ -300,7 +387,15 @@ func _build_ui() -> void:
 	panel.add_child(margin)
 
 	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 10)
 	margin.add_child(outer)
+
+	var header := Label.new()
+	header.text = "PC ALCHEMON"
+	header.add_theme_font_size_override("font_size", 32)
+	_gold_label(header)
+	outer.add_child(header)
+	outer.add_child(HSeparator.new())
 
 	var root := HBoxContainer.new()
 	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -308,21 +403,14 @@ func _build_ui() -> void:
 	outer.add_child(root)
 
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(200, 0)
+	left.custom_minimum_size = Vector2(240, 0)
 	root.add_child(left)
-	var title := Label.new()
-	title.text = "PC ALCHEMON"
-	title.add_theme_font_size_override("font_size", 22)
-	_gold_label(title)
-	left.add_child(title)
-	_menu = ItemList.new()
-	_menu.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_style_list(_menu)
+	_menu = _make_list()
 	for i in OPTIONS.size():
-		_menu.add_item("%d. %s" % [i + 1, OPTION_LABELS[OPTIONS[i]]])
+		_add_menu_entry(i)
 	_menu.item_selected.connect(_on_menu_selected)
 	_menu.item_activated.connect(func(_i): _open_option())
-	left.add_child(_menu)
+	left.add_child(_framed(_menu))
 
 	var right := Control.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -342,38 +430,62 @@ func _build_ui() -> void:
 	outer.add_child(_hint)
 
 
+func _add_menu_entry(i: int) -> void:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 12)
+	h.custom_minimum_size = Vector2(0, 40)
+	var num := UIStyle.chip(str(i + 1), GOLD, 14)
+	num.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(num)
+	var l := Label.new()
+	l.text = OPTION_LABELS[OPTIONS[i]]
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 20)
+	h.add_child(l)
+	_menu.add_entry(h, UIStyle.CLEAR, l)
+
+
 func _build_idle_page() -> Control:
-	var page := VBoxContainer.new()
+	var page := PanelContainer.new()
+	_style_panel(page)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	page.add_child(v)
+	v.add_child(UIStyle.section_label("Sobre esta opção"))
 	_idle_label = Label.new()
 	_idle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_idle_label.add_theme_color_override("font_color", TEXT_COLOR)
-	page.add_child(_idle_label)
+	v.add_child(_idle_label)
 	return page
 
 
 func _build_alchemy_page() -> Control:
 	var page := VBoxContainer.new()
+	page.add_theme_constant_override("separation", 8)
 	_alch_header = Label.new()
 	_alch_header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_alch_header.add_theme_font_size_override("font_size", 20)
 	_gold_label(_alch_header)
 	page.add_child(_alch_header)
 	var h := Label.new()
 	h.text = "Escolha de 2 a %d Alchemons (time + armazenamento) e depois Formar Composto" % AlchemyStation.MAX_BOND_SIZE
 	h.modulate = Color(1, 1, 1, 0.55)
 	page.add_child(h)
-	_alch_list = ItemList.new()
-	_style_list(_alch_list)
-	_alch_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	_alch_list = _make_list()
 	_alch_list.item_activated.connect(func(_i): _alchemy_select())
 	_alch_list.item_selected.connect(_on_alch_selected)
-	_alch_stats = _make_stats_label()
+	_alch_stats = PCStatsCard.new()
 	var arow := HBoxContainer.new()
 	arow.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	arow.add_theme_constant_override("separation", 12)
 	page.add_child(arow)
-	arow.add_child(_alch_list)
-	_alch_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	arow.add_child(_stats_panel(_alch_stats))
+	arow.add_child(_framed(_alch_list))
+	arow.add_child(_alch_stats)
+
+	_alch_action = Label.new()
+	_alch_action.add_theme_font_size_override("font_size", 18)
+	page.add_child(_alch_action)
 	_alch_info = Label.new()
 	_alch_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_alch_info.add_theme_color_override("font_color", GOLD)
@@ -383,17 +495,23 @@ func _build_alchemy_page() -> Control:
 
 func _build_stored_page() -> Control:
 	var page := VBoxContainer.new()
-	_st_stats = _make_stats_label()
+	page.add_theme_constant_override("separation", 8)
+	_st_stats = PCStatsCard.new()
 	var srow := HBoxContainer.new()
 	srow.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	srow.add_theme_constant_override("separation", 12)
 	page.add_child(srow)
 
 	_st_party_list = _make_st_column(srow, ST_TITLE_PARTY)
+	_st_party_title = _st_party_list.get_meta("title")
 	_st_stored_list = _make_st_column(srow, ST_TITLE_STORED)
+	_st_stored_title = _st_stored_list.get_meta("title")
 	_st_focus = _st_party_list
-	srow.add_child(_stats_panel(_st_stats))
+	srow.add_child(_st_stats)
 
+	_st_action = Label.new()
+	_st_action.add_theme_font_size_override("font_size", 18)
+	page.add_child(_st_action)
 	_st_info = Label.new()
 	_st_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_st_info.add_theme_color_override("font_color", GOLD)
@@ -401,38 +519,43 @@ func _build_stored_page() -> Control:
 	return page
 
 
-func _make_st_column(parent: Control, title: String) -> ItemList:
+func _make_st_column(parent: Control, title: String) -> PCList:
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 6)
 	parent.add_child(col)
 	var t := Label.new()
 	t.text = title
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.add_theme_font_size_override("font_size", 20)
 	_gold_label(t)
 	col.add_child(t)
-	var list := ItemList.new()
-	_style_list(list)
-	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var list := _make_list()
+	list.set_meta("title", t)
 	list.item_activated.connect(func(_i): _stored_select())
 	list.item_selected.connect(_on_st_selected)
 	list.focus_entered.connect(func():
 		_st_focus = list
 		_update_st_stats())
-	col.add_child(list)
+	col.add_child(_framed(list))
 	return list
 
 
 func _build_exit_page() -> Control:
-	var page := VBoxContainer.new()
+	var page := PanelContainer.new()
+	_style_panel(page)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	page.add_child(v)
 	var l := Label.new()
 	l.text = "Fechar o PC?"
-	l.add_theme_font_size_override("font_size", 20)
+	l.add_theme_font_size_override("font_size", 24)
 	_gold_label(l)
-	page.add_child(l)
+	v.add_child(l)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	page.add_child(row)
+	v.add_child(row)
 	_exit_yes = Button.new()
 	_exit_yes.text = "Sim"
 	_exit_yes.pressed.connect(func(): exit_requested.emit())
@@ -508,9 +631,9 @@ func _open_option() -> void:
 			_st_party_list.grab_focus()
 		"Exit":
 			_exit_no.grab_focus()
-	_hint.text = "Cima/Baixo: mover   [%s]: selecionar   [%s]: voltar" % [select_action, back_action]
+	_hint.text = "Cima/Baixo: mover   E: selecionar   Esc: voltar"
 	if _current_option == "Stored":
-		_hint.text = "Cima/Baixo: mover   Esq./Dir.: trocar coluna   [%s]: mover Alchemon   [%s]: voltar" % [select_action, back_action]
+		_hint.text = "Cima/Baixo: mover   Esq./Dir.: trocar coluna   E: transferir Alchemon   Esc: voltar"
 
 
 func _go_list() -> void:
@@ -524,7 +647,7 @@ func _go_list() -> void:
 		sel = [0]
 	_idle_label.text = DESCRIPTIONS[OPTIONS[sel[0]]]
 	_show_page("Idle")
-	_hint.text = "Cima/Baixo: mover   [%s]: abrir opção" % select_action
+	_hint.text = "Cima/Baixo: mover   E: abrir opção"
 
 
 func _show_page(page_name: String) -> void:
@@ -575,18 +698,19 @@ func _refresh_alchemy() -> void:
 	for r in _alch_rows:
 		match r.kind:
 			"mon":
-				var mark := "[x]" if _alch_picked.has(r.inst) else "[ ]"
-				_alch_list.add_item("%s [%s] %s" % [mark, r.tag, _label_of(r.inst)])
+				var tag_color := TAG_PARTY if r.tag == "Time" else TAG_STORED
+				_add_mon_entry(_alch_list, r.inst, r.tag, tag_color, _alch_picked.has(r.inst))
 			"make":
-				_alch_list.add_item(">> Formar Composto (%d selecionados, 2-%d)" % [_alch_picked.size(), AlchemyStation.MAX_BOND_SIZE])
+				_add_action_entry(_alch_list, "Formar Composto  (%d selecionados, 2-%d)" % [_alch_picked.size(), AlchemyStation.MAX_BOND_SIZE], TAKE_COLOR)
 			"break":
-				_alch_list.add_item("xx Romper Composto")
+				_add_action_entry(_alch_list, "Romper Composto", SEND_COLOR)
 			"back":
-				_alch_list.add_item("<< Voltar")
+				_add_action_entry(_alch_list, "Voltar", MUTED)
 
 	if _alch_list.item_count > 0:
 		_alch_list.select(mini(keep[0] if not keep.is_empty() else 0, _alch_list.item_count - 1))
-	_update_stats(_alch_list, _alch_rows, _alch_stats)
+	_update_card(_alch_list, _alch_rows, _alch_stats)
+	_update_alch_action()
 
 
 func _refresh_stored() -> void:
@@ -598,12 +722,14 @@ func _refresh_stored() -> void:
 	_st_stored_rows.clear()
 	for inst in _party():
 		_st_party_rows.append({"src": "party", "inst": inst})
-		_st_party_list.add_item(_label_of(inst))
+		_add_mon_entry(_st_party_list, inst, "Time", TAG_PARTY)
 	_st_party_rows.append({"src": "back", "inst": null})
-	_st_party_list.add_item("<< Back")
+	_add_action_entry(_st_party_list, "Voltar", MUTED)
 	for inst in _stored():
 		_st_stored_rows.append({"src": "stored", "inst": inst})
-		_st_stored_list.add_item(_label_of(inst))
+		_add_mon_entry(_st_stored_list, inst, "PC", TAG_STORED)
+	_st_party_title.text = "%s  (%d/%d)" % [ST_TITLE_PARTY, _party().size(), max_party_size]
+	_st_stored_title.text = "%s  (%d)" % [ST_TITLE_STORED, _stored().size()]
 	_st_info.text = "Time: %d/%d   Armazenados: %d" % [_party().size(), max_party_size, _stored().size()]
 	_st_party_list.select(mini(keep_p[0] if not keep_p.is_empty() else 0, _st_party_list.item_count - 1))
 	if _st_stored_list.item_count > 0:

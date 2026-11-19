@@ -14,4 +14,6 @@ class_name NPCSpawnPoint
 @export_group("Dialogue")
 @export_multiline var dialogue: String = ""
 @export_multiline var dialogue_defeated: String = ""
+## Fala exibida antes da batalha com este NPC. Vazio = usa `dialogue`.
+@export_multiline var dialogue_pre_battle: String = ""
 @export_multiline var dialogue_healed: String = ""

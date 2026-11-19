@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_item")
 index = 4
-nome = "Ametal method"
-descricao = "Placeholder. Captura criaturas do tipo Ametal."
+nome = "Ampola Eletrofílica"
+descricao = "Devido à alta avidez dos ametais por elétrons, a ferramenta lança reagentes doadores aos quais a criatura reage instantaneamente."
 is_capture_method = true
 capture_type = 1
 valorVenda = 100

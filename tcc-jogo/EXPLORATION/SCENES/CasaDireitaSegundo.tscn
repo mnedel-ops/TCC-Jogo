@@ -3,7 +3,9 @@
 [ext_resource type="Script" uid="uid://drd6v6caqftp6" path="res://Level.gd" id="1_gqv8b"]
 [ext_resource type="PackedScene" uid="uid://dbysqb5jauvro" path="res://EXPLORATION/npc.tscn" id="2_7g0a3"]
 [ext_resource type="Script" uid="uid://33gss3xoovk1" path="res://scenes/NPCspawn_point.gd" id="3_dgjff"]
+[ext_resource type="PackedScene" uid="uid://lkv7cq3sslkk" path="res://DATABASE/Inventory/interactable_item.tscn" id="4_dgjff"]
 [ext_resource type="Script" uid="uid://cq0o7r4jvvodg" path="res://scenes/porta.gd" id="4_wgwcy"]
+[ext_resource type="Resource" uid="uid://dac5jkcot5oem" path="res://DATABASE/Inventory/Itens/7RecargaValênciaG.tres" id="5_wgwcy"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_eqltt"]
 size = Vector3(60, 0.5, 60)
@@ -34,6 +36,10 @@ script = ExtResource("3_dgjff")
 npc_scene = ExtResource("2_7g0a3")
 alchemons_ids = Array[int]([3, 3])
 dialogue = "Marie Curie eh minha cientista favorita!"
+
+[node name="RecargaValG" parent="NPCHolder" unique_id=1606038511 instance=ExtResource("4_dgjff")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1602993, 9.536743e-07, 1.6715417)
+item_data = ExtResource("5_wgwcy")
 
 [node name="Environment" type="Node3D" parent="." unique_id=915643647]
 

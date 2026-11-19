@@ -531,22 +531,31 @@ O dano considera nível, poder, Ataque, Defesa e efetividade elemental. A chance
 
 ## 11. Captura de criaturas
 
-### 11.1 Fluxo — [Parcial]
+### 11.1 Ferramentas de captura
 
-1. O jogador seleciona um item identificado como método de captura.
-2. O sistema valida se o alvo é um inimigo vivo.
-3. A compatibilidade entre o método e o tipo da criatura determina o multiplicador.
-4. Uma rolagem aleatória determina o sucesso.
-5. Em caso de sucesso, a criatura capturada é transferida para o armazenamento.
+A captura utiliza ferramentas que representam processos físicos e químicos de separação e transformação da matéria. Cada ferramenta possui uma afinidade específica com determinadas categorias de Alchemons, influenciando a probabilidade de sucesso da captura.
 
-A captura é bloqueada em batalhas contra treinadores.
+| Item | Categoria | Fundamentação química | Aplicação no jogo | Estado |
+|---|---|---|---|---|
+| **Cristalizador Molar** | Separação física | Cristalização: formação de estruturas cristalinas pela precipitação de um soluto, geralmente provocada pela evaporação do solvente ou pelo resfriamento da solução. | Ferramenta de captura baseada na separação e organização da matéria em estruturas cristalinas. A categoria de Alchemon compatível ainda precisa ser definida. | Planejado |
+| **Ampola Eletrofílica** | Reagente de atração química | Espécies eletrofílicas apresentam deficiência eletrônica e interagem com regiões de elevada densidade eletrônica. | Ferramenta especializada na captura de Alchemons do tipo Ametal, conforme a abstração química adotada pelo jogo. | Planejado |
+| **Célula de Eletrólise Portátil** | Separação eletroquímica | Eletrólise: processo não espontâneo que utiliza corrente elétrica para promover reações de oxidação e redução. | Ferramenta de captura associada aos Alchemons do tipo Metal, representando a redução de espécies iônicas e a obtenção de elementos em estado neutro. | Planejado |
 
-### 11.2 Multiplicadores atuais — [Parcial]
+### 11.2 Multiplicadores de captura
 
-- método compatível: 255;
-- método incompatível: 127.
+A compatibilidade entre a ferramenta utilizada e o tipo do Alchemon determina o multiplicador aplicado à fórmula de captura.
 
-Os métodos atuais são categorias provisórias associadas aos tipos Metal, Ametal e Metaloide. A lista definitiva de ferramentas físicas ou químicas e seus critérios de utilização permanece pendente.
+| Condição | Multiplicador atual (\(X\)) | Descrição |
+|---|---:|---|
+| Ferramenta compatível | 255 | Maior probabilidade de sucesso. |
+| Ferramenta incompatível | 127 | Menor probabilidade de sucesso. |
+
+A fórmula considera também o HP atual e máximo do alvo, aumentando a probabilidade de captura conforme sua integridade diminui.
+
+A definição dos multiplicadores definitivos e a associação entre as três ferramentas e os tipos de Alchemon devem ser consolidadas durante o balanceamento.
+
+---
+
 
 ### 11.3 Fórmula de captura — [OK]
 
@@ -615,31 +624,50 @@ O avanço recalcula Ataque, Defesa e Velocidade, aumenta o HP máximo e a energi
 
 O aumento de HP máximo também é acrescentado ao HP atual quando a criatura está viva. O aumento do limite de energia não restaura automaticamente a energia atual.
 
-**Pendente:** definir e implementar um teto de nível, caso o limite 20 previsto no design original continue desejado.
 
 ### 12.5 Insígnias e obediência — [Parcial]
 
 A estrutura de insígnias existe, e o NPC líder do ginásio Metal concede a Insígnia do Metal. A implementação de regras de obediência por nível e quantidade de insígnias não foi identificada.
 
----
-
 ## 13. Economia e itens
 
-### 13.1 Moeda — [OK]/[Parcial]
+### 13.1 Moeda
 
-O jogador inicia com 500 moedas. A vitória contra treinadores concede 100 moedas. A venda de itens também pode gerar moeda.
+O sistema econômico utiliza moedas como recurso para aquisição de ferramentas, materiais e itens consumíveis.
 
-Os valores de recompensa e preços ainda precisam de balanceamento.
+| Fonte | Quantidade |
+|---|---:|
+| Moedas iniciais | 500 |
+| Vitória contra treinadores | 100 |
+| Venda de itens | 50% do valor de venda cadastrado, arredondado para baixo |
 
-### 13.2 Itens — [Parcial]
+Os valores estão sujeitos a ajustes durante o balanceamento da economia.
 
-Os itens são definidos por dados que incluem identificador, nome, descrição, ícone, valor de cura, identificação de método de captura, tipo de captura e valor de venda.
+### 13.2 Itens consumíveis e ferramentas
 
-Os itens de cura e recuperação de energia devem ser conferidos no banco atual antes de serem descritos como conteúdo final. A versão anterior do GDD registrava apenas itens genéricos e métodos de captura provisórios.
+Os itens são organizados conforme suas funções durante a exploração e o combate. As ferramentas de captura possuem utilização específica, enquanto os itens restauradores recuperam a integridade dos Alchemons.
 
-### 13.3 Lojas — [OK]
+| Item | Categoria | Fundamentação química | Efeito no jogo | Estado |
+|---|---|---|---|---|
+| **Cristalizador Molar** | Captura | Cristalização e separação de fases. | Permite tentar capturar Alchemons por meio de um processo de cristalização. | Planejado |
+| **Ampola Eletrofílica** | Captura | Interações entre espécies eletrofílicas e regiões ricas em elétrons. | Permite tentar capturar Alchemons do tipo Ametal. | Planejado |
+| **Célula de Eletrólise Portátil** | Captura | Reações eletroquímicas não espontâneas e transferência de elétrons. | Permite tentar capturar Alchemons do tipo Metal. | Planejado |
+| **Recarga de Valência Pequena** | Recuperação de HP | Representação da recomposição da estabilidade eletrônica na camada de valência. | Recupera 30 pontos de HP de um Alchemon. | Planejado |
+| **Recarga de Valência Grande** | Recuperação de HP | Representação da recomposição da estabilidade eletrônica na camada de valência. | Recupera 100 pontos de HP de um Alchemon. | Planejado |
 
-O NPC lojista oferece opções de compra e venda. O preço de compra utiliza o valor de venda cadastrado; a venda pelo jogador ocorre por metade desse valor, arredondado para baixo. Itens com valor não positivo não são negociados.
+Os itens de recuperação são consumidos após a utilização e possuem efeito limitado aos seus alvos. A Recarga de Valência restaura apenas um Alchemon, enquanto a Ponte Salina Reconstituinte beneficia simultaneamente os dois integrantes da equipe.
+
+### 13.3 Lojas e comercialização
+
+O jogador pode adquirir e vender itens por meio de NPCs lojistas.
+
+| Operação | Regra |
+|---|---|
+| Compra | O jogador paga o valor de venda cadastrado no item. |
+| Venda | O lojista paga metade do valor cadastrado, com arredondamento para baixo. |
+| Itens sem valor comercial | Itens com valor igual ou inferior a zero não podem ser negociados. |
+
+Os preços individuais dos novos itens devem ser definidos durante o balanceamento econômico.  registrava apenas itens genéricos e métodos de captura provisórios.
 
 ---
 

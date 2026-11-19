@@ -10,6 +10,7 @@ const LINE_COLOR := Color(0.92, 0.92, 0.95)
 var commands: BattleCommands
 
 var _panel: PanelContainer
+var _temperature: Label
 var _lines: VBoxContainer
 var _x := 0.0
 var _bar_height := 0.0
@@ -31,10 +32,19 @@ func _ready() -> void:
 	box.content_margin_bottom = 8
 	_panel.add_theme_stylebox_override("panel", box)
 	add_child(_panel)
+	var column := VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation", 4)
+	_panel.add_child(column)
+	_temperature = Label.new()
+	_temperature.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_temperature.add_theme_color_override("font_color", PROMPT_COLOR)
+	_temperature.visible = false
+	column.add_child(_temperature)
 	_lines = VBoxContainer.new()
 	_lines.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_lines.add_theme_constant_override("separation", 2)
-	_panel.add_child(_lines)
+	column.add_child(_lines)
 	_panel.visible = false
 
 
@@ -49,6 +59,12 @@ func begin_round() -> void:
 
 func add_line(text: String) -> void:
 	_add(text, LINE_COLOR)
+
+
+func set_temperature(kelvin: float) -> void:
+	_temperature.text = "Temperatura da Arena: %.2fK" % kelvin
+	_temperature.visible = true
+	_panel.reset_size()
 
 
 func reset_anchor() -> void:
