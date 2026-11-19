@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" uid="uid://dn5kkw48uiw21" path="res://EXPLORATION/wilderness_encounter.tscn" id="6_ea8wx"]
 [ext_resource type="Resource" uid="uid://cfwlvyoilecef" path="res://DATABASE/Inventory/Itens/RecargaValencia.tres" id="7_uxhkt"]
 [ext_resource type="Resource" uid="uid://dac5jkcot5oem" path="res://DATABASE/Inventory/Itens/7RecargaValênciaG.tres" id="8_7hgg1"]
+[ext_resource type="Resource" uid="uid://cinfsi6tw4ff1" path="res://DATABASE/Inventory/Itens/AmetalMethod.tres" id="8_i6eu5"]
+[ext_resource type="Resource" uid="uid://cvokrnrlvijd3" path="res://DATABASE/Inventory/Itens/MetalMethod.tres" id="8_uxhkt"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_csqnk"]
 size = Vector3(78.961426, 0.5, 60)
@@ -309,12 +311,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5272903, 1, 0)
 mesh = SubResource("BoxMesh_7hgg1")
 
 [node name="RecargaValencia" parent="." unique_id=1606038511 instance=ExtResource("6_ceq6u")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.561487, 0.08903551, 25.66074)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.778238, 0.08903551, 21.967735)
 item_data = ExtResource("7_uxhkt")
 
-[node name="RecargaValencia2" parent="." unique_id=1701411194 instance=ExtResource("6_ceq6u")]
+[node name="AmetalCap" parent="." unique_id=35983458 instance=ExtResource("6_ceq6u")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 57.770226, 0.0890317, 24.516586)
+item_data = ExtResource("8_i6eu5")
+
+[node name="MetalCap" parent="." unique_id=1701411194 instance=ExtResource("6_ceq6u")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.002367, 0.08903551, -14.168842)
-item_data = ExtResource("7_uxhkt")
+item_data = ExtResource("8_uxhkt")
 
 [node name="RecargaValencia3" parent="." unique_id=1684554416 instance=ExtResource("6_ceq6u")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.574392, 0.08903551, -14.168842)
