@@ -9,6 +9,7 @@
 [ext_resource type="Resource" uid="uid://kfl5y2vtbtix" path="res://DATABASE/Alchemons/PlayerCurrentAlchemon.tres" id="7_o6xl0"]
 [ext_resource type="PackedScene" uid="uid://dlg0yfhe6hu37" path="res://INTERFACES/hud_combat.tscn" id="8_tipki"]
 [ext_resource type="PackedScene" uid="uid://c1s742glubqgs" path="res://INTERFACES/game_menu.tscn" id="10_choun"]
+[ext_resource type="Script" uid="uid://c0y8racdsi6j0" path="res://INTERFACES/command_hints.gd" id="11_hints"]
 [ext_resource type="Script" uid="uid://csa7mo505bgst" path="res://scenes/mouse_blocker.gd" id="99_mouseblk"]
 
 [node name="main" type="Node3D" unique_id=1718374945]
@@ -81,3 +82,6 @@ offset_bottom = 40.0
 
 [node name="Hud" parent="." unique_id=1534891892 instance=ExtResource("8_tipki")]
 visible = false
+
+[node name="CommandHints" type="CanvasLayer" parent="." unique_id=1036837223]
+script = ExtResource("11_hints")
