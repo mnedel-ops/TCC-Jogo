@@ -14,7 +14,11 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_csqnk"]
 size = Vector3(78.961426, 0.5, 60)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7hgg1"]
+albedo_color = Color(0.69965345, 0.69965345, 0.69965345, 1)
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_beapv"]
+material = SubResource("StandardMaterial3D_7hgg1")
 size = Vector2(100, 48)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_beapv"]
@@ -55,7 +59,11 @@ size = Vector3(1, 2, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_uxhkt"]
 size = Vector3(0.48840332, 1, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i6eu5"]
+albedo_color = Color(0.18590316, 0.22981077, 0.39258498, 1)
+
 [sub_resource type="SphereMesh" id="SphereMesh_ea8wx"]
+material = SubResource("StandardMaterial3D_i6eu5")
 radius = 8.0
 height = 16.0
 
